@@ -91,7 +91,7 @@ stacked_df <- rel_abundance_data
 stacked_df[,which(colnames(stacked_df)==lineage)] <- as.character(stacked_df[,which(colnames(stacked_df)==lineage)])
 
 stacked_df <- stacked_df %>% 
-  pivot_longer(cols = -(which(colnames(stacked_df)==lineage)), names_to = "Sample_Id", values_to = "Abundance") %>% 
+  pivot_longer(cols = -all_of(which(colnames(stacked_df)==lineage)), names_to = "Sample_Id", values_to = "Abundance") %>% 
   filter(Abundance > 0) %>% 
   mutate(Name = ifelse(Abundance>2, stacked_df[,which(colnames(stacked_df)==lineage)], "< 2% Abundance"))
 
@@ -400,7 +400,7 @@ required_col <- which(colnames(stacked_df)==lineage)
 stacked_df[,required_col] <- as.character(stacked_df[,required_col])
 
 stacked_df <- stacked_df %>% 
-  pivot_longer(cols = -(required_col), names_to = "Sample_Id", values_to = "Abundance") %>% 
+  pivot_longer(cols = -all_of(required_col), names_to = "Sample_Id", values_to = "Abundance") %>% 
   filter(Abundance > 0)
 
 stacked_df <- stacked_df %>% group_by(Sample_Id) %>%

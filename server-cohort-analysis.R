@@ -23,7 +23,7 @@ cohort_analysis_plots <- reactive({
       stacked_df[,required_col] <- as.character(stacked_df[,required_col])
 
       stacked_df <- stacked_df %>% 
-        pivot_longer(cols = -(required_col), names_to = "Sample_Id", values_to = "Abundance") %>% 
+        pivot_longer(cols = -all_of(required_col), names_to = "Sample_Id", values_to = "Abundance") %>% 
         filter(Abundance > 0)
 
       stacked_df <- stacked_df %>% group_by(Sample_Id) %>%
@@ -49,7 +49,7 @@ cohort_analysis_plots <- reactive({
 
       stacked_barplot <- ggplot(stacked_df, aes(x = Sample_Id, y = Abundance, fill = stacked_df[[required_col]])) +
         geom_bar(stat = "identity", position = "stack", color = "black", linewidth=0.2) +
-        theme_classic() +
+        theme_linedraw() +
         theme(
           axis.text.x = element_text(size = 10, face = "bold"),
           axis.text.y = element_text(size = 10, face = "bold"),
@@ -58,7 +58,9 @@ cohort_analysis_plots <- reactive({
           legend.title = element_text(face = "bold"),
           legend.text = element_text(face = "bold"),
           legend.position = "bottom",
-          title = element_text(size = 10, face = "bold")
+          title = element_text(size = 10, face = "bold"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()
         ) +
         guides(fill = guide_legend(ncol = 8)) +
         labs(x = "BARCODE", y="% RELATIVE ABUNDANCE", fill = lineage) + 
@@ -98,7 +100,7 @@ cohort_analysis_plots <- reactive({
         ggplot(aes(x=Group, y=Value, color=Group)) +
         geom_boxplot() +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
-        theme_classic() +
+        theme_linedraw() +
         labs(y= "Alpha Diversity", x = "") +
         stat_pvalue_manual(subset(alpha_div_p, Diversity=="Shannon"), label = "p.signif", y.position = max(
           subset(alpha_diversity_data, Diversity=="Shannon")$Value) + 0.1, hide.ns = "p.adj", step.increase = 0.1,
@@ -113,14 +115,16 @@ cohort_analysis_plots <- reactive({
           axis.ticks.x = element_blank(),
           legend.title=element_text(colour="black",size=14, face = "bold"),
           legend.text=element_text(colour="black", size=14, face = "bold"),
-          plot.title = element_text(hjust = 0.5,size = rel(2))
+          plot.title = element_text(hjust = 0.5,size = rel(2)),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()
         )
       
       simpson_plot <- alpha_diversity_data %>% filter(Diversity == "Simpson") %>%
         ggplot(aes(x=Group, y=Value, color=Group)) +
         geom_boxplot() +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) + 
-        theme_classic() +
+        theme_linedraw() +
         labs(y= "Alpha diversity", x = "") +
         stat_pvalue_manual(subset(alpha_div_p, Diversity=="Simpson"), y.position = max(
           subset(alpha_diversity_data, Diversity=="Simpson")$Value) + 0.01, label = "p.signif",
@@ -135,7 +139,9 @@ cohort_analysis_plots <- reactive({
           axis.ticks.x = element_blank(),
           legend.title=element_text(colour="black",size=14, face = "bold"),
           legend.text=element_text(colour="black", size=14, face = "bold"),
-          plot.title = element_text(hjust = 0.5,size = rel(2))
+          plot.title = element_text(hjust = 0.5,size = rel(2)),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank()
         )
       
       
@@ -159,7 +165,7 @@ cohort_analysis_plots <- reactive({
       pcoa_plot <- ggplot(data = pcoa_df, aes(x = Axis.1, y = Axis.2, color = Group)) +
         geom_point(size=5) +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
-        theme_minimal() +
+        theme_linedraw() +
         geom_vline(xintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
         geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
         theme(
@@ -195,7 +201,7 @@ cohort_analysis_plots <- reactive({
         xlab(paste0("PC1 (", pca.var.per[1], "%", ")")) +
         ylab(paste0("PC2 (", pca.var.per[2], "%", ")")) +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
-        theme_minimal() +
+        theme_linedraw() +
         theme(
           axis.text.x = element_text(size = 15, face = "bold"),
           axis.text.y = element_text(size = 15, face = "bold"),
@@ -221,7 +227,7 @@ cohort_analysis_plots <- reactive({
       nmds_plot <- ggplot(data = nmds_df, aes(x = MDS1, y = MDS2, color = Group)) +
         geom_point(size=5) +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
-        theme_minimal() +
+        theme_linedraw() +
         theme(
           axis.text.x = element_text(size = 15, face = "bold"),
           axis.text.y = element_text(size = 15, face = "bold"),
