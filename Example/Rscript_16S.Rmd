@@ -1,0 +1,348 @@
+---
+title: "Rscript_16S"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Install packages
+```{r}
+install.packages("pheatmap")
+BiocManager::install("phyloseq")
+install.packages("readxl")
+install.packages("ggpubr")
+install.packages("Rtsne")
+```
+
+# Load libraries
+```{r, echo=F}
+library(dplyr)
+library(pheatmap)
+library(phyloseq)
+library(ggplot2)
+library(ggpubr) 
+library(readxl)
+library(Rtsne)
+library(tidyverse)
+#library(ggsignif)
+#library(variancePartition) 
+
+```
+
+# Reading and compiling blastn+taxonkit output
+
+```{r}
+list1<-read.csv("list", header=F)$V1                #list_of_48_sample_IDs
+
+metadata<-as.data.frame(read_xlsx("Sample_Metadata.xlsx"))[,1:11]  #just relevant columns
+rownames(metadata)<-metadata$`SAMPLE CODE`
+metadata[is.na(metadata$DIAGNOSIS),"DIAGNOSIS"]<-"Control"
+metadata[is.na(metadata$INTERVENTION),"INTERVENTION"]<-"Control"
+#for MM (multiple myeloma) patients, Hematopoietic cell transplant took place
+#for AML (acute myeloid leukemia) patients, it was chemotherapy
+
+TAXA_df<-data.frame()
+
+for(i in 1:length(list1))
+{
+  x<-read.csv(paste(list1[i], "_filtered_tax_5col", sep=""), sep="\t", header=F)
+  
+  y<-as.data.frame(do.call(rbind, strsplit(x$V5,";")))
+  TAXA_df<-rbind(TAXA_df,y)
+  
+  z_tot<-as.data.frame(table(y$V7))
+  z_rel<-z_tot
+  z_rel$Freq<-(z_rel$Freq)*100/(sum(z_rel$Freq))
+  
+  if(i==1)
+  {
+    abundance_total<-z_tot
+    abundance_relative<-z_rel
+  } else {
+    abundance_total<-full_join(abundance_total, z_tot, by=c("Var1"="Var1"))
+    abundance_relative<-full_join(abundance_relative, z_rel, by=c("Var1"="Var1"))
+  }
+    
+}
+
+colnames(abundance_total)<-append("taxa_name", list1)
+colnames(abundance_relative)<-append("taxa_name", list1)
+abundance_total[is.na(abundance_total)]<-0
+abundance_relative[is.na(abundance_relative)]<-0
+
+mat_total<-as.matrix(abundance_total[,-1])
+mat_relative<-as.matrix(abundance_relative[,-1])
+rownames(mat_total)<-abundance_total$taxa_name
+rownames(mat_relative)<-abundance_relative$taxa_name
+
+write.table(mat_total, "abundances_total.tsv", sep="\t")
+write.table(mat_relative, "abundances_relative.tsv", sep="\t")
+
+TAXA_df<-distinct(TAXA_df)
+colnames(TAXA_df)<-c("Superkingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+TAXA_mat<-as.matrix(TAXA_df, ncol=7)
+rownames(TAXA_mat)<-TAXA_df$Species
+
+```
+
+## To avoid false interpretations, very low-expressed species are removed
+
+```{r}
+
+TAXA_mat<-readRDS("TAXA_mat.RDS")
+TAXA_mat[TAXA_mat==""]<-"unclassified"   # just so that it is not blank
+mat_total<-readRDS("mat_total.RDS")
+mat_relative<-readRDS("mat_relative.RDS")
+metadata<-readRDS("metadata.RDS")
+metadata$seq_batch<-rep(c("1", "2", "3", "4"), each=12)
+
+ind<-c()
+cutoff<-1     #specify cutoff percentage
+
+for(i in 1:nrow(mat_relative))
+{
+  if(any(mat_relative[i,]>=cutoff))      
+  ind<-append(ind,i)
+}
+
+mat_relative_sub<-mat_relative[ind,]
+mat_total_sub<-mat_total[ind,]
+
+n<-nrow(mat_relative_sub)
+#cutoff 10 gives  species
+#cutoff 5 gives  species
+#cutoff 1 gives 135 species
+
+write.table(mat_relative_sub, paste("abundances_relative_", cutoff, "percent.tsv", sep=""), sep="\t")
+write.table(mat_total_sub, paste("abundances_total_", cutoff, "percent.tsv", sep=""), sep="\t")
+#double quote may be removed in bash using sed as: sed -i 's/"//g' abundances_total.tsv
+
+```
+
+## phyloseq package tools
+
+```{r}
+#DATA1 - total counts for all
+OTU = otu_table(mat_total, taxa_are_rows = TRUE)
+
+#DATA2 - taxa table to subset taxa
+TAX = tax_table(TAXA_mat)
+
+#DATA3 - sample table to subset samples [change as per experimental setup]
+SAM<-sample_data(metadata)
+
+physeq = phyloseq(OTU, TAX, SAM)
+physeq_rel<-transform_sample_counts(physeq, function(x) 100*x/sum(x))
+physeq_rel_sub<-filter_taxa(physeq_rel, function(x) any(x>=cutoff)==TRUE, TRUE)
+#got the same 135 species as before
+
+#PT_ID for MM - 17, 23, 2, 3, 42, 49, 55, 62
+#PT_ID for AML - 1, 21, 27, 37, 44, 4, 56, 60 
+
+```
+
+
+```{r}
+
+#STACKED BAR PLOTS -
+#a semi-percent bar plot, with percentages of top 135 species, accounting for others'
+#plots with plot_bar() were fine, but extra lines must be removed - using psmelt+ggplot2 instead
+
+save_cust_barplot=function(phy_obj, lineage)
+{
+  svg(paste0("top", cutoff, "percent_stackedbarplot_", lineage, "_", substitute(phy_obj), ".svg"), height=8, width=12)
+  g<-ggplot(phy_obj, aes_string(x = "Sample", y = "Abundance", fill = lineage)) + geom_bar(stat = "identity", position = "stack") + theme(axis.text.x=element_text(angle=60, hjust=1, size=8), legend.text = element_text(size=6), legend.title = element_text(size=7), legend.key.size = unit(3.5,"mm")) + scale_x_discrete(labels=scales::label_wrap(23)) + ggtitle(paste0(lineage, "-wise Abundance")) + labs(y="% Relative Abundance") + scale_fill_hue(l=55)
+  print(g)
+  dev.off()
+}
+
+tot<-psmelt(physeq_rel_sub)
+save_cust_barplot(tot, "Genus")
+save_cust_barplot(tot, "Family")
+save_cust_barplot(tot, "Phylum")
+
+MM_A_X<-psmelt(subset_samples(physeq_rel_sub, PT.ID %in% c("17", "23", "2", "3", "42", "49", "55", "62") & TYPE.OF.SAMPLE %in% c("A", "X")))
+save_cust_barplot(MM_A_X, "Genus")
+save_cust_barplot(MM_A_X, "Family")
+
+MM_A_B<-psmelt(subset_samples(physeq_rel_sub, PT.ID %in% c("17", "23", "2", "3", "42", "49", "55", "62") & TYPE.OF.SAMPLE %in% c("A", "B")))
+save_cust_barplot(MM_A_B, "Genus")
+save_cust_barplot(MM_A_B, "Family")
+
+AML_A_X<-psmelt(subset_samples(physeq_rel_sub, PT.ID %in% c ("1", "21", "27", "37", "44", "4", "56", "60") & TYPE.OF.SAMPLE %in% c("A", "X")))
+save_cust_barplot(AML_A_X, "Genus")
+save_cust_barplot(AML_A_X, "Family")
+
+AML_A_B<-psmelt(subset_samples(physeq_rel_sub, PT.ID %in% c ("1", "21", "27", "37", "44", "4", "56", "60") & TYPE.OF.SAMPLE %in% c("A", "B")))
+save_cust_barplot(AML_A_B, "Genus")
+save_cust_barplot(AML_A_B, "Family")
+
+
+ggplot(AML_A_B, aes_string(x = "Sample", y = "Abundance", fill = lineage)) + geom_bar(stat = "identity", position = "stack") + theme(axis.text.x=element_text(angle=60, hjust=1, size=8), legend.text = element_text(size=6), legend.title = element_text(size=7), legend.key.size = unit(3.5,"mm")) + scale_x_discrete(labels=scales::label_wrap(23)) + ggtitle(paste0(lineage, "-wise Abundance")) + labs(y="% Relative Abundance") + scale_fill_hue(l=55)
+
+#SPECIES RICHNESS - only used counts - it internally transforms counts to relative abundance
+
+#all samples
+svg("Shannon_index_alpha_diversity_total.svg", height = 6, width=9)
+p<-plot_richness(physeq, measures="Shannon") + labs(x="Sample Name") + geom_point(size=4) + theme(axis.text.x=element_text(angle=60, hjust=1, vjust=1, size=12)) + scale_x_discrete(labels=scales::label_wrap(23)) + ggtitle("Shannon index - All patients")
+print(p)
+dev.off()
+
+#only MM - before and controls
+physeq_MM<-subset_samples(physeq, PT.ID %in% c("17", "23", "2", "3", "42", "49", "55", "62") & TYPE.OF.SAMPLE %in% c("A", "X"))
+svg("Shannon_index_alpha_diversity_MM.svg", height = 6, width=9)
+p<-plot_richness(physeq_MM, measures="Shannon") + labs(x="Sample Name") + geom_point(size=4) + theme(axis.text.x=element_text(angle=60, hjust=1, vjust=1, size=12)) + scale_x_discrete(labels=scales::label_wrap(23)) + ggtitle("Shannon index - Transplant cohort (MM)") + facet_grid(.~VEG.NON.VEG, scales = "free_x", drop=TRUE)
+print(p)
+dev.off()
+
+#only AML - before and controls
+physeq_AML<-subset_samples(physeq, PT.ID %in% c ("1", "21", "27", "37", "44", "4", "56", "60") & TYPE.OF.SAMPLE %in% c("A", "X"))
+svg("Shannon_index_alpha_diversity_AML.svg", height = 6, width=9)
+p<-plot_richness(physeq_AML, measures="Shannon") + labs(x="Sample Name") + geom_point(size=4) + theme(axis.text.x=element_text(angle=60, hjust=1, vjust=1, size=12)) + scale_x_discrete(labels=scales::label_wrap(23)) + ggtitle("Shannon index - Chemotherapy cohort (AML)") + facet_grid(.~VEG.NON.VEG, scales = "free_x", drop=TRUE)
+print(p)
+dev.off()
+
+#all patients before treatment
+physeq_A<-subset_samples(physeq, TYPE.OF.SAMPLE=="A")
+svg("Shannon_index_alpha_diversity_A.svg", height = 6, width=9)
+p<-plot_richness(physeq_A, measures="Shannon") + labs(x="Sample Name") + geom_point(size=4) + theme(axis.text.x=element_text(angle=60, hjust=1, vjust=1, size=12)) + facet_grid(.~DIAGNOSIS, scales = "free_x", drop=TRUE) + scale_x_discrete(labels=scales::label_wrap(23)) + ggtitle("Shannon index - AML vs MM - before")
+print(p)
+dev.off()
+
+#all patients after treatment
+physeq_B<-subset_samples(physeq, TYPE.OF.SAMPLE=="B")
+svg("Shannon_index_alpha_diversity_B.svg", height = 6, width=9)
+p<-plot_richness(physeq_B, measures="Shannon") + labs(x="Sample Name") + geom_point(size=4) + theme(axis.text.x=element_text(angle=60, hjust=1, vjust=1, size=12)) + facet_grid(.~DIAGNOSIS, scales = "free_x", drop=TRUE) + scale_x_discrete(labels=scales::label_wrap(23)) + ggtitle("Shannon index - AML vs MM - after")
+print(p)
+dev.off()
+
+#conclusion - 
+#1 no significant difference in alpha diversity between patients (before treatment) of either cohort and controls
+#2 alpha diversity decreases upon antibiotic usage - across both cohorts
+
+#BETA-DIVERSITY
+
+nmds_dist<-ordinate(physeq=physeq_rel_sub, method="NMDS", distance="bray")
+ordinate.df<-as.data.frame(nmds_dist$points)
+ordinate.df$DiseaseStatus<-metadata$DIAGNOSIS
+ordinate.df$TreatmentStatus<-metadata$`TYPE OF SAMPLE`
+
+svg("beta_diversity_NMDS.svg", height=8, width=10)
+p<-ggplot(ordinate.df)+geom_point(aes(x=MDS1, y=MDS2, col=TreatmentStatus, shape=DiseaseStatus), size=5) + ggtitle("Beta diversity (Bray-Curtis NMDS)")
+print(p)
+dev.off()
+
+pcoa_dist<-ordinate(physeq=physeq_rel_sub, method="PCoA")        #similar result with physeq_rel
+ordinate.df<-as.data.frame(pcoa_dist$vectors)
+ordinate.df$DiseaseStatus<-metadata$DIAGNOSIS
+ordinate.df$TreatmentStatus<-metadata$`TYPE OF SAMPLE`
+
+svg("beta_diversity_PCoA.svg", height=8, width=10)
+p<-ggplot(ordinate.df)+geom_point(aes(x=Axis.1, y=Axis.2, col=TreatmentStatus, shape=DiseaseStatus), size=5) + ggtitle("Beta diversity (Bray-Curtis PCoA)")
+print(p)
+dev.off()
+
+#similar results across NDMS and PCoA
+#disease status - MM vs AML does not show any trend - A and X have similar beta diveristy indices, while B is different, we know from alpha diveristy that B has very low diversity
+#perform PCA?
+
+```
+
+
+```{r}
+#does pheatmap need normalized data? ideally normalized yes
+
+#pheatmap(mat_total)          #too many taxa; non-normalized
+#pheatmap(mat_total_sub)      #non-normalized
+#pheatmap(mat_relative)       #too many taxa
+
+color1<-c("darkblue", "turquoise3", "orange")
+color2<-c("darkgreen", "darkkhaki", "pink")
+color3<-c("grey", "black", "maroon", "bisque3")
+names(color1)<-c("A", "B", "X")
+names(color2)<-c("AML", "Control", "Multiple myeloma")
+names(color3)<-c("1", "2", "3", "4")
+
+svg(paste0("top",cutoff,"percent_heatmap_with_clustering.svg"), height=9, width=11)
+p<-pheatmap(log(mat_relative_sub + 0.01), color=hcl.colors(50,"Reds",rev=T), main=paste("Log(relative abundance) of species with at least", cutoff, "% abundance"), angle_col=45, treeheight_col=10, fontsize_row = 5, fontsize_col = 7, annotation_col = metadata[,c(3,7,12)], display_numbers=T, fontsize_number = 2, number_color = "black", annotation_colors = list(DIAGNOSIS=color2, `TYPE OF SAMPLE`=color1, seq_batch=color3))
+print(p)
+dev.off()
+
+svg(paste0("top",cutoff,"percent_heatmap_no_clustering_pattern1.svg"), height=8, width=10)
+p<-pheatmap(log(mat_relative_sub[,c("1A","4A","21A","27A","37A","44A","56A","60A","2A","3A","17A","23A","42A","49A","55A","62A","1B","4B","21B","27B","37B","44B","56B","60B","2B","3B","17B","23B","42B","49B","55B","62B","1X","4X","21X","27X","37X","44X","56X","60X","2X","3X","17X","23X","42X","49X","55X","62X")] + 0.01), color=hcl.colors(50,"Reds",rev=T), main=paste("Log(relative abundance) of species with at least", cutoff, "% abundance"), cluster_cols = F, angle_col=45, treeheight_col=10, fontsize_row = 5, fontsize_col = 7, annotation_col = metadata[,c(3,7,12)], display_numbers=T, fontsize_number = 2, number_color = "black", annotation_colors = list(DIAGNOSIS=color2, `TYPE OF SAMPLE`=color1, seq_batch=color3))
+print(p)
+dev.off()
+
+svg(paste0("top",cutoff,"percent_heatmap_no_clustering_pattern2.svg"), height=8, width=10)
+p<-pheatmap(log(mat_relative_sub[,c("1A","4A","21A","27A","37A","44A","56A","60A","1B","4B","21B","27B","37B","44B","56B","60B","1X","4X","21X","27X","37X","44X","56X","60X","2A","3A","17A","23A","42A","49A","55A","62A","2B","3B","17B","23B","42B","49B","55B","62B","2X","3X","17X","23X","42X","49X","55X","62X")] + 0.01), color=hcl.colors(50,"Reds",rev=T), main=paste("Log(relative abundance) of species with at least", cutoff, "% abundance"), cluster_cols = F, angle_col=45, treeheight_col=10, fontsize_row = 5, fontsize_col = 7, annotation_col = metadata[,c(3,7,12)], display_numbers=T, fontsize_number = 2, number_color = "black", annotation_colors = list(DIAGNOSIS=color2, `TYPE OF SAMPLE`=color1, seq_batch=color3))
+print(p)
+dev.off()
+
+svg(paste0("top",cutoff,"percent_heatmap_no_clustering_pattern3.svg"), height=8, width=10)
+p<-pheatmap(log(mat_relative_sub[,c("1A","1B","1X","4A","4B","4X","21A","21B","21X","27A","27B","27X","37A","37B","37X","44A","44B","44X","56A","56B","56X","60A","60B","60X","2A","2B","2X","3A","3B","3X","17A","17B","17X","23A","23B","23X","42A","42B","42X","49A","49B","49X","55A","55B","55X","62A","62B","62X")] + 0.01), color=hcl.colors(50,"Reds",rev=T), main=paste("Log(relative abundance) of species with at least", cutoff, "% abundance"), cluster_cols = F, angle_col=45, treeheight_col=10, fontsize_row = 5, fontsize_col = 7, annotation_col = metadata[,c(3,7,12)], display_numbers=T, fontsize_number = 2, number_color = "black", annotation_colors = list(DIAGNOSIS=color2, `TYPE OF SAMPLE`=color1, seq_batch=color3))
+print(p)
+dev.off()
+
+```
+
+
+```{r}
+save.image("obj.RData")
+```
+
+## TSNE
+```{r}
+
+metadata<-metadata[,1:11]
+
+lineage_tsne=function(mat_tot, lin_name)
+{
+  Species_name<-row.names(mat_tot)
+  df_total<-as.data.frame(mat_tot)
+  df_total[colnames(df_total)] <- sapply(df_total[colnames(df_total)],as.numeric)
+  df_total$Species<-Species_name
+  df_total<-left_join(as.data.frame(TAXA_mat), df_total, by=c("Species"))
+  
+  df_total_lin<-aggregate(df_total[,-c(1:7)], by=list(df_total[,lin_name]), FUN=sum)
+
+  df_total_lin <- df_total_lin %>% unique() %>% t() %>% as.data.frame()
+  colnames(df_total_lin) <- df_total_lin[1,]
+  df_total_lin<-df_total_lin[-1,]
+  df_total_lin$SAMPLE_CODE <- rownames(df_total_lin) 
+  df_total_lin <- left_join(df_total_lin, metadata, by=c("SAMPLE_CODE"="SAMPLE CODE")) 
+  cols.num <- colnames(df_total_lin)[1:(ncol(df_total_lin)-11)]
+  df_total_lin[cols.num] <- sapply(df_total_lin[cols.num],as.numeric)
+  
+  df_total_lin$max_abundance<-colnames(df_total_lin)[apply(df_total_lin,1,which.max)]
+
+  tsne_in<- df_total_lin[,1:(ncol(df_total_lin)-12)]    
+  tsne_meta<- df_total_lin[,(ncol(df_total_lin)-11):ncol(df_total_lin)]  %>% mutate(ID=row_number())  
+
+  tsne_out <- tsne_in %>% scale() %>% Rtsne(perplexity=12)   #see if perplexity can be chosen based on input nrow
+  tsne_outdf <-  tsne_out$Y %>% as.data.frame() %>% rename(tSNE1="V1", tSNE2="V2") %>% mutate(ID=row_number())
+  tsne_outdf <- tsne_outdf %>% inner_join(tsne_meta, by="ID")
+  
+  return(tsne_outdf)
+}
+
+tsne_lin<-lineage_tsne(mat_total, "Genus")
+tsne_lin %>% ggplot(aes(x = tSNE1, y = tSNE2, color = max_abundance, shape=`TYPE OF SAMPLE`)) + geom_point(size=3) + ggtitle("TSNE Genus-wise")
+tsne_lin %>% ggplot(aes(x = tSNE1, y = tSNE2, color = `TYPE OF SAMPLE`, shape = DIAGNOSIS)) + geom_point(size=3) + ggtitle("TSNE Genus-wise")
+
+tsne_lin<-lineage_tsne(mat_total, "Family")
+tsne_lin %>% ggplot(aes(x = tSNE1, y = tSNE2, color = max_abundance, shape=`TYPE OF SAMPLE`)) + geom_point(size=3) + ggtitle("TSNE Family-wise")
+tsne_lin %>% ggplot(aes(x = tSNE1, y = tSNE2, color = `TYPE OF SAMPLE`, shape = DIAGNOSIS)) + geom_point(size=3) + ggtitle("TSNE Family-wise")
+
+tsne_lin<-lineage_tsne(mat_total, "Species")   #anything
+tsne_lin %>% ggplot(aes(x = tSNE1, y = tSNE2, color = max_abundance, shape=`TYPE OF SAMPLE`)) + geom_point(size=3) + ggtitle("TSNE Species-wise")
+tsne_lin %>% ggplot(aes(x = tSNE1, y = tSNE2, color = `TYPE OF SAMPLE`, shape = DIAGNOSIS)) + geom_point(size=3) + ggtitle("TSNE Species-wise")
+  
+
+```
+
+
+
+

@@ -1,0 +1,3 @@
+1280	234228.1463511092	Bacteria	Bacillota	Bacilli	Bacillales	Staphylococcaceae	Staphylococcus	Staphylococcus aureus
+37482	35.85364889082524	Bacteria	Bacillota	Bacilli	Bacillales	Thermoactinomycetaceae	Laceyella	Laceyella sacchari
+Unclassified	0.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified

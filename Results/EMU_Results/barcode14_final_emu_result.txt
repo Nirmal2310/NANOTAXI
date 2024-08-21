@@ -1,0 +1,2 @@
+1351	199815.0	Bacteria	Bacillota	Bacilli	Lactobacillales	Enterococcaceae	Enterococcus	Enterococcus faecalis
+Unclassified	0.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified

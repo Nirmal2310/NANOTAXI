@@ -1,0 +1,18 @@
+29391	37458.68238106791	Bacteria	Bacillota	Bacilli	Bacillales	Gemellaceae	Gemella	Gemella morbillorum
+84135	186.25348881065452	Bacteria	Bacillota	Bacilli	Bacillales	Gemellaceae	Gemella	Gemella sanguinis
+1379	344.05221970448207	Bacteria	Bacillota	Bacilli	Bacillales	Gemellaceae	Gemella	Gemella haemolysans
+341694	7995.252072549746	Bacteria	Bacillota	Clostridia	Peptostreptococcales	Peptostreptococcaceae	Peptostreptococcus	Peptostreptococcus stomatis
+1338	79005.13339735875	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus intermedius
+1328	375.167853850691	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus anginosus
+33040	55.776545851641316	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus milleri
+2490633	98.44613491492127	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus periodonticum
+33033	82649.2904514163	Bacteria	Bacillota	Tissierellia	Tissierellales	Peptoniphilaceae	Parvimonas	Parvimonas micra
+1261	445.58636920940495	Bacteria	Bacillota	Clostridia	Peptostreptococcales	Peptostreptococcaceae	Peptostreptococcus	Peptostreptococcus anaerobius
+1302	45.92888635941929	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus gordonii
+1888195	12.980283876395907	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus himalayensis
+199	232.99150632736837	Bacteria	Campylobacterota	Epsilonproteobacteria	Campylobacterales	Campylobacteraceae	Campylobacter	Campylobacter concisus
+37482	74.45549221195893	Bacteria	Bacillota	Bacilli	Bacillales	Thermoactinomycetaceae	Laceyella	Laceyella sacchari
+539	17.00309104219799	Bacteria	Pseudomonadota	Betaproteobacteria	Neisseriales	Neisseriaceae	Eikenella	Eikenella corrodens
+851	14.002545564163052	Bacteria	Fusobacteriota	Fusobacteriia	Fusobacteriales	Fusobacteriaceae	Fusobacterium	Fusobacterium nucleatum
+1884263	17.997279895667294	Bacteria	Bacillota	Negativicutes	Selenomonadales	Selenomonadaceae	Selenomonas	Selenomonas sp. oral taxon 920
+Unclassified	0.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified

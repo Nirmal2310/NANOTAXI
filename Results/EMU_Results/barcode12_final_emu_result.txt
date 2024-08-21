@@ -1,0 +1,5 @@
+1305	233511.16305401528	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus sanguinis
+37482	166.83267068804452	Bacteria	Bacillota	Bacilli	Bacillales	Thermoactinomycetaceae	Laceyella	Laceyella sacchari
+1658665	16.00253350908126	Bacteria	Pseudomonadota	Betaproteobacteria	Burkholderiales	Sphaerotilaceae	Roseateles	Mitsuaria sp. 7
+1213358	11.001741787493367	Bacteria	Actinomycetota	Actinomycetes	Micrococcales	Microbacteriaceae	Microbacterium	Microbacterium saccharophilum
+Unclassified	2.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified
