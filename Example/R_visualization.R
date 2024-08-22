@@ -414,3 +414,4 @@ perm_dist <- vegdist(t(abundance_matrix), method = "bray")
 
 
 permanova_test <- adonis2(perm_dist~as.factor(sample_metadata$Group), data = perm_dist, permutations = 9999)
+

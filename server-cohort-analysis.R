@@ -273,7 +273,9 @@ cohort_analysis_plots <- reactive({
 
       permanova_res <- pairwise.adonis(perm_dist, as.factor(sample_metadata$Group), p.adjust.m = "BH")
 
-      permanova_res <- permanova_res %>% select(c(pairs, R2, p.value, p.adjusted, sig))
+      permanova_res <- permanova_res %>% select(c(pairs, R2, p.value, p.adjusted))
+
+      colnames(permanova_res) <- c("Pair", "R2", "P", "Padj")
 
       return(permanova_res)
     
@@ -349,7 +351,7 @@ observeEvent(c(input$upload_data, input$taxa), ignoreNULL=TRUE, ignoreInit=TRUE,
     plots_data <- cohort_analysis_plots()
 
     output$plot_stacked_barplot <- renderPlot({
-        plots_data$stacked_barplot}, height = 500, width = 1500
+        plots_data$stacked_barplot}, height = 600, width = 1500
         )
     
     output$plot_boxplot <- renderPlot({
@@ -375,6 +377,7 @@ observeEvent(c(input$upload_data, input$taxa), ignoreNULL=TRUE, ignoreInit=TRUE,
       plots_data$permanova_res
       
     })
+    
     output$plot_heatmap <- renderPlot({
       plots_data$heatmap_plot}, height = 500
       )
