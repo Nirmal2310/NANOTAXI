@@ -15,6 +15,8 @@ library(ComplexHeatmap)
 library(dendextend)
 library(viridis)
 library(circlize)
+library(compositions)
+library(pairwiseAdonis)
 
 file_list <- gsub(".txt", "", list.files(getwd())[grep("\\_final_blast_result.txt$", 
                                                        list.files(getwd()))])
@@ -74,7 +76,7 @@ rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
 
 rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
 
-rel_abundance_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) >0.1 )), ]
+rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) >0.1 )), ]
 
 abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
@@ -86,9 +88,9 @@ abundance_matrix <- abundance_data[,-1]
 
 rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
 
-abundance_matrix <- abundance_matrix[which(rownames(abundance_matrix) %in% rownames(rel_abundance_matrix)),]
+rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_filtered_matrix)),]
 
-rel_abundance_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
+# abundance_matrix <- abundance_matrix[which(rownames(abundance_matrix) %in% rownames(rel_abundance_matrix)),]
 
 ############# Stacked Bar-Plot #################################################
 
@@ -99,7 +101,7 @@ required_col <- which(colnames(stacked_df)==lineage)
 stacked_df[,required_col] <- as.character(stacked_df[,required_col])
 
 stacked_df <- stacked_df %>% 
-  pivot_longer(cols = -(required_col), names_to = "Sample_Id", values_to = "Abundance") %>% 
+  pivot_longer(cols = -(all_of(required_col)), names_to = "Sample_Id", values_to = "Abundance") %>% 
   filter(Abundance > 0)
 
 stacked_df <- stacked_df %>% group_by(Sample_Id) %>%
@@ -144,7 +146,7 @@ ggplot(stacked_df, aes(x = Sample_Id, y = Abundance, fill = stacked_df[[required
 
 #################### Alpha Diversity Plot ######################################
 
-alpha_diversity_data <- rel_abundance_data
+alpha_diversity_data <- rel_abundance_filtered_data
 
 alpha_diversity_data[,which(colnames(alpha_diversity_data)==lineage)] <- as.character(
   alpha_diversity_data[,which(colnames(alpha_diversity_data)==lineage)])
@@ -215,9 +217,12 @@ simpson_plot <- alpha_diversity_data %>% filter(Diversity == "Simpson") %>%
 
 as_ggplot(grid.grabExpr(grid.arrange(shannon_plot, simpson_plot, ncol=2)))
 
-################## Beta Diversity Plot #########################################
+#################### PCA Plot ##################################################
 
-pca <- prcomp(t(rel_abundance_matrix), scale = TRUE, center = TRUE)
+clr_transformed_abundance_matrix <- clr(abundance_matrix+1) %>% as.data.frame()
+
+pca <- prcomp(t(clr_transformed_abundance_matrix), scale. = FALSE, center = TRUE,
+              retx = TRUE)
 
 pca.var <- pca$sdev^2
 
@@ -231,9 +236,11 @@ pca_data$Group <- factor(pca_data$Group)
 
 ggplot(data = pca_data, aes(x = X, y = Y, color = Group)) +
   geom_point(size=5) +
+  stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
   xlab(paste0("PC1 (", pca.var.per[1], "%", ")")) +
   ylab(paste0("PC2 (", pca.var.per[2], "%", ")")) +
   scale_color_manual(values = pal_aaas("default")(length(levels(sample_annotation$Group)))) +
+  scale_fill_manual(values = pal_aaas("default")(length(levels(pcoa_df$Group)))) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(size = 15, face = "bold"),
@@ -246,11 +253,11 @@ ggplot(data = pca_data, aes(x = X, y = Y, color = Group)) +
   ) +
   geom_vline(xintercept = 0, color = "black") +
   geom_hline(yintercept = 0, color = "black") +
-  ggtitle("Principal Component Analysis (PCA) Plot")
+  ggtitle("Principal Component Analysis (PCA) Plot on CLR Transformed Data")
 
+######################### NMDS Plot #############################################
 
-
-nmds_dist <- metaMDS(t(abundance_matrix), distance = "bray", trymax = 100)
+nmds_dist <- metaMDS(t(rel_abundance_matrix), distance = "bray", trymax = 100)
 
 nmds_df <- as.data.frame(nmds_dist$points)
 
@@ -258,7 +265,9 @@ nmds_df$Group <- sample_metadata$Group
 
 ggplot(data = nmds_df, aes(x = MDS1, y = MDS2, color = Group)) +
   geom_point(size=5) +
+  stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
   scale_color_manual(values = pal_aaas("default")(length(levels(sample_annotation$Group)))) +
+  scale_fill_manual(values = pal_aaas("default")(length(levels(pcoa_df$Group)))) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(size = 15, face = "bold"),
@@ -269,13 +278,19 @@ ggplot(data = nmds_df, aes(x = MDS1, y = MDS2, color = Group)) +
     legend.title = element_text(size = 15, face = "bold"),
     title = element_text(size = 15, face = "bold")
   ) +
-  geom_vline(xintercept = 0, color = "black") +
-  geom_hline(yintercept = 0, color = "black") +
+  geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
+  geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
   ggtitle("Non-metric MultiDimensional Scaling (NMDS) ordination plot with Bray-Curtis Distance")
 
-pcoa_df <- wcmdscale(vegdist(t(abundance_matrix), method = "aitchison", pseudocount=1), k=2) %>% as.data.frame()
+#################### PCoA Plot #####################################################
 
-# pcoa_df <- wcmdscale(vegdist(t(abundance_matrix), method = "jaccard"), k=2) %>% as.data.frame()
+pcoa_dist <- wcmdscale(vegdist(t(abundance_matrix), method = "aitchison", pseudocount=1), k=2, eig = TRUE)
+
+pcoa_df <- pcoa_dist$points[,1:2] %>% as.data.frame()
+
+pcoa_eigenvalues <- pcoa_dist$eig
+
+pcoa.var <- round(pcoa_eigenvalues/sum(pcoa_eigenvalues)*100, 1)
 
 pcoa_df$Group <- sample_metadata$Group
 
@@ -283,12 +298,14 @@ pcoa_df$Group <- factor(pcoa_df$Group)
 
 colnames(pcoa_df) <- c("Axis.1", "Axis.2", "Group")
 
-pal_aaas("default")(length(levels(pcoa_df$Group)))
-
 ggplot(data = pcoa_df, aes(x = Axis.1, y = Axis.2, color = Group)) +
   geom_point(size=5) +
+  stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
   scale_color_manual(values = pal_aaas("default")(length(levels(pcoa_df$Group)))) +
+  scale_fill_manual(values = pal_aaas("default")(length(levels(pcoa_df$Group)))) +
   theme_minimal() +
+  xlab(paste0("PC1 (", pcoa.var[1], "%", ")")) +
+  ylab(paste0("PC2 (", pcoa.var[2], "%", ")")) +
   theme(
     axis.text.x = element_text(size = 15, face = "bold"),
     axis.text.y = element_text(size = 15, face = "bold"),
@@ -302,6 +319,14 @@ ggplot(data = pcoa_df, aes(x = Axis.1, y = Axis.2, color = Group)) +
   geom_hline(yintercept = 0, color = "black") +
   ggtitle("Principal Coordination Analysis (PCoA) ordination plot with Aitchison Distance")
 
+
+##################### Permanova Analysis #######################################
+
+perm_dist <- vegdist(t(abundance_matrix), method = "aitchison", pseudocount=1)
+
+permanova_res <- pairwise.adonis(perm_dist, as.factor(sample_metadata$Group))
+
+permanova_res <- permanova_res %>% select(c(pairs, R2, p.value, p.adjusted, sig))
 
 ############### HeatMap Plot ###################################################
 
@@ -334,7 +359,7 @@ ggplot(data = pcoa_df, aes(x = Axis.1, y = Axis.2, color = Group)) +
 # 
 # print(heatmap_plot)
 
-heatmap_df <- as.data.frame(log10(rel_abundance_matrix+0.00001))
+heatmap_df <- as.data.frame(log10(rel_abundance_filtered_matrix+0.00001))
 
 sample_metadata$Group <- factor(sample_metadata$Group)
 
@@ -382,3 +407,10 @@ heatmap_plot <- Heatmap(t(heatmap_df), heatmap_legend_param = list(title = expre
 heatmap_ggplot <- as_ggplot(grid.grabExpr(print(heatmap_plot)))
 
 print(heatmap_ggplot)
+
+################## Miscellaneous ###############################################
+
+perm_dist <- vegdist(t(abundance_matrix), method = "bray")
+
+
+permanova_test <- adonis2(perm_dist~as.factor(sample_metadata$Group), data = perm_dist, permutations = 9999)

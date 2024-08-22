@@ -198,7 +198,6 @@ observe({
 
 })
 
-
 analyze_data_reactive <-
   eventReactive(c(input$upload_data,input$taxa), ignoreNULL = TRUE,
                 {
@@ -264,7 +263,7 @@ analyze_data_reactive <-
 
                       rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
 
-                      rel_abundance_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+                      rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
 
                       abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
@@ -276,15 +275,15 @@ analyze_data_reactive <-
 
                       rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
 
-                      abundance_matrix <- abundance_matrix[which(rownames(abundance_matrix) %in% rownames(rel_abundance_matrix)),]
-
-                      rel_abundance_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
+                      rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
 
                       return(list('rel_abundance_data'=rel_abundance_data,
                       'rel_abundance_matrix'=rel_abundance_matrix,
                       'abundance_matrix'=abundance_matrix,
                       'sample_metadata'=sample_metadata,
-                      'lineage'=lineage))
+                      'lineage'=lineage,
+                      'rel_abundance_filtered_data'=rel_abundance_filtered_data,
+                      'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix))
                     }
                     
                     else if(input$data_file_type == "precomputed")
@@ -792,15 +791,23 @@ analyze_data_reactive <-
 
                           rel_abundance_data[is.na(rel_abundance_data)] <- 0
 
+                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+
+                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+
+                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) >0.1 )), ]
+
                           abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
                           abundance_data <- as.data.frame(abundance_data)
 
                           abundance_data[is.na(abundance_data)] <- 0
 
-                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+                          abundance_matrix <- abundance_data[,-1]
 
-                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+                          rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
+
+                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_filtered_matrix)),]
 
                           return(list('abundance_data' = abundance_data,
                           'sample_metadata' = sample_metadata,
@@ -842,7 +849,7 @@ output$download_results_CSV <- downloadHandler(
   
   content = function(file) {
     
-    write.csv(analyze_data_reactive()$rel_abundance_dataa,
+    write.csv(analyze_data_reactive()$rel_abundance_data,
               
               file, row.names = FALSE)
   }

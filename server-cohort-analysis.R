@@ -13,6 +13,10 @@ cohort_analysis_plots <- reactive({
     sample_metadata$Group <- factor(sample_metadata$Group)
     
     rownames(sample_metadata) <- sample_metadata$Sample_Id
+
+    rel_abundance_filtered_data <- analyze_data_reactive()$rel_abundance_filtered_data
+
+    rel_abundance_filtered_matrix <- analyze_data_reactive()$rel_abundance_filtered_matrix
     
     fun_stacked_bar_plot <- function(data, sample_metadata, lineage) {     
       
@@ -147,8 +151,6 @@ cohort_analysis_plots <- reactive({
       
       diversity_facet <- as_ggplot(grid.grabExpr(grid.arrange(shannon_plot,
                                           simpson_plot, ncol=2)))
-
-      print("Alpha Diversity Plot Done.")
       
       return(diversity_facet)
     }
@@ -156,35 +158,50 @@ cohort_analysis_plots <- reactive({
 
     fun_pcoa_plot <- function(matrix) {
 
-      pcoa_df <- wcmdscale(vegdist(t(matrix), method = "aitchison", pseudocount=1), k=2) %>% as.data.frame()
+      pcoa_dist <- wcmdscale(vegdist(t(matrix), method = "aitchison", pseudocount=1), k=2, eig = TRUE)
+
+      pcoa_df <- pcoa_dist$points[,1:2] %>% as.data.frame()
       
+      pcoa_eigenvalues <- pcoa_dist$eig
+
+      pcoa.var <- round(pcoa_eigenvalues/sum(pcoa_eigenvalues)*100, 1)  
+
       pcoa_df$Group <- sample_metadata$Group
+
+      pcoa_df$Group <- factor(pcoa_df$Group)
       
       colnames(pcoa_df) <- c("Axis.1", "Axis.2", "Group")
 
       pcoa_plot <- ggplot(data = pcoa_df, aes(x = Axis.1, y = Axis.2, color = Group)) +
         geom_point(size=5) +
+        stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
+        scale_fill_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
         theme_linedraw() +
-        geom_vline(xintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
-        geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
+        xlab(paste0("PC1 (", pcoa.var[1], "%", ")")) +
+        ylab(paste0("PC2 (", pcoa.var[2], "%", ")")) +
+        geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
+        geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
         theme(
           axis.text.x = element_text(size = 15, face = "bold"),
           axis.text.y = element_text(size = 15, face = "bold"),
           legend.text = element_text(size = 15, face = "bold"),
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
-          legend.title = element_text(size = 15, face = "bold")
-        )
-
-        print("PCoA Plot Done.")
+          legend.title = element_text(size = 15, face = "bold"),
+          title = element_text(size = 15, face = "bold")
+        ) +
+        ggtitle("Principal Coordination Analysis (PCoA) ordination plot using Aitchison Distance")
 
       return(pcoa_plot)
     }
 
     fun_pca_plot <- function(matrix) {
       
-      pca <- prcomp(t(matrix), scale. = TRUE, center = TRUE)
+      clr_transformed_abundance_matrix <- clr(matrix+1) %>% as.data.frame()
+
+      pca <- prcomp(t(clr_transformed_abundance_matrix), scale. = FALSE, center = TRUE,
+              retx = TRUE)
 
       pca.var <- pca$sdev^2
 
@@ -198,9 +215,11 @@ cohort_analysis_plots <- reactive({
 
       pca_plot <- ggplot(data = pca_df, aes(x = X, y = Y, color = Group)) +
         geom_point(size=5) +
+        stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
         xlab(paste0("PC1 (", pca.var.per[1], "%", ")")) +
         ylab(paste0("PC2 (", pca.var.per[2], "%", ")")) +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
+        scale_fill_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
         theme_linedraw() +
         theme(
           axis.text.x = element_text(size = 15, face = "bold"),
@@ -208,10 +227,12 @@ cohort_analysis_plots <- reactive({
           legend.text = element_text(size = 15, face = "bold"),
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
-          legend.title = element_text(size = 15, face = "bold")
+          legend.title = element_text(size = 15, face = "bold"),
+          title = element_text(size = 15, face = "bold")
         ) +
-        geom_vline(xintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
-        geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1)
+        geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
+        geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+        ggtitle("Principal Component Analysis (PCA) Plot using CLR Transformed Data")
 
       return(pca_plot)
     }
@@ -226,7 +247,9 @@ cohort_analysis_plots <- reactive({
 
       nmds_plot <- ggplot(data = nmds_df, aes(x = MDS1, y = MDS2, color = Group)) +
         geom_point(size=5) +
+        stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
         scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
+        scale_fill_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
         theme_linedraw() +
         theme(
           axis.text.x = element_text(size = 15, face = "bold"),
@@ -234,20 +257,32 @@ cohort_analysis_plots <- reactive({
           legend.text = element_text(size = 15, face = "bold"),
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
-          legend.title = element_text(size = 15, face = "bold")
+          legend.title = element_text(size = 15, face = "bold"),
+          title = element_text(size = 15, face = "bold")
         ) +
-        geom_vline(xintercept = 0, color = "black", linetype = "dashed", linewidth = 1) +
-        geom_hline(yintercept = 0, color = "black", linetype = "dashed", linewidth = 1)
+        geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
+        geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+        ggtitle("Non-metric MultiDimensional Scaling (NMDS) ordination plot with Bray-Curtis Distance")
       
       return(nmds_plot)
+    }
 
-      print("NMDS Plot Done.")
+    fun_permanova <- function(matrix)
+    {
+      perm_dist <- vegdist(t(matrix), method = "aitchison", pseudocount=1)
+
+      permanova_res <- pairwise.adonis(perm_dist, as.factor(sample_metadata$Group), p.adjust.m = "BH")
+
+      permanova_res <- permanova_res %>% select(c(pairs, R2, p.value, p.adjusted, sig))
+
+      return(permanova_res)
+    
     }
 
     fun_heatmap_plot <- function(matrix)
     {
       
-        heatmap_df <- as.data.frame(log10(rel_abundance_matrix+0.00001))
+        heatmap_df <- as.data.frame(log10(matrix+0.00001))
 
         sample_annotation <- data.frame(sample_metadata$Group)
 
@@ -273,7 +308,7 @@ cohort_analysis_plots <- reactive({
 
         col_fun <- colorRamp2(c(as.vector(quantile(tmp$Abundance)[1]),
                               as.vector(quantile(tmp$Abundance)[3]),
-                              as.vector(quantile(tmp$Abundance)[5])), c("#1010fe", "white", "#FF1212"))
+                              as.vector(quantile(tmp$Abundance)[5])), c("#1010fe", "#FFD700", "#FF1212"))
 
         heatmap_plot <- Heatmap(t(heatmap_df), heatmap_legend_param = list(title = expression("Log"[10]*"Relative Abundance"),
                                                 title_gp = gpar(fontsize = 10)),
@@ -291,11 +326,12 @@ cohort_analysis_plots <- reactive({
     }
     
     return(list(stacked_barplot = fun_stacked_bar_plot(rel_abundance_data, sample_metadata, lineage),
-                alpha_diversity_plot = fun_alpha_diversity_plot(rel_abundance_data, sample_metadata, lineage),
+                alpha_diversity_plot = fun_alpha_diversity_plot(rel_abundance_filtered_data, sample_metadata, lineage),
                 pcoa_plot = fun_pcoa_plot(abundance_matrix),
-                pca_plot = fun_pca_plot(rel_abundance_matrix),
+                pca_plot = fun_pca_plot(abundance_matrix),
                 nmds_plot = fun_nmds_plot(rel_abundance_matrix),
-                heatmap_plot = fun_heatmap_plot(rel_abundance_matrix)
+                permanova_res = fun_permanova(abundance_matrix),
+                heatmap_plot = fun_heatmap_plot(rel_abundance_filtered_matrix)
                 ))
 })
 
@@ -331,6 +367,14 @@ observeEvent(c(input$upload_data, input$taxa), ignoreNULL=TRUE, ignoreInit=TRUE,
     output$plot_pca <- renderPlot({
         plots_data$pca_plot}, height = 500
         )
+
+    output$permanova_data <- renderDataTable({
+  
+      print("PERMANOVA Results")
+      
+      plots_data$permanova_res
+      
+    })
     output$plot_heatmap <- renderPlot({
       plots_data$heatmap_plot}, height = 500
       )
@@ -392,6 +436,17 @@ observeEvent(c(input$upload_data, input$taxa), ignoreNULL=TRUE, ignoreInit=TRUE,
       content = function(file) {
         ggsave(file, plots_data$heatmap_plot,
                width = 13.69, height = 8.27, units = "in", dpi = "retina", bg = "white")
+      }
+    )
+
+    output$download_permanova_csv <- downloadHandler(
+      filename = paste0("PERMANOVA_Result_", Sys.Date(), ".csv"),
+      
+      content = function(file) {
+        
+        write.csv(plots_data$permanova_res,
+                  
+                  file, row.names = FALSE)
       }
     )
 })

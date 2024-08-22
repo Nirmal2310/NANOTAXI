@@ -23,6 +23,12 @@ tabPanel(
                            plotOutput("plot_boxplot", height = "100%")
                            
                   ),
+                  tabPanel(title = div("PCA Plot", style="font-size: 15px; font-weight: bold; color: #000000;
+                                                    font-family: serif"),
+                           downloadButton(outputId = "download_pca_plot",
+                                          label = "Download PCA Plot (PNG)"),
+                           plotOutput("plot_pca", height = "100%")
+                  ),
                   tabPanel(title = div("PCoA Plot", style="font-size: 15px; font-weight: bold; color: #000000;
                                                     font-family: serif"),
                            downloadButton(outputId = "download_pcoa_plot",
@@ -34,12 +40,11 @@ tabPanel(
                            downloadButton(outputId = "download_nmds_plot",
                                           label = "Download NMDS Plot (PNG)"),
                            plotOutput("plot_nmds", height = "100%")),
-                  tabPanel(title = div("PCA Plot", style="font-size: 15px; font-weight: bold; color: #000000;
+                  tabPanel(title = div("PERMANOVA", style="font-size: 15px; font-weight: bold; color: #000000;
                                                     font-family: serif"),
-                           downloadButton(outputId = "download_pca_plot",
-                                          label = "Download PCA Plot (PNG)"),
-                           plotOutput("plot_pca", height = "100%")
-                  ),
+                           downloadButton(outputId = "download_permanova_csv",
+                                          label = "Download Result (CSV)"),
+                           DTOutput("permanova_data")),
                   tabPanel(title = div("HeatMap", style="font-size: 15px; font-weight: bold; color: #000000;
                                                     font-family: serif"),
                            downloadButton(outputId = "download_heatmap",
