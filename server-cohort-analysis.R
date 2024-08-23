@@ -31,7 +31,7 @@ cohort_analysis_plots <- reactive({
         filter(Abundance > 0)
 
       stacked_df <- stacked_df %>% group_by(Sample_Id) %>%
-        arrange(desc(Abundance)) %>% slice(1:ifelse(n()<10,n(),10))
+        arrange(desc(Abundance)) %>% dplyr::slice(1:ifelse(n()<10,n(),10))
 
       stacked_df$Sample_Id <- gsub("barcode","", stacked_df$Sample_Id)
 
@@ -61,12 +61,12 @@ cohort_analysis_plots <- reactive({
           axis.title.y = element_text(size = 10, face = "bold"),
           legend.title = element_text(face = "bold"),
           legend.text = element_text(face = "bold"),
-          legend.position = "bottom",
+          legend.position = "right",
           title = element_text(size = 10, face = "bold"),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()
         ) +
-        guides(fill = guide_legend(ncol = 8)) +
+        guides(fill = guide_legend(ncol = 4)) +
         labs(x = "BARCODE", y="% RELATIVE ABUNDANCE", fill = lineage) + 
         scale_fill_manual(values = fill_colors) +
         scale_y_continuous(expand = c(0, 0), limits = c(0,102)) +
@@ -158,7 +158,7 @@ cohort_analysis_plots <- reactive({
 
     fun_pcoa_plot <- function(matrix) {
 
-      pcoa_dist <- wcmdscale(vegdist(t(matrix), method = "aitchison", pseudocount=1), k=2, eig = TRUE)
+      pcoa_dist <- wcmdscale(vegdist(t(matrix), method = "aitchison", pseudocount=0.5), k=2, eig = TRUE)
 
       pcoa_df <- pcoa_dist$points[,1:2] %>% as.data.frame()
       
@@ -198,7 +198,7 @@ cohort_analysis_plots <- reactive({
 
     fun_pca_plot <- function(matrix) {
       
-      clr_transformed_abundance_matrix <- clr(matrix+1) %>% as.data.frame()
+      clr_transformed_abundance_matrix <- clr(matrix+0.5) %>% as.data.frame()
 
       pca <- prcomp(t(clr_transformed_abundance_matrix), scale. = FALSE, center = TRUE,
               retx = TRUE)
@@ -269,11 +269,11 @@ cohort_analysis_plots <- reactive({
 
     fun_permanova <- function(matrix)
     {
-      perm_dist <- vegdist(t(matrix), method = "aitchison", pseudocount=1)
+      perm_dist <- vegdist(t(matrix), method = "aitchison", pseudocount=0.5)
 
       permanova_res <- pairwise.adonis(perm_dist, as.factor(sample_metadata$Group), p.adjust.m = "BH")
 
-      permanova_res <- permanova_res %>% select(c(pairs, R2, p.value, p.adjusted))
+      permanova_res <- permanova_res %>% dplyr::select(c(pairs, R2, p.value, p.adjusted))
 
       colnames(permanova_res) <- c("Pair", "R2", "P", "Padj")
 
@@ -351,7 +351,7 @@ observeEvent(c(input$upload_data, input$taxa), ignoreNULL=TRUE, ignoreInit=TRUE,
     plots_data <- cohort_analysis_plots()
 
     output$plot_stacked_barplot <- renderPlot({
-        plots_data$stacked_barplot}, height = 600, width = 1500
+        plots_data$stacked_barplot}, height = 700, width = 1500
         )
     
     output$plot_boxplot <- renderPlot({
@@ -388,7 +388,7 @@ observeEvent(c(input$upload_data, input$taxa), ignoreNULL=TRUE, ignoreInit=TRUE,
       },
       content = function(file) {
         ggsave(file, plots_data$stacked_barplot,
-               width = 20, height = 15, units = "in", dpi = "retina", bg = "white")
+               width = 15, height = 10, units = "in", dpi = "retina", bg = "white")
       }
     )
     

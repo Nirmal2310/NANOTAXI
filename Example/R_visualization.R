@@ -43,6 +43,8 @@ abundance_data_list <- list()
 
 lineage <- "Species"
 
+phyloseq_df <- NULL
+
 for (i in 1:length(file_list))
 {
   sample_data_list[[i]] <- read.delim(file = paste0(file_list[i],".txt"), header = TRUE)
@@ -51,6 +53,10 @@ for (i in 1:length(file_list))
                                        "Class", "Order", "Family", "Genus", "Species")
   
   sample_data_list[[i]][sample_data_list[[i]]==""] <- "Unclassified"
+  
+  sample_data_list[[i]]$Sample_Id <- samples_header[i]
+  
+  phyloseq_df <- rbind(phyloseq_df, sample_data_list[[i]])
   
   col_num <- which(colnames(sample_data_list[[i]])==lineage)
   
@@ -65,6 +71,7 @@ for (i in 1:length(file_list))
   
   colnames(abundance_data_list[[i]]) <- c(lineage, samples_header[i])
 }
+
 
 rel_abundance_data <- rel_abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
@@ -219,7 +226,7 @@ as_ggplot(grid.grabExpr(grid.arrange(shannon_plot, simpson_plot, ncol=2)))
 
 #################### PCA Plot ##################################################
 
-clr_transformed_abundance_matrix <- clr(abundance_matrix+1) %>% as.data.frame()
+clr_transformed_abundance_matrix <- clr(abundance_matrix+0.5) %>% as.data.frame()
 
 pca <- prcomp(t(clr_transformed_abundance_matrix), scale. = FALSE, center = TRUE,
               retx = TRUE)
@@ -415,3 +422,38 @@ perm_dist <- vegdist(t(abundance_matrix), method = "bray")
 
 permanova_test <- adonis2(perm_dist~as.factor(sample_metadata$Group), data = perm_dist, permutations = 9999)
 
+
+tax_df <- phyloseq_df %>% dplyr::select(-c(TAX_ID, Counts, Sample_Id)) %>% unique()
+
+library(phyloseq)
+
+tax_df <- tax_df %>% as.matrix()
+
+rownames(tax_df) <- tax_df[,7]
+
+abundance_phyloseq <- phyloseq(otu_table(abundance_matrix, taxa_are_rows = TRUE), tax_table(tax_df), sample_data(sample_metadata))
+
+
+library(ANCOMBC)
+
+abundance_phyloseq@sam_data$Group <- factor(abundance_phyloseq@sam_data$Group)
+
+ancombc2(data = abundance_phyloseq, assay_name = "otu_table", tax_level = "Species",
+         fix_formula = NULL,
+         rand_formula = NULL,
+         p_adj_method = "holm", pseudo_sens = TRUE,
+         prv_cut = 0.10, lib_cut = 1000, s0_perc = 0.05,
+         group = "Group", struc_zero = TRUE, neg_lb = TRUE,
+         alpha = 0.05, n_cl = 1, verbose = TRUE,
+         global = TRUE, pairwise = TRUE, dunnet = TRUE, trend = TRUE,
+         iter_control = list(tol = 1e-2, max_iter = 1, verbose = TRUE),
+         em_control = list(tol = 1e-5, max_iter = 1),
+         lme_control = lme4::lmerControl(),
+         mdfdr_control = list(fwer_ctrl_method = "holm", B = 1),
+         trend_control = list(contrast =
+                                list(matrix(c(1, 0, -1, 1),
+                                            nrow = 2,
+                                            byrow = TRUE)),
+                              node = list(2),
+                              solver = "ECOS",
+                              B = 1))
