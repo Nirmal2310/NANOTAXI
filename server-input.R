@@ -62,7 +62,7 @@ observe({
         height: 40px;
         }")))),
                         column(id="realtime_classified", 3,
-                               div(tags$b("CLASSIFIED READS"), style="padding-bottom: 4px; text-align: center"),
+                               div(tags$b("CLASSIFIED"), style="padding-bottom: 4px; text-align: center"),
                                verbatimTextOutput("classified_reads", placeholder = T),
                                tags$head(
                                  tags$style(
@@ -364,26 +364,31 @@ analyze_data_reactive <-
 
                           rel_abundance_data[is.na(rel_abundance_data)] <- 0
 
+                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+
+                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+
+                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+
                           abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
                           abundance_data <- as.data.frame(abundance_data)
 
                           abundance_data[is.na(abundance_data)] <- 0
 
-                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
-
-                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
-
                           abundance_matrix <- abundance_data[,-1]
 
                           rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
+                          
+                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
 
-                          return(list('abundance_data' = abundance_data,
-                          'sample_metadata' = sample_metadata,
-                          'lineage' = lineage,
-                          'rel_abundance_data' = rel_abundance_data,
-                          'abundance_matrix' = abundance_matrix,
-                          'rel_abundance_matrix' = rel_abundance_matrix))
+                          return(list('rel_abundance_data'=rel_abundance_data,
+                          'rel_abundance_matrix'=rel_abundance_matrix,
+                          'abundance_matrix'=abundance_matrix,
+                          'sample_metadata'=sample_metadata,
+                          'lineage'=lineage,
+                          'rel_abundance_filtered_data'=rel_abundance_filtered_data,
+                          'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix))
                         }
                         
                         else
@@ -449,26 +454,32 @@ analyze_data_reactive <-
 
                           rel_abundance_data[is.na(rel_abundance_data)] <- 0
 
+                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+
+                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+
+                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+
                           abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
                           abundance_data <- as.data.frame(abundance_data)
 
                           abundance_data[is.na(abundance_data)] <- 0
 
-                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
-
-                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
-
                           abundance_matrix <- abundance_data[,-1]
 
                           rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
-                          
-                          return(list('sample_metadata' = sample_metadata,
-                          'lineage' = lineage,
-                          'rel_abundance_data' = rel_abundance_data,
-                          'abundance_matrix' = abundance_matrix,
-                          'rel_abundance_matrix' = rel_abundance_matrix)
-                          )}
+
+                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
+
+                          return(list('rel_abundance_data'=rel_abundance_data,
+                          'rel_abundance_matrix'=rel_abundance_matrix,
+                          'abundance_matrix'=abundance_matrix,
+                          'sample_metadata'=sample_metadata,
+                          'lineage'=lineage,
+                          'rel_abundance_filtered_data'=rel_abundance_filtered_data,
+                          'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix))
+                        }
                       }
                       
                       else if(pipeline == "Kraken2 + Greengenes")
@@ -538,26 +549,31 @@ analyze_data_reactive <-
 
                           rel_abundance_data[is.na(rel_abundance_data)] <- 0
 
+                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+
+                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+
+                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+
                           abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
                           abundance_data <- as.data.frame(abundance_data)
 
                           abundance_data[is.na(abundance_data)] <- 0
 
-                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
-
-                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
-
                           abundance_matrix <- abundance_data[,-1]
 
                           rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
 
-                          return(list('abundance_data' = abundance_data,
-                          'sample_metadata' = sample_metadata,
-                          'lineage' = lineage,
-                          'rel_abundance_data' = rel_abundance_data,
-                          'abundance_matrix' = abundance_matrix,
-                          'rel_abundance_matrix' = rel_abundance_matrix))  
+                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
+
+                          return(list('rel_abundance_data'=rel_abundance_data,
+                          'rel_abundance_matrix'=rel_abundance_matrix,
+                          'abundance_matrix'=abundance_matrix,
+                          'sample_metadata'=sample_metadata,
+                          'lineage'=lineage,
+                          'rel_abundance_filtered_data'=rel_abundance_filtered_data,
+                          'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix))  
                         }
                         
                         else {
@@ -618,26 +634,31 @@ analyze_data_reactive <-
 
                           rel_abundance_data[is.na(rel_abundance_data)] <- 0
 
+                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+
+                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+
+                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+
                           abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
                           abundance_data <- as.data.frame(abundance_data)
 
                           abundance_data[is.na(abundance_data)] <- 0
 
-                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
-
-                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
-
                           abundance_matrix <- abundance_data[,-1]
 
                           rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
 
-                          return(list('abundance_data' = abundance_data,
-                          'sample_metadata' = sample_metadata,
-                          'lineage' = lineage,
-                          'rel_abundance_data' = rel_abundance_data,
-                          'abundance_matrix' = abundance_matrix,
-                          'rel_abundance_matrix' = rel_abundance_matrix))
+                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
+
+                          return(list('rel_abundance_data'=rel_abundance_data,
+                          'rel_abundance_matrix'=rel_abundance_matrix,
+                          'abundance_matrix'=abundance_matrix,
+                          'sample_metadata'=sample_metadata,
+                          'lineage'=lineage,
+                          'rel_abundance_filtered_data'=rel_abundance_filtered_data,
+                          'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix))
                           
                           
                         }
@@ -712,22 +733,31 @@ analyze_data_reactive <-
 
                           rel_abundance_data[is.na(rel_abundance_data)] <- 0
 
+                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+
+                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+
+                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+
                           abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
                           abundance_data <- as.data.frame(abundance_data)
 
                           abundance_data[is.na(abundance_data)] <- 0
 
-                          rel_abundance_matrix <- as.matrix(rel_abundance_data[,-1])
+                          abundance_matrix <- abundance_data[,-1]
 
-                          rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
+                          rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
 
-                          return(list('abundance_data' = abundance_data,
-                          'sample_metadata' = sample_metadata,
-                          'lineage' = lineage,
-                          'rel_abundance_data' = rel_abundance_data))
+                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
 
-                          
+                          return(list('rel_abundance_data'=rel_abundance_data,
+                          'rel_abundance_matrix'=rel_abundance_matrix,
+                          'abundance_matrix'=abundance_matrix,
+                          'sample_metadata'=sample_metadata,
+                          'lineage'=lineage,
+                          'rel_abundance_filtered_data'=rel_abundance_filtered_data,
+                          'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix))
                         }
                         
                         else
@@ -795,7 +825,7 @@ analyze_data_reactive <-
 
                           rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
 
-                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) >0.1 )), ]
+                          rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
 
                           abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
@@ -807,15 +837,17 @@ analyze_data_reactive <-
 
                           rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
 
-                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_filtered_matrix)),]
+                          rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),]
 
-                          return(list('abundance_data' = abundance_data,
-                          'sample_metadata' = sample_metadata,
-                          'lineage' = lineage,
-                          'rel_abundance_data' = rel_abundance_data))
+                          return(list('rel_abundance_data'=rel_abundance_data,
+                          'rel_abundance_matrix'=rel_abundance_matrix,
+                          'abundance_matrix'=abundance_matrix,
+                          'sample_metadata'=sample_metadata,
+                          'lineage'=lineage,
+                          'rel_abundance_filtered_data'=rel_abundance_filtered_data,
+                          'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix))
                         }
                       }
-
                     }
                   })
                 })

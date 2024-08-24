@@ -75,7 +75,7 @@ cohort_analysis_plots <- reactive({
 
     fun_alpha_diversity_plot <- function(data, sample_metadata, lineage) {
       
-      alpha_diversity_data <- rel_abundance_data
+      alpha_diversity_data <- data
         
       required_col <- which(colnames(alpha_diversity_data)==lineage)
         

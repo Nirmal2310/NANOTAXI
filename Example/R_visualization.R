@@ -17,6 +17,9 @@ library(viridis)
 library(circlize)
 library(compositions)
 library(pairwiseAdonis)
+library(ANCOMBC)
+library(phyloseq)
+library(lme4)
 
 file_list <- gsub(".txt", "", list.files(getwd())[grep("\\_final_blast_result.txt$", 
                                                        list.files(getwd()))])
@@ -183,7 +186,7 @@ shannon_plot <- alpha_diversity_data %>% filter(Diversity == "Shannon") %>%
   scale_color_manual(values = pal_aaas("default")(length(levels(sample_annotation$Group)))) +
   theme_classic() +
   labs(y= "Alpha Diversity", x = "") +
-  stat_pvalue_manual(subset(alpha_div_p, Diversity=="Shannon"), label = "p.signif", y.position = max(
+  stat_pvalue_manual(subset(alpha_div_p, Diversity=="Shannon"), label = "p.adj", y.position = max(
     subset(alpha_diversity_data, Diversity=="Shannon")$Value) + 0.1, hide.ns = "p.adj", step.increase = 0.1,
     tip.length = 0.02, bracket.size = 0.8, size = 8) +
   guides(color = guide_legend(title = "Shannon", title.position = "top")) +
@@ -206,7 +209,7 @@ simpson_plot <- alpha_diversity_data %>% filter(Diversity == "Simpson") %>%
   theme_classic() +
   labs(y= "Alpha diversity", x = "") +
   stat_pvalue_manual(subset(alpha_div_p, Diversity=="Simpson"), y.position = max(
-    subset(alpha_diversity_data, Diversity=="Simpson")$Value) + 0.01, label = "p.signif",
+    subset(alpha_diversity_data, Diversity=="Simpson")$Value) + 0.01, label = "p.adj",
     hide.ns = "p.adj", step.increase = 0.1, tip.length = 0.02, bracket.size = 0.8, size = 8) +
   guides(color = guide_legend(title = "Simpson", title.position = "top")) +
   theme(
@@ -433,9 +436,6 @@ rownames(tax_df) <- tax_df[,7]
 
 abundance_phyloseq <- phyloseq(otu_table(abundance_matrix, taxa_are_rows = TRUE), tax_table(tax_df), sample_data(sample_metadata))
 
-
-library(ANCOMBC)
-
 abundance_phyloseq@sam_data$Group <- factor(abundance_phyloseq@sam_data$Group)
 
 ancombc2(data = abundance_phyloseq, assay_name = "otu_table", tax_level = "Species",
@@ -457,3 +457,73 @@ ancombc2(data = abundance_phyloseq, assay_name = "otu_table", tax_level = "Speci
                               node = list(2),
                               solver = "ECOS",
                               B = 1))
+
+abundance_phyloseq@sam_data$Group <- factor(abundance_phyloseq@sam_data$Group)
+
+ancom_res <- ancombc2(data=abundance_phyloseq, rank = "Species", fix_formula = "Group",
+         rand_formula = NULL, pseudo_sens = TRUE, prv_cut = 0.10, lib_cut = 1000,
+         s0_perc = 0.05, group = "Group", struc_zero = TRUE, neg_lb = TRUE,
+         alpha = 0.05, n_cl = 1, verbose = TRUE, global = TRUE, pairwise = TRUE,
+         dunnet = TRUE, trend = FALSE, iter_control = list(tol = 1e-2, max_iter = 100, verbose = TRUE),
+         em_control = list(tol = 1e-5, max_iter = 100, verbose = TRUE),
+         lme_control = lme4::lmerControl(),
+         mdfdr_control = list(fwer_ctrl_method = "holm", B = 100),
+         trend_control = NULL)
+
+
+ancom_res$res_pair %>% View()
+
+
+res_pair <- ancom_res$res_pair
+
+df_pair1 <- res_pair %>% dplyr::filter(`diff_GroupJoint aspirate` == 1 |
+                             `diff_GroupPeritoneal dialysis fluid` == 1 | 
+                             `diff_GroupPeritoneal fluid` == 1) %>% 
+  dplyr::mutate(lfc1 = ifelse(`diff_GroupJoint aspirate`==1, round(`lfc_GroupJoint aspirate`,2),0),
+                lfc2 = ifelse(`diff_GroupPeritoneal dialysis fluid`==1, round(`lfc_GroupPeritoneal dialysis fluid`,2),0),
+                lfc3 = ifelse(`diff_GroupPeritoneal dialysis fluid_GroupJoint aspirate`==1, round(`lfc_GroupPeritoneal dialysis fluid_GroupJoint aspirate`,2),0)) %>% 
+  tidyr::pivot_longer(cols = lfc1:lfc3,
+                      names_to = "Group", values_to = "value") %>% 
+  dplyr::arrange(taxon)
+
+df_pair2 <- res_pair %>% dplyr::filter(`diff_GroupPeritoneal fluid` == 1 |
+                                         `diff_GroupPeritoneal dialysis fluid` == 1 | 
+                                         `diff_GroupPeritoneal fluid` == 1) %>% 
+  dplyr::mutate(lfc1 = ifelse(`passed_ss_GroupJoint aspirate`==1 & `diff_GroupJoint aspirate`==1, "aquamarine3", "black"),
+                lfc2 = ifelse(`passed_ss_GroupPeritoneal dialysis fluid`==1 & `diff_GroupPeritoneal dialysis fluid`==1, "aquamarine3", "black"),
+                lfc3 = ifelse(`passed_ss_GroupPeritoneal fluid`==1 & `diff_GroupPeritoneal fluid`==1, "aquamarine3", "black")) %>% 
+  tidyr::pivot_longer(cols = lfc1:lfc3,
+                      names_to = "Group", values_to = "color") %>% 
+  dplyr::arrange(taxon)
+
+
+df_fig_pair <- df_pair1 %>%
+  dplyr::left_join(df_pair2, by = c("taxon", "Group"))
+
+df_fig_pair$Group = recode(df_fig_pair$Group, 
+                           `lfc1` = "Overweight - Obese",
+                           `lfc2` = "Lean - Obese",
+                           `lfc3` = "Lean - Overweight")
+
+df_fig_pair$Group = factor(df_fig_pair$Group, 
+                           levels = c("Overweight - Obese",
+                                      "Lean - Obese", 
+                                      "Lean - Overweight"))
+
+lo = floor(min(df_fig_pair$value))
+up = ceiling(max(df_fig_pair$value))
+mid = (lo + up)/2
+df_fig_pair %>%
+  ggplot(aes(x = Group, y = taxon, fill = value)) + 
+  geom_tile(color = "black") +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                       na.value = "white", midpoint = mid, limit = c(lo, up),
+                       name = NULL) +
+  geom_text(aes(Group, taxon, label = value, color = color), size = 4) +
+  scale_color_identity(guide = FALSE) +
+  labs(x = NULL, y = NULL, title = "Log fold changes as compared to obese subjects") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+df_fig_pair %>% dplyr::select(c(Group, taxon, value, color))
