@@ -81,6 +81,16 @@ else
         
 fi
 
+if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+
+        conda create --name nanofilt --file nanofilt.txt
+
+fi
+
 cd DATA
 
 if [ ! -d TAXONKIT_DATA ]; then
