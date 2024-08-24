@@ -44,13 +44,13 @@ else
 
 fi
 
-if { conda env list | grep "seqkit";} > /dev/null 2>&1; then
+if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
 else
         
-        conda create -n seqkit --file seqkit.txt
+        conda create -n nanofilt --file nanofilt.txt
         
 fi
 

@@ -3,7 +3,7 @@
 helpFunction()
 {
    echo "Usage: blast_run.sh -p '/path/to/the/directory'-t 16 -m 1400 -M 1800 -i 75"
-   echo -e "\t-p <path> Path to directory containing raw data"
+   echo -e "\t-p <path> Path to directory containing passed raw data"
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
@@ -61,17 +61,17 @@ while read barcode
 
 do
 
-source $conda_path/activate seqkit
+    source $conda_path/activate nanofilt
 
-zcat $path/$barcode/*fastq.gz | sed -n '1~4s/^@/>/p;2~4p' | seqkit seq -m $min -M $max -g --line-width 0 - -o $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l 1400 --maxlength 1800 | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
-source $conda_path/activate blast
+    source $conda_path/activate blast
 
-blastn -db $BLAST_DB/16S_ribosomal_RNA -query $path/$barcode/${barcode}_16s.fasta -out $path/${barcode}/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 -outfmt "6 std staxids stitle"
+    blastn -db $BLAST_DB/16S_ribosomal_RNA -query $path/$barcode/${barcode}_16s.fasta -out $path/${barcode}/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 -outfmt "6 std staxids stitle"
 
-source $conda_path/activate taxonkit
+    source $conda_path/activate taxonkit
 
-awk -v i="$identity" 'BEGIN{FS="\t";OFS="\t"}{if($3>=i) print $13}' $path/${barcode}/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}' | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/${barcode}/${barcode}_final_blast_result.txt
+    awk -v i="$identity" 'BEGIN{FS="\t";OFS="\t"}{if($3>=i) print $13}' $path/${barcode}/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}' | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/${barcode}/${barcode}_final_blast_result.txt
 
 done < "$path/barcode_list"
 
