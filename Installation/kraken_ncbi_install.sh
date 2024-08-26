@@ -91,6 +91,16 @@ else
 
 fi
 
+if { conda env list | grep "bioawk";} > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+
+        conda create --name bioawk --file bioawk.txt
+
+fi
+
 cd DATA
 
 if [ ! -d TAXONKIT_DATA ]; then
