@@ -20,7 +20,8 @@ tabPanel(
                       selected = "KRAKEN2 + 16S NCBI DB"),
           numericInput("num", "Minimum Length", value = 1400),
           numericInput("num", "Maximum Length", value = 1800),
-          checkboxInput("Setup", "Setup")
+          checkboxInput("setup", "Setup"),
+          actionButton("real_time","Start Analysis")
         ),
         conditionalPanel(
           condition = "input.data_file_type == 'precomputed'",
@@ -30,16 +31,20 @@ tabPanel(
                                                              "Qiime2", "Centrifuge",
                                                              "EMU + Standard DB"),
                       selected = "BLASTn + 16s DB"),
-          selectInput("tax", "Taxon Level", choices = list("Species" = 1, "Genus" = 2,
-                                                              "Family" = 3, "Order" = 4),
-                      selected = 1),
+          selectInput("tax", "Taxon Level", choices = list("Species", "Genus",
+                                                              "Family", "Order", "Class", "Phylum"),
+                      selected = "Species"),
           numericInput("min", "Minimum Length", value = 1400),
           numericInput("max", "Maximum Length", value = 1800),
           numericInput("threads", "Number of Threads", value = 16),
           
-          checkboxInput("Setup", "Setup")
+          checkboxInput("setup", "Setup"),
+          actionButton("upload_data","Start Analysis")
         ),
-        actionButton("upload_data","Start Analysis")
+        conditionalPanel(
+          condition = "input.data_file_type == 'examplelist'",
+          actionButton("upload_data","Use Example Data")
+        )
     )),
 
     column(

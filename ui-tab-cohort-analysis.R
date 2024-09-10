@@ -4,8 +4,9 @@ tabPanel(
     column(
       width = 2,
       selectInput("taxa", "Taxon Level", choices = list("Species", "Genus",
-                                                          "Family", "Order"),
-                  selected = "Species")
+                                                          "Family", "Order", "Class", "Phylum"),
+                  selected = "Species"),
+      sliderInput("top_taxa", "Top N", min = 1, max = 25, value = 5)
     ),
     column(
       width = 10,
@@ -14,7 +15,7 @@ tabPanel(
                                                     font-family: serif"),
                            downloadButton(outputId = "download_stacked_barplot",
                                           label = "Download Stacked Bar Plot (PNG)"),
-                           plotOutput("plot_stacked_barplot", height = "100%")
+                           plotlyOutput("plot_stacked_barplot", height = "100%")
                   ),
                   tabPanel(title = div("Alpha Diversity Plot", style="font-size: 15px; font-weight: bold; color: #000000;
                                                     font-family: serif"),

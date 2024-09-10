@@ -9,13 +9,13 @@ while True:
         # Get the sequencing state
         phase = client.protocol.get_current_protocol_run().phase
         if(phase == 1):
-            print("Initializing")
+            status = print("Initializing")
         elif(phase == 2):
-            print("Sequencing")
+            status = print("Sequencing")
         elif(phase == 4):
-                print("Pore Scanning")
+            status = print("Pore Scanning")
     except Exception as e:
-        print("Completed")
+        status = print("Completed")
         break
 
 

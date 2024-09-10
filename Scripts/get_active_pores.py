@@ -1,13 +1,44 @@
+# from minknow_api.manager import Manager
+
+# # Connect to the Sequencing Run
+
+# client = list(Manager(host='localhost', port=9502).flow_cell_positions())[0].connect()
+
+# # Get Pore Scanning Output
+
+# mux_scan_data = client.acquisition.get_acquisition_info().bream_info.mux_scan_results
+
+# # Print the number of active pores
+
+# pore_counts = mux_scan_data[0].counts.get("single_pore")
+
 from minknow_api.manager import Manager
 
-# Connect to the Sequencing Run
+import pandas as pd
 
 client = list(Manager(host='localhost', port=9502).flow_cell_positions())[0].connect()
 
-# Get Pore Scanning Output
+channels = client.device.get_flow_cell_info().channel_count
 
-mux_scan_data = client.acquisition.get_acquisition_info().bream_info.mux_scan_results
+if(channels==126):
+    data = client.data.get_channel_states(first_channel = 1, last_channel = 126)
+else:
+    data = client.data.get_channel_states(first_channel = 1, last_channel = 2048)
 
-# Print the number of active pores
+channels_dict = []
 
-print(mux_scan_data[0].counts.get("single_pore"))
+for i in data:
+   for channel in i.channel_states:
+      channels_dict.append({
+                    "Channel": channel.channel,
+                    "Type": channel.state_name
+                  })
+   break
+
+channels_df = pd.DataFrame(channels_dict)
+
+channels_stat = channels_df['Type'].value_counts().reset_index()
+
+channels_stat.columns = ['Type', 'Count']
+
+pore_counts = channels_stat.loc[channels_stat['Type'].isin(['strand', 'adapter', 'pore']), 'Count'].sum()

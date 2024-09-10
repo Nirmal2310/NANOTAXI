@@ -51,19 +51,27 @@ wget https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Archaea/archaea.16SrRNA.fn
 
 wget -c https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/bacteria.16SrRNA.fna.gz -O bacteria.16SrRNA.fasta.gz
 
-zcat bacteria.16SrRNA.fasta.gz archea.16SrRNA.fasta.gz > sequences.fasta
+zcat bacteria.16SrRNA.fasta.gz archaea.16SrRNA.fasta.gz > sequences.fasta
 
 rm -r archaea.16SrRNA.fasta.gz bacteria.16SrRNA.fasta.gz
+
+mkdir KRAKEN_NCBI && cd KRAKEN_NCBI && mkdir taxonomy && cd taxonomy
+
+wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/accession2taxid/nucl_wgs.accession2taxid.gz .
+
+wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/accession2taxid/nucl_gb.accession2taxid.gz .
+
+cd $base_dir/DATA
 
 kraken2-build --download-taxonomy --db KRAKEN_NCBI
 
 kraken2-build --add-to-library sequences.fasta --db KRAKEN_NCBI
 
-kraken2-build --build --db KRAKEN_NCBI
+kraken2-build --build --db KRAKEN_NCBI && rm -r sequences.fasta
 
 cd KRAKEN_NCBI
 
-grep -qF "export KRAKEN_NCBI_DB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_NCBI_DB=\"$PWD\"" >> ~/.bashrc
+grep -qF "export KRAKEN_NCBI=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_NCBI=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 

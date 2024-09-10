@@ -20,6 +20,7 @@ ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height=100
                             }'),
                HTML('.navbar-brand {width: 110px; font-size:35px; text-align:center}'))
   ),
+  useShinyjs(),
   source("ui-tab-intro.R", local = TRUE)$value,
   source("ui-tab-input.R", local = TRUE)$value,
   source("ui-tab-cohort-analysis.R", local = TRUE)$value,

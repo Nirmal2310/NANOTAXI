@@ -64,11 +64,11 @@ do
 
     source $conda_path/activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l 1400 --maxlength 1800 | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
     source $conda_path/activate kraken2
 
-    kraken2 --db $KRAKEN_DB --threads $threads --output $path/$barcode/${barcode}_kraken2_output.txt --report $path/$barcode/${barcode}_kraken2_report.txt $path/$barcode/${barcode}_16s.fasta
+    kraken2 --db $KRAKEN_DB --threads $threads $path/$barcode/${barcode}_16s.fasta --output $path/$barcode/${barcode}_kraken2_output.txt --report $path/$barcode/${barcode}_kraken2_report.txt
 
     kraken-biom --max $r --min $r -o $path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $path/$barcode/${barcode}_kraken2_report.txt
 

@@ -20,6 +20,7 @@ library(pairwiseAdonis)
 library(ANCOMBC)
 library(phyloseq)
 library(lme4)
+library(forcats)
 
 file_list <- gsub(".txt", "", list.files(getwd())[grep("\\_final_blast_result.txt$", 
                                                        list.files(getwd()))])
@@ -106,36 +107,44 @@ rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %
 
 stacked_df <- rel_abundance_data
 
-required_col <- which(colnames(stacked_df)==lineage)
+required_col <- which(colnames(stacked_df) == lineage)
 
-stacked_df[,required_col] <- as.character(stacked_df[,required_col])
+stacked_df[, required_col] <- as.character(stacked_df[, required_col])
 
-stacked_df <- stacked_df %>% 
-  pivot_longer(cols = -(all_of(required_col)), names_to = "Sample_Id", values_to = "Abundance") %>% 
+stacked_df <- stacked_df %>%
+  pivot_longer(cols = -all_of(required_col), names_to = "Sample_Id", values_to = "Abundance") %>%
   filter(Abundance > 0)
 
 stacked_df <- stacked_df %>% group_by(Sample_Id) %>%
-  arrange(desc(Abundance)) %>% slice(1:ifelse(n()<10,n(),10))
+  arrange(desc(Abundance)) %>% slice(1:ifelse(n() < 5, n(), 5))
 
-stacked_df$Sample_Id <- gsub("barcode","", stacked_df$Sample_Id)
+stacked_df$Sample_Id <- gsub("barcode", "", stacked_df$Sample_Id)
 
-temp <- stacked_df %>% group_by(Sample_Id) %>% summarise(Abundance = 100-sum(Abundance)) %>% mutate(Species="Others") %>% 
+# Create the "Others" category and bind to the data frame
+temp <- stacked_df %>% group_by(Sample_Id) %>% summarise(Abundance = 100 - sum(Abundance)) %>%
+  mutate(Species = "Others") %>%
   dplyr::select(Species, Sample_Id, Abundance)
 
 colnames(temp) <- colnames(stacked_df)
 
 stacked_df <- rbind(stacked_df, temp) %>% arrange(Sample_Id)
 
-stacked_df[[required_col]] <- factor(stacked_df[[required_col]])
+# Calculate total abundance for each species across all samples
+total_abundance <- stacked_df %>%
+  group_by(!!sym(lineage)) %>%
+  summarise(TotalAbundance = sum(Abundance)) %>%
+  arrange(desc(TotalAbundance))
 
+# Reorder the factor levels based on total abundance, ensuring "Others" is first
 stacked_df[[required_col]] <- factor(stacked_df[[required_col]], 
-                             levels = c("Others", setdiff(levels(stacked_df[[required_col]]), "Others")))
+                                     levels = c("Others", total_abundance[[required_col]][total_abundance[[required_col]] != "Others"]))
 
-fill_colors <- c("Others" = "#D3D3D3",setNames(viridis_pal(option = "D")(
-  length(levels(stacked_df[[required_col]]))-1), 
+fill_colors <- c("Others" = "#D3D3D3", setNames(viridis_pal(option = "D")(
+  length(levels(stacked_df[[required_col]])) - 1), 
   levels(stacked_df[[required_col]])[levels(stacked_df[[required_col]]) != "Others"]))
 
-ggplot(stacked_df, aes(x = Sample_Id, y = Abundance, fill = stacked_df[[required_col]])) +
+# Create the plot
+ggplot(stacked_df, aes(x = Sample_Id, y = Abundance, fill = !!sym(lineage))) +
   geom_bar(stat = "identity", position = "stack", color = "black", linewidth = 0.2) +
   theme_classic() +
   theme(
@@ -149,10 +158,10 @@ ggplot(stacked_df, aes(x = Sample_Id, y = Abundance, fill = stacked_df[[required
     title = element_text(size = 10, face = "bold")
   ) +
   guides(fill = guide_legend(ncol = 5)) +
-  labs(x = "BARCODE", y="% RELATIVE ABUNDANCE", fill = lineage) + 
+  labs(x = "BARCODE", y = "% RELATIVE ABUNDANCE", fill = lineage) + 
   scale_fill_manual(values = fill_colors) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0,102)) +
-  ggtitle(label = paste0("Stacked Barplot Showing Top 10 ",lineage," Across All Samples"))
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 102)) +
+  ggtitle(label = paste0("Stacked Barplot Showing Top 10 ", lineage, " Across All Samples"))
 
 #################### Alpha Diversity Plot ######################################
 
@@ -264,6 +273,35 @@ ggplot(data = pca_data, aes(x = X, y = Y, color = Group)) +
   geom_vline(xintercept = 0, color = "black") +
   geom_hline(yintercept = 0, color = "black") +
   ggtitle("Principal Component Analysis (PCA) Plot on CLR Transformed Data")
+
+
+# umap_run <- umap(t(clr_transformed_abundance_matrix))
+# 
+# umap_data <- data.frame(Sample_Id = rownames(umap_run$layout),UMAP1 = umap_run$layout[,1], UMAP2 = umap_run$layout[,2])
+# 
+# umap_data <- inner_join(umap_data, sample_metadata)
+# 
+# ggplot(data = umap_data, aes(x = UMAP1, y = UMAP2, color = Group)) +
+#   geom_point(size=5) +
+#   stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") +
+#   scale_color_manual(values = pal_aaas("default")(length(levels(umap_data$Group)))) +
+#   scale_fill_manual(values = pal_aaas("default")(length(levels(umap_data$Group)))) +
+#   theme_minimal() +
+#   theme(
+#     axis.text.x = element_text(size = 15, face = "bold"),
+#     axis.text.y = element_text(size = 15, face = "bold"),
+#     legend.text = element_text(size = 15, face = "bold"),
+#     axis.title.x = element_text(size = 15, face = "bold"),
+#     axis.title.y = element_text(size = 15, face = "bold"),
+#     legend.title = element_text(size = 15, face = "bold"),
+#     title = element_text(size = 15, face = "bold")
+#   ) +
+#   geom_vline(xintercept = 0, color = "black") +
+#   geom_hline(yintercept = 0, color = "black") +
+#   ggtitle("Uniform Manifold Approximation and Projection (UMAP) Plot on CLR Transformed Data")
+
 
 ######################### NMDS Plot #############################################
 
@@ -557,3 +595,39 @@ tmp %>% ggplot(aes(Bin,Counts)) +
     legend.position = "right"
   )
   
+####### Miscellaneous Plots ####################################################
+
+library(networkD3)
+library(tidyverse)
+library(ggalluvial)
+
+temp <- sample_data_list[[1]]
+
+temp <- temp[,-10]
+
+df_long <- temp %>%
+  select(Superkingdom, Phylum, Class, Order, Family, Genus, Species, Counts) %>%
+  pivot_longer(cols = c(Superkingdom, Phylum, Class, Order, Family, Genus, Species),
+               names_to = "Taxonomy", 
+               values_to = "Taxon") %>%
+  mutate(Taxonomy = factor(Taxonomy, 
+                           levels = c("Superkingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"),
+                           labels = c("D", "P", "C", "O", "F", "G", "S"))) %>%
+  group_by(Taxonomy, Taxon) %>%
+  summarise(Counts = sum(Counts), .groups = "drop")
+
+ggplot(df_long,
+       aes(x = Taxonomy, stratum = Taxon, alluvium = Counts,
+           y = Counts, fill = Taxon, label = Taxon)) +
+  geom_flow(stat = "alluvium", lode.guidance = "frontback", color = "white") +
+  geom_stratum(alpha = .5) +
+  geom_text(stat = "stratum", size = 3, color = "black") +
+  scale_x_discrete(expand = c(.1, .1)) +
+  scale_fill_brewer(palette = "Set3") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.grid = element_blank()) +
+  labs(title = "Taxonomic Classification Sankey Diagram")
