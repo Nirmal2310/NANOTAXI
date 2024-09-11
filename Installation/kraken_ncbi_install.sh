@@ -22,7 +22,15 @@ else
 
 fi
 
-path=$(which conda | sed "s/\b\/conda\b//g")
+if [ $(which conda | grep "condabin") ]; then
+
+    path=$(which conda | sed 's/\/condabin.*$//g')
+
+else
+
+    path=$(which conda | sed 's/\/bin.*$//g')
+
+fi
 
 base_dir=$PWD
 
@@ -34,7 +42,7 @@ if { conda env list |  grep "kraken2"; } > /dev/null 2>&1; then
 
 else
 
-        conda create --name kraken2 --file kraken.txt
+        conda create --name kraken2 --file kraken.txt -y
 
 fi
 
@@ -43,7 +51,7 @@ if [ ! -d DATA ]; then
 	mkdir DATA
 fi
 
-source $path/activate kraken2
+source $path/bin/activate kraken2
 
 cd DATA
 
@@ -75,7 +83,7 @@ grep -qF "export KRAKEN_NCBI=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_NCBI=\"$
 
 source ~/.bashrc
 
-source $path/activate base
+source $path/bin/activate base
 
 cd $base_dir
 
@@ -85,7 +93,7 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 
 else
         
-        conda create -n taxonkit --file taxonkit.txt
+        conda create -n taxonkit --file taxonkit.txt -y
         
 fi
 
@@ -95,17 +103,17 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 
 else
 
-        conda create --name nanofilt --file nanofilt.txt
+        conda create --name nanofilt --file nanofilt.txt -y
 
 fi
 
-if { conda env list | grep "bioawk";} > /dev/null 2>&1; then
+if { conda env list | grep "bbtools";} > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
 else
 
-        conda create --name bioawk --file bioawk.txt
+        conda create --name bbtools --file bbtools.txt -y
 
 fi
 
@@ -136,3 +144,23 @@ grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$
 source ~/.bashrc
 
 cd $base_dir
+
+if { conda env list |  grep "minknow_api"; } > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+
+        conda create --name minknow_api --file minknow_api.txt -y
+        
+        conda activate minknow_api
+
+        pip install minknow-api==6.0.4
+
+        pip install grpcio==1.60.1
+
+        pip install pandas==2.2.2
+
+        conda activate base
+
+fi

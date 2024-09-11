@@ -896,7 +896,7 @@ analyze_data_reactive <-
           real_time_delay_done(TRUE)  # Mark initial delay as done
         })
         # Use shinyjs::delay to handle the initial 30-minute delay  
-        delay(180000, { # 30-minute delay
+        delay(1800000, { # 30-minute delay
           cohort_analysis_delay(TRUE) # Mark initial delay as done
         })
       }
@@ -918,14 +918,13 @@ analyze_data_reactive <-
         print(paste0("Initial Delay Started at ", Sys.time()))
 
         mode("Realtime")
-      
-        # Use shinyjs::delay to handle the initial 10-minute delay
-        delay(600000, {  # 10-minute delay
-          real_time_delay_done(TRUE)  # Mark initial delay as done
+
+        delay(600000, {
+          real_time_delay_done(TRUE)
         })
-        # Use shinyjs::delay to handle the initial 30-minute delay  
-        delay(180000, { # 30-minute delay
-          cohort_analysis_delay(TRUE) # Mark initial delay as done
+        
+        delay(1800000, {
+          cohort_analysis_delay(TRUE)
         })
       }
     }
@@ -982,7 +981,6 @@ analyze_data_reactive <-
   # Function to run Python script and get sequencing status
   
   check_sequencing_status <- function() {
-    # Replace with your actual Python script execution
     
     path <- paste0(getwd(),"/Scripts")
       

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+eval "$(conda shell.bash hook)"
+
 helpFunction()
 {
    echo "Usage: blast_run.sh -p '/path/to/the/directory'-t 16 -m 1400 -M 1800 -i 75"
@@ -46,8 +48,6 @@ if [ -z "$path" ]
     helpFunction
 fi
 
-conda_path=$(which conda | sed "s/\b\/conda\b//g")
-
 
 if [ ! -f $path/barcode_list ]
 	then
@@ -61,15 +61,15 @@ while read barcode
 
 do
 
-    source $conda_path/activate nanofilt
+    conda activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l 1400 --maxlength 1800 | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
-    source $conda_path/activate blast
+    conda activate blast
 
     blastn -db $BLAST_DB/16S_ribosomal_RNA -query $path/$barcode/${barcode}_16s.fasta -out $path/${barcode}/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 -outfmt "6 std staxids stitle"
 
-    source $conda_path/activate taxonkit
+    conda activate taxonkit
 
     awk -v i="$identity" 'BEGIN{FS="\t";OFS="\t"}{if($3>=i) print $13}' $path/${barcode}/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}' | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/${barcode}/${barcode}_final_blast_result.txt
 

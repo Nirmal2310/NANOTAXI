@@ -22,7 +22,15 @@ else
 
 fi
 
-path=$(which conda | sed "s/\b\/conda\b//g")
+if [ $(which conda | grep "condabin") ]; then
+
+    path=$(which conda | sed 's/\/condabin.*$//g')
+
+else
+
+    path=$(which conda | sed 's/\/bin.*$//g')
+
+fi
 
 base_dir=$PWD
 
@@ -36,11 +44,11 @@ else
 
         conda create --name emu --file emu.txt
 
-        source $path/activate emu
+        source $path/bin/activate emu
 
         pip install osfclient
 
-        source $path/activate base
+        source $path/bin/activate base
 
 fi
 

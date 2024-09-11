@@ -1,6 +1,15 @@
 options(shiny.maxRequestSize = 100*1024^2)
+
 source("packages.R")
+
 print(sessionInfo())
+
+# conda_path <- system("if [ $(which conda | grep 'condabin') ]; then conda_path=$(which conda | sed 's/\/condabin.*$//g'); else conda_path=$(which conda | sed 's/\/bin.*$//g'); fi && echo $conda_path", intern = TRUE)
+
+# Sys.setenv(RETICULATE_PYTHON = paste0(conda_path,"/envs/minknow_api/bin/python"))
+
+# print(paste0(conda_path,"/envs/minknow_api/bin/python"))
+
 server <- function(input, output, session) {
     
     source("server-input.R", local = TRUE)

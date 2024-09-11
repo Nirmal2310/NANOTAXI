@@ -21,7 +21,15 @@ else
 
 fi
 
-path=$(which conda | sed "s/\b\/conda\b//g")
+if [ $(which conda | grep "condabin") ]; then
+
+    path=$(which conda | sed 's/\/condabin.*$//g')
+
+else
+
+    path=$(which conda | sed 's/\/bin.*$//g')
+
+fi
 
 base_dir=$PWD
 
@@ -62,7 +70,7 @@ rm 16S_ribosomal_RNA.tar.gz
 
 grep -qF "export BLAST_DB=\"$PWD\"" ~/.bashrc || echo "export BLAST_DB=\"$PWD\"" >> ~/.bashrc
                 
-source $path/activate base
+source $path/bin/activate base
         
 cd $base_dir
 

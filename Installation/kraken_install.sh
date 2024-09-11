@@ -22,7 +22,15 @@ else
 
 fi
 
-path=$(which conda | sed "s/\b\/conda\b//g")
+if [ $(which conda | grep "condabin") ]; then
+
+    path=$(which conda | sed 's/\/condabin.*$//g')
+
+else
+
+    path=$(which conda | sed 's/\/bin.*$//g')
+
+fi
 
 base_dir=$PWD
 
@@ -47,7 +55,7 @@ cd DATA
 
 if [ ! -d KRAKEN_DATA ]; then
                 
-        source $path/activate kraken2
+        source $path/bin/activate kraken2
 
         kraken2-build --db KRAKEN_DATA --special greengenes
 
@@ -57,8 +65,7 @@ if [ ! -d KRAKEN_DATA ]; then
 
         source ~/.bashrc
 
-        source $path/activate base
-
+        source $path/bin/activate base
 
 fi
 

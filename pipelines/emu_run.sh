@@ -1,5 +1,7 @@
 #!/bin/bash
 
+eval "$(conda shell.bash hook)"
+
 helpFunction()
 {
    echo "Usage: emu_run.sh -p '/path/to/the/directory'-t 16 -m 1400 -M 1800"
@@ -41,8 +43,6 @@ if [ -z "$path" ]
     helpFunction
 fi
 
-conda_path=$(which conda | sed "s/\b\/conda\b//g")
-
 
 if [ ! -f $path/barcode_list ]
 	then
@@ -56,15 +56,15 @@ while read barcode
 
 do
 
-    source $conda_path/activate nanofilt
+    conda activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l 1400 --maxlength 1800 | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
-    source $conda_path/activate emu
+    conda activate emu
 
     emu abundance --type map-ont --db $EMU_DB --output-dir $path/$barcode/ --output-basename $barcode --keep-counts --threads $threads $path/$barcode/${barcode}_16s.fasta
 
-    source $conda_path/activate taxonkit
+    conda activate taxonkit
 
     awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$14}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/temp
 
