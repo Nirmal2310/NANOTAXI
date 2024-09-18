@@ -24,9 +24,9 @@ ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height=100
 
 # Set up Python environment
 
-# conda_path <- system('if [ $(which conda | grep "condabin") ]; then conda_path=$(which conda | sed "s/\\/condabin.*$//g"); else conda_path=$(which conda | sed "s/\\/bin.*$//g"); fi && echo $conda_path', intern = TRUE)
-# 
-# Sys.setenv(RETICULATE_PYTHON = paste0(conda_path, "/envs/minknow_api/bin/python"))
+conda_path <- system('if [ $(which conda | grep "condabin") ]; then conda_path=$(which conda | sed "s/\\/condabin.*$//g"); else conda_path=$(which conda | sed "s/\\/bin.*$//g"); fi && echo $conda_path', intern = TRUE)
+
+Sys.setenv(RETICULATE_PYTHON = paste0(conda_path, "/envs/minknow_api/bin/python"))
 
 # Server
 
