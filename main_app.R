@@ -1,5 +1,3 @@
-options(shiny.maxRequestSize = 100*1024^2)
-
 source("packages.R")
 
 # UI
@@ -1042,8 +1040,6 @@ server <- function(input, output, session) {
       stacked_df[[required_col]] <- factor(stacked_df[[required_col]], 
                                   levels = c("Others", total_abundance[[required_col]][total_abundance[[required_col]] != "Others"]))
 
-      stacked_df <- stacked_df %>% filter(!!sym(lineage)!="Unclassified")
-
       fill_colors <- c("Others" = "#D3D3D3",setNames(viridis_pal(option = "D")(
         length(levels(stacked_df[[required_col]]))-1), 
         levels(stacked_df[[required_col]])[levels(stacked_df[[required_col]]) != "Others"]))
@@ -1114,8 +1110,6 @@ server <- function(input, output, session) {
       stacked_df[[required_col]] <- factor(stacked_df[[required_col]], 
                                   levels = c("Others", total_abundance[[required_col]][total_abundance[[required_col]] != "Others"]))
 
-      stacked_df <- stacked_df %>% filter(!!sym(lineage)!="Unclassified")
-      
       fill_colors <- c("Others" = "#D3D3D3",setNames(viridis_pal(option = "D")(
         length(levels(stacked_df[[required_col]]))-1), 
         levels(stacked_df[[required_col]])[levels(stacked_df[[required_col]]) != "Others"]))
@@ -1185,8 +1179,6 @@ server <- function(input, output, session) {
 
       stacked_df[[required_col]] <- factor(stacked_df[[required_col]], 
                                   levels = c("Others", total_abundance[[required_col]][total_abundance[[required_col]] != "Others"]))
-
-      stacked_df <- stacked_df %>% filter(!!sym(lineage)!="Unclassified")
 
       fill_colors <- c("Others" = "#D3D3D3",setNames(viridis_pal(option = "D")(
         length(levels(stacked_df[[required_col]]))-1), 
@@ -1259,6 +1251,7 @@ server <- function(input, output, session) {
       shannon_plot <- alpha_diversity_data %>% filter(Diversity == "Shannon") %>%
         ggplot(aes(x=Group, y=Value, color=Group)) +
         geom_boxplot() +
+        geom_jitter(shape = 16, position = position_jitter(0.2)) +
         scale_color_manual(values = pal_aaas("default")(length(levels(alpha_diversity_data$Group)))) +
         theme_linedraw() +
         labs(y= "Alpha Diversity", x = "") +
@@ -1273,8 +1266,8 @@ server <- function(input, output, session) {
           axis.text.y=element_text(size=14, face = "bold"),
           axis.text.x= element_blank(),
           axis.ticks.x = element_blank(),
-          legend.title=element_text(colour="black",size=10, face = "bold"),
-          legend.text=element_text(colour="black", size=10, face = "bold"),
+          legend.title=element_text(colour="black",size=14, face = "bold"),
+          legend.text=element_text(colour="black", size=14, face = "bold"),
           plot.title = element_text(hjust = 0.5,size = rel(2)),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()
@@ -1283,6 +1276,7 @@ server <- function(input, output, session) {
       simpson_plot <- alpha_diversity_data %>% filter(Diversity == "Simpson") %>%
         ggplot(aes(x=Group, y=Value, color=Group)) +
         geom_boxplot() +
+        geom_jitter(shape = 16, position = position_jitter(0.2)) +
         scale_color_manual(values = pal_aaas("default")(length(levels(alpha_diversity_data$Group)))) + 
         theme_linedraw() +
         labs(y= "Alpha diversity", x = "") +
@@ -1297,8 +1291,8 @@ server <- function(input, output, session) {
           axis.text.y=element_text(size=14, face = "bold"),
           axis.text.x= element_blank(),
           axis.ticks.x = element_blank(),
-          legend.title=element_text(colour="black",size=10, face = "bold"),
-          legend.text=element_text(colour="black", size=10, face = "bold"),
+          legend.title=element_text(colour="black",size=14, face = "bold"),
+          legend.text=element_text(colour="black", size=14, face = "bold"),
           plot.title = element_text(hjust = 0.5,size = rel(2)),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()
@@ -1367,8 +1361,8 @@ server <- function(input, output, session) {
           axis.text.y=element_text(size=14, face = "bold"),
           axis.text.x= element_blank(),
           axis.ticks.x = element_blank(),
-          legend.title=element_text(colour="black",size=10, face = "bold"),
-          legend.text=element_text(colour="black", size=10, face = "bold"),
+          legend.title=element_text(colour="black",size=14, face = "bold"),
+          legend.text=element_text(colour="black", size=14, face = "bold"),
           plot.title = element_text(hjust = 0.5,size = rel(2)),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()
@@ -1392,8 +1386,8 @@ server <- function(input, output, session) {
           axis.text.y=element_text(size=14, face = "bold"),
           axis.text.x= element_blank(),
           axis.ticks.x = element_blank(),
-          legend.title=element_text(colour="black",size=10, face = "bold"),
-          legend.text=element_text(colour="black", size=10, face = "bold"),
+          legend.title=element_text(colour="black",size=14, face = "bold"),
+          legend.text=element_text(colour="black", size=14, face = "bold"),
           plot.title = element_text(hjust = 0.5,size = rel(2)),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()
@@ -1447,6 +1441,7 @@ server <- function(input, output, session) {
       shannon_plot <- alpha_diversity_data %>% filter(Diversity == "Shannon") %>%
         ggplot(aes(x=Group, y=Value, color=Group)) +
         geom_boxplot() +
+        geom_jitter(shape = 16, position = position_jitter(0.2)) +
         scale_color_manual(values = pal_aaas("default")(length(levels(alpha_diversity_data$Group)))) +
         theme_linedraw() +
         labs(y= "Alpha Diversity", x = "") +
@@ -1461,8 +1456,8 @@ server <- function(input, output, session) {
           axis.text.y=element_text(size=14, face = "bold"),
           axis.text.x= element_blank(),
           axis.ticks.x = element_blank(),
-          legend.title=element_text(colour="black",size=10, face = "bold"),
-          legend.text=element_text(colour="black", size=10, face = "bold"),
+          legend.title=element_text(colour="black",size=14, face = "bold"),
+          legend.text=element_text(colour="black", size=14, face = "bold"),
           plot.title = element_text(hjust = 0.5,size = rel(2)),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()
@@ -1471,6 +1466,7 @@ server <- function(input, output, session) {
       simpson_plot <- alpha_diversity_data %>% filter(Diversity == "Simpson") %>%
         ggplot(aes(x=Group, y=Value, color=Group)) +
         geom_boxplot() +
+        geom_jitter(shape = 16, position = position_jitter(0.2)) +
         scale_color_manual(values = pal_aaas("default")(length(levels(alpha_diversity_data$Group)))) + 
         theme_linedraw() +
         labs(y= "Alpha diversity", x = "") +
@@ -1485,8 +1481,8 @@ server <- function(input, output, session) {
           axis.text.y=element_text(size=14, face = "bold"),
           axis.text.x= element_blank(),
           axis.ticks.x = element_blank(),
-          legend.title=element_text(colour="black",size=10, face = "bold"),
-          legend.text=element_text(colour="black", size=10, face = "bold"),
+          legend.title=element_text(colour="black",size=14, face = "bold"),
+          legend.text=element_text(colour="black", size=14, face = "bold"),
           plot.title = element_text(hjust = 0.5,size = rel(2)),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank()
@@ -1502,7 +1498,7 @@ server <- function(input, output, session) {
     
     }
   
-  }, height = 500)
+  }, height = 600)
 
   output$plot_pcoa <- renderPlot({
 
@@ -1551,7 +1547,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         ggtitle("Principal Coordination Analysis (PCoA) ordination plot using Aitchison Distance")
 
@@ -1608,7 +1604,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         ggtitle("Principal Coordination Analysis (PCoA) ordination plot using Aitchison Distance")
 
@@ -1663,7 +1659,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         ggtitle("Principal Coordination Analysis (PCoA) ordination plot using Aitchison Distance")
 
@@ -1673,7 +1669,7 @@ server <- function(input, output, session) {
     
     }
   
-  }, height = 500) 
+  }, height = 600)
 
   output$plot_nmds <- renderPlot({
     
@@ -1710,7 +1706,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
         geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
@@ -1755,7 +1751,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
         geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
@@ -1800,7 +1796,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
         geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
@@ -1812,7 +1808,7 @@ server <- function(input, output, session) {
 
     }
     
-  }, height = 500)
+  }, height = 600)
 
   output$plot_pca <- renderPlot({
     
@@ -1858,7 +1854,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
         geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
@@ -1912,7 +1908,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
         geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
@@ -1966,7 +1962,7 @@ server <- function(input, output, session) {
           axis.title.x = element_text(size = 15, face = "bold"),
           axis.title.y = element_text(size = 15, face = "bold"),
           legend.title = element_text(size = 15, face = "bold"),
-          title = element_text(size = 15, face = "bold")
+          title = element_text(size = 10, face = "bold")
         ) +
         geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
         geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
@@ -1978,7 +1974,7 @@ server <- function(input, output, session) {
 
     }
 
-  }, height = 500)
+  }, height = 600)
 
   output$permanova_data <- DT::renderDataTable({
     
@@ -2060,7 +2056,7 @@ server <- function(input, output, session) {
     
     }
   
-  }, height = 500)
+  })
 
   output$plot_heatmap <- renderPlot({
     
@@ -2232,7 +2228,7 @@ server <- function(input, output, session) {
     
     }
   
-  }, height = 500, width = 1000)
+  }, height = 600)
 
   output$download_readlength_plot <- downloadHandler(
     req(input$barcode_select),
