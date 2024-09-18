@@ -20,6 +20,12 @@ min=1400
 max=1800
 identity=75
 
+BLAST_DB=$(grep BLAST_DB ~/.bashrc | tail -n 1 | sed 's/export BLAST_DB="//;s/"//g')
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
+
+echo $BLAST_DB
+
 while getopts "p:t:m:M:i:" opt
 do
     case "$opt" in
@@ -63,7 +69,7 @@ do
 
     conda activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | NanoFilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
     conda activate blast
 
@@ -71,7 +77,7 @@ do
 
     conda activate taxonkit
 
-    awk -v i="$identity" 'BEGIN{FS="\t";OFS="\t"}{if($3>=i) print $13}' $path/${barcode}/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}' | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/${barcode}/${barcode}_final_blast_result.txt
+    awk -v i="$identity" 'BEGIN{FS="\t";OFS="\t"}{if($3>=i) print $13}' $path/${barcode}/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}' | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/${barcode}/${barcode}_final_blast_result.txt
 
 done < "$path/barcode_list"
 

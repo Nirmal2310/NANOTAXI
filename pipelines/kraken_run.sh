@@ -20,6 +20,10 @@ min=1400
 max=1800
 rank=Species
 
+KRAKEN_DB=$(grep KRAKEN_DB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_DB="//;s/"//g')
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
+
 while getopts "p:t:m:M:r:" opt
 do
     case "$opt" in
@@ -64,7 +68,7 @@ do
 
     conda activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | NanoFilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
     conda activate kraken2
 
@@ -74,11 +78,11 @@ do
 
     conda activate taxonkit
 
-    sed '1,2d' $path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/${barcode}_final_kraken2_result.txt
+    sed '1,2d' $path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/${barcode}_final_kraken2_result.txt
 
     rm -r $path/$barcode/${barcode}_kraken_biom.txt
 
-done < "barcode_list"
+done < "$path/barcode_list"
 
 if [ ! -d $path/Kraken2_Results ]; then
     

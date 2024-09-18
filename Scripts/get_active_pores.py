@@ -9,7 +9,7 @@ channels = client.device.get_flow_cell_info().channel_count
 if(channels==126):
     data = client.data.get_channel_states(first_channel = 1, last_channel = 126)
 else:
-    data = client.data.get_channel_states(first_channel = 1, last_channel = 2048)
+    data = client.data.get_channel_states(first_channel = 1, last_channel = 512)
 
 channels_dict = []
 

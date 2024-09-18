@@ -18,10 +18,10 @@ tabPanel(
           fileInput("inputfile", "Select the sample Information File", accept = ".csv", multiple = FALSE),
           selectInput("pipeline", "Select Analysis Tool", choices = list("KRAKEN2 + 16S NCBI DB"),
                       selected = "KRAKEN2 + 16S NCBI DB"),
-          numericInput("num", "Minimum Length", value = 1400),
-          numericInput("num", "Maximum Length", value = 1800),
+          numericInput("min", "Minimum Length", value = 1400),
+          numericInput("max", "Maximum Length", value = 1800),
           checkboxInput("setup", "Setup"),
-          actionButton("real_time","Start Analysis")
+          actionButton("start_analysis", "Start Analysis")
         ),
         conditionalPanel(
           condition = "input.data_file_type == 'precomputed'",
@@ -32,18 +32,18 @@ tabPanel(
                                                              "EMU + Standard DB"),
                       selected = "BLASTn + 16s DB"),
           selectInput("tax", "Taxon Level", choices = list("Species", "Genus",
-                                                              "Family", "Order", "Class", "Phylum"),
+                                                              "Family", "Order"),
                       selected = "Species"),
           numericInput("min", "Minimum Length", value = 1400),
           numericInput("max", "Maximum Length", value = 1800),
           numericInput("threads", "Number of Threads", value = 16),
-          
+          numericInput("iden", "Percent Identity", value = 75),
           checkboxInput("setup", "Setup"),
-          actionButton("upload_data","Start Analysis")
+          actionButton("upload_data", "Start Analysis")
         ),
         conditionalPanel(
           condition = "input.data_file_type == 'examplelist'",
-          actionButton("upload_data","Use Example Data")
+          actionButton("example_run", "Use Example Data")
         )
     )),
 
@@ -56,7 +56,7 @@ tabPanel(
         ),
         bsCollapsePanel(title = "Analysis Results: Ready to View Other Tabs",
                         value = "analysis_panel",
-                        downloadButton("download_results_CSV","Save Results as CSV File"),
+                        downloadButton("download_results_csv","Save Results as CSV File"),
                         DTOutput("analysisoutput")
                         )
       )

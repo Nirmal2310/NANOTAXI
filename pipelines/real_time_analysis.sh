@@ -45,6 +45,10 @@ if [ -z "$data_path" ]
     helpFunction
 fi
 
+KRAKEN_NCBI=$(grep KRAKEN_NCBI ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_NCBI="//;s/"//g')
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
+
 
 if [ ! -f $data_path/$barcode/processed_files.txt ]; then
     

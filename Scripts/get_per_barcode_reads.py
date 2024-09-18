@@ -26,9 +26,7 @@ for filter_groups in data_stream:
             for snapshot in filter_group.snapshots:
                 data.append({
                     "Barcode": barcode.barcode_name,
-                    "Passed Reads": snapshot.yield_summary.basecalled_pass_read_count
+                    "Counts": snapshot.yield_summary.basecalled_pass_read_count
                 })
             
 df = pd.DataFrame(data)
-
-print(df)

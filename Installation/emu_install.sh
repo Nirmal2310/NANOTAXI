@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 if which conda >/dev/null; then
         
@@ -31,6 +31,8 @@ else
     path=$(which conda | sed 's/\/bin.*$//g')
 
 fi
+
+echo $path
 
 base_dir=$PWD
 
@@ -72,6 +74,8 @@ cd DATA
 
 if [ ! -d EMU_DATA ]; then
         
+        source $path/bin/activate emu
+        
         mkdir EMU_DATA
 
         osf -p 56uf7 fetch osfstorage/emu-prebuilt/emu.tar.gz
@@ -81,6 +85,8 @@ if [ ! -d EMU_DATA ]; then
         rm -r emu.tar.gz
 
         cd EMU_DATA
+        
+        source $path/bin/activate base
 
         grep -qF "export EMU_DB=\"$PWD\"" ~/.bashrc || echo "export EMU_DB=\"$PWD\"" >> ~/.bashrc
 
@@ -102,7 +108,7 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 
 else
         
-        conda create -n taxonkit --file taxonkit.txt
+        conda create -n taxonkit --file taxonkit.txt -y
         
 fi
 

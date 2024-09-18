@@ -1,84 +1,105 @@
 tabPanel(
-  div("Real-Time Analysis", style="font-size: 20px; font-weight: bold; color: #000000;
-             font-family: serif"),
-  fluidRow(id="realtime_analysis",
-    column(id="realtime_data", 2,
-           fluidRow(
-             div(selectInput("select", "BARCODE", choices = list("barcode1"=1,   "barcode2"=2,   "barcode3"=3,   "barcode4"=4,   "barcode5"=5,   "barcode6"=6,
-                                                                    "barcode7"=7,   "barcode8"=8,   "barcode9"=9,   "barcode10"=10, "barcode11"=11, "barcode12"=12,
-                                                                    "barcode13"=13, "barcode14"=14, "barcode15"=15, "barcode16"=16, "barcode17"=17, "barcode18"=18,
-                                                                    "barcode19"=19, "barcode20"=20, "barcode21"=21, "barcode22"=22, "barcode23"=23, "barcode24"=24),
-                         selected = 1),
-                 style="padding-left: 2%; text-align: center; width: 95%")
-             ),
-           tags$head(tags$style(HTML(".selectize-input {height: 40px}")))
-           ),
-    column(id="realtime_taxa", 2,
-           div(selectInput("select", "TAXON", choices = list("Species"=1, "Genus"=2, "Family"=3,
-                                                             "Order"=4), selected = 1),
-               style="padding-left: 2%; height: 40px; text-align: center")
-    ),
-    column(id="realtime_status", 2,
-           div(tags$b("SEQUENCING STATE"), style="padding-bottom: 4px; text-align: center"),
-           verbatimTextOutput("state", placeholder = T),
-           tags$head(
-             tags$style(
-               HTML(
-               "#state {
-        height: 40px;
-        }"
-               )))),
-    column(id="realtime_status", 2,
-           div(tags$b("N50 READ LENGTH"), style="padding-bottom: 4px; text-align: center"),
-           verbatimTextOutput("n50", placeholder = T),
-           tags$head(
-             tags$style(
-               HTML(
-                 "#n50 {
-        height: 40px;
-        }")))),
-    column(id="realtime_status", 2,
-           div(tags$b("PASSED READS"), style="padding-bottom: 4px; text-align: center"),
-           verbatimTextOutput("reads", placeholder = T),
-           tags$head(
-             tags$style(
-               HTML(
-                 "#reads {
-        height: 40px;
-        }")))),
-    column(id="realtime_status", 2,
-           div(tags$b("NUMBER OF SPECIES"), style="padding-bottom: 4px; text-align: center"),
-           verbatimTextOutput("species", placeholder = T),
-           tags$head(
-             tags$style(
-               HTML(
-                 "#species {
-        height: 40px;
-        }"))))
-  ),
-  fluidRow(id="realtime_readlength_analysis",
-           br(),
-           column(id="realtime_readlength_plot", 6,
-                  tags$b("READ LENGTH DISTRIBUTION"),
-                           downloadButton(outputId = "download_readlength_plot",
-                                          label = "Download Read Length Plot (PNG)"),
-                           plotOutput("plot_read_classification_plot", height = "100%"))
-           ,
-           column(id="realtime_plot", 6,
-                  tags$b("Q-SCORE HISTOGRAM"),
-                                 downloadButton(outputId = "download_qscore_plot",
-                                                label = "Download Q score Plot (PNG)"),
-                                 plotOutput("plot_q_score_plot", height = "100%"))),
-  br(),
-  fluidRow(id="realtime_read_classification",
-           column(id="realtime_readclassification_plot", 6,
-                  tags$b("READS CLASSIFICATION"),
-                           downloadButton(outputId = "download_classification_plot",
-                                          label = "Download Reads Classification Plot (PNG)"),
-                           plotOutput("plot_classification_plot",height = "100%", width = "100%")),
-           column(id="realtime_sankey_plot", 6,
-                  tags$b("SANKEY CLASSIFICATION"),
-                  downloadButton(outputId = "download_sankey_plot",
-                                 label = "Download Sankey Classification Plot (PNG)"),
-                  plotOutput("plot_sankey_plot",height = "100%", width = "100%")))
-)
+        "Real-Time Analysis",
+        fluidRow(id="realtime_analysis",
+                 column(id="realtime_one", 6,
+                        column(id="realtime_barcode", 3,
+                               fluidRow(
+                                div(selectInput("barcode_select", "BARCODE", choices = paste0("barcode",sprintf("%02d", 1:24)),
+                                selected = "barcode01"),
+                                style="padding-left: 2%; text-align: center; width: 95%; font-size: 13px; font-weight: bold;")
+                              ),
+                              tags$head(tags$style(HTML(".selectize-input {height: 40px}")))
+                              ),
+                              column(id="realtime_taxa", 3,
+                              div(selectInput("taxon_select", "TAXON", choices = list("Species", "Genus", "Family",
+                              "Order", "Class", "Phylum", "Kingdom"), selected = "Species"),
+                              style="padding-left: 2%; height: 40px; text-align: center; font-size: 13px; font-weight: bold;")
+                            ),
+                            column(id="realtime_status", 3,
+                            div(tags$b("STATE"), style="padding-bottom: 4px; text-align: center"),
+                            verbatimTextOutput("state", placeholder = T),
+                            tags$head(
+                              tags$style(
+                                HTML(
+                                  "#state {height: 40px; font-size: 13px; text-align: center; font-weight: bold;}")
+                                  )
+                                  )
+                            ),
+                            column(id="realtime_pores", 3,
+                            div(tags$b("PORES"), style="padding-bottom: 4px; text-align: center"),
+                            verbatimTextOutput("pores", placeholder = T),
+                            tags$head(
+                              tags$style(
+                                HTML("#pores {height: 40px; font-size: 13px; text-align: center; font-weight: bold;}"
+                                )
+                                )
+                                )
+                              )
+                          ),
+                          column(id="realtime_two", 6,
+                          column(id="realtime_reads", 3,
+                          div(tags$b("READS"), style="padding-bottom: 4px; text-align: center"),
+                          verbatimTextOutput("passed_reads", placeholder = T),
+                          tags$head(
+                            tags$style(
+                              HTML(
+                                "#passed_reads {height: 40px; font-size: 13px; text-align: center; font-weight: bold;}"
+                                )
+                                )
+                                )
+                              ),
+                              column(id="realtime_mean", 3,
+                              div(tags$b("MEAN LENGTH"), style="padding-bottom: 4px; text-align: center"),
+                              verbatimTextOutput("mean_length", placeholder = T),
+                              tags$head(
+                                tags$style(
+                                  HTML(
+                                    "#mean_length {height: 40px; font-size: 13px; text-align: center; font-weight: bold;}"
+                                    )
+                                    )
+                                    )
+                                ),
+                                column(id="realtime_classified", 3,
+                                div(tags$b("CLASSIFIED"), style="padding-bottom: 4px; text-align: center"),
+                                verbatimTextOutput("classified_reads", placeholder = T),
+                                tags$head(
+                                  tags$style(
+                                    HTML(
+                                     "#classified_reads {height: 40px; font-size: 13px; text-align: center; font-weight: bold;}"
+                                     )
+                                     )
+                                     )
+                                ),
+                                column(id="realtime_species", 3,
+                                div(tags$b("TAXON COUNT"), style="padding-bottom: 4px; text-align: center"),
+                                verbatimTextOutput("taxon_count", placeholder = T),
+                                tags$head(
+                                  tags$style(
+                                    HTML("#taxon_count {height: 40px; font-size: 13px; text-align: center; font-weight: bold;}")))))),
+                                    br(),
+                                    fluidRow(id="realtime_readlength_analysis",
+                                    column(width = 12,
+                                    tabsetPanel(id="realtime_plots",
+                                    tabPanel(title = div("TAXON TABLE", style="font-size: 15px; font-weight: bold; color: #000000; font-family: serif"),
+                                    div(downloadButton(outputId = "download_taxa_table",
+                                    label = "Download Table (TSV)"), style = "padding-top: 10px;"),
+                                    DT::dataTableOutput("taxa_table", height = "100%", width = "50%")),
+                                    tabPanel(title = div("READ LENGTH", style="font-size: 15px; font-weight: bold; color: #000000; font-family: serif"),
+                                    div(downloadButton(outputId = "download_readlength_plot",
+                                    label = "Download Plot (PNG)"), style = "padding-top: 10px;"),
+                                    plotOutput("plot_read_length", height = "100%", width = "100%")
+                                    ),
+                                    tabPanel(title = div("Q-SCORE", style="font-size: 15px; font-weight: bold; color: #000000; font-family: serif"),
+                                    div(downloadButton(outputId = "download_qscore_plot",
+                                    label = "Download Plot (PNG)"), style = "padding-top: 10px;"),
+                                    plotOutput("plot_q_score_plot", height = "100%", width = "75%")
+                                    ),
+                                    tabPanel(title = div("CLASSIFICATION", style="font-size: 15px; font-weight: bold; color: #000000; font-family: serif"),
+                                    fluidRow(column(width = 2,
+                                    sliderInput("top_n", "Top N", min = 1, max = 25, value = 10)),
+                                    column(width=10,
+                                    div(downloadButton(outputId = "download_classification_plot",
+                                    label = "Download Plot (PNG)"), style = "float: right; padding-right: 15px; padding-top: 10px;"),
+                                    plotOutput("plot_classification_plot", height = "100%")))
+                                    ))))
+    )

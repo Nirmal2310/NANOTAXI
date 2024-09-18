@@ -53,23 +53,31 @@ fi
 
 cd DATA
 
+# Download 16S rRNA Database (Required by BLAST)
+
 if [ ! -d 16s_DATA ]; then
                 
 	mkdir 16s_DATA
+
+        cd 16s_DATA
+        
+        wget https://ftp.ncbi.nih.gov/blast/db/16S_ribosomal_RNA.tar.gz
+        
+        tar -xvf 16S_ribosomal_RNA.tar.gz
+        
+        rm 16S_ribosomal_RNA.tar.gz
+
+        grep -qF "export BLAST_DB=\"$PWD\"" ~/.bashrc || echo "export BLAST_DB=\"$PWD\"" >> ~/.bashrc
+
+        source ~/.bashrc
 fi
         
-# Download 16S rRNA Database (Required by BLAST)
-        
-cd 16s_DATA
-        
-wget https://ftp.ncbi.nih.gov/blast/db/16S_ribosomal_RNA.tar.gz
-        
-tar -xvf 16S_ribosomal_RNA.tar.gz
-        
-rm 16S_ribosomal_RNA.tar.gz
+cd $base_dir/DATA/16s_DATA
 
 grep -qF "export BLAST_DB=\"$PWD\"" ~/.bashrc || echo "export BLAST_DB=\"$PWD\"" >> ~/.bashrc
-                
+
+source ~/.bashrc
+
 source $path/bin/activate base
         
 cd $base_dir
@@ -99,16 +107,27 @@ cd DATA
 if [ ! -d TAXONKIT_DATA ]; then
                 
         mkdir TAXONKIT_DATA
+
+        cd TAXONKIT_DATA
+
+        wget -c ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz 
+
+        tar -zxvf taxdump.tar.gz
+
+        rm -r taxdump.tar.gz
+
+        grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
+
+        source ~/.bashrc
+
+        cd $base_dir
+
 fi
 
-cd TAXONKIT_DATA
-
-wget -c ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz 
-
-tar -zxvf taxdump.tar.gz
-
-rm -r taxdump.tar.gz
+cd $base_dir/DATA/TAXONKIT_DATA
 
 grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
+
+cd $base_dir

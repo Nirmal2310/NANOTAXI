@@ -42,7 +42,7 @@ if { conda env list |  grep "kraken2"; } > /dev/null 2>&1; then
 
 else
 
-        conda create --name kraken2 --file kraken.txt -y
+        conda create --name kraken2 --file kraken.txt
 
 fi
 
@@ -63,19 +63,11 @@ zcat bacteria.16SrRNA.fasta.gz archaea.16SrRNA.fasta.gz > sequences.fasta
 
 rm -r archaea.16SrRNA.fasta.gz bacteria.16SrRNA.fasta.gz
 
-mkdir KRAKEN_NCBI && cd KRAKEN_NCBI && mkdir taxonomy && cd taxonomy
+kraken2-build --download-taxonomy --db KRAKEN_NCBI --use-ftp
 
-wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/accession2taxid/nucl_wgs.accession2taxid.gz .
+kraken2-build --add-to-library sequences.fasta --db KRAKEN_NCBI --use-ftp
 
-wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/accession2taxid/nucl_gb.accession2taxid.gz .
-
-cd $base_dir/DATA
-
-kraken2-build --download-taxonomy --db KRAKEN_NCBI
-
-kraken2-build --add-to-library sequences.fasta --db KRAKEN_NCBI
-
-kraken2-build --build --db KRAKEN_NCBI && rm -r sequences.fasta
+kraken2-build --build --db KRAKEN_NCBI --use-ftp && rm -r sequences.fasta
 
 cd KRAKEN_NCBI
 

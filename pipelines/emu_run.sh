@@ -18,6 +18,10 @@ threads=16
 min=1400
 max=1800
 
+EMU_DB=$(grep EMU_DB ~/.bashrc | tail -n 1 | sed 's/export EMU_DB="//;s/"//g')
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
+
 while getopts "p:t:m:M:" opt
 do
     case "$opt" in
@@ -58,7 +62,7 @@ do
 
     conda activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | Nanofilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | NanoFilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
     conda activate emu
 
@@ -66,7 +70,7 @@ do
 
     conda activate taxonkit
 
-    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$14}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/temp
+    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$14}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/temp
 
     awk 'BEGIN {for (i = 1; i <= 7; i++) printf "%s\t", "Unclassified"}' | paste -d "\t" <(echo "Unclassified") <(tail -n 1 $path/$barcode/${barcode}_rel-abundance.tsv | awk -F "\t" '{print $14}') - | cat $path/$barcode/temp - > $path/$barcode/${barcode}_final_emu_result.txt
 
@@ -79,5 +83,7 @@ if [ ! -d $path/EMU_Results ]; then
     mkdir $path/EMU_Results
 
 fi
+
+echo "Success"
 
 mv $path/barcode*/*_final_emu_result.txt $path/EMU_Results/
