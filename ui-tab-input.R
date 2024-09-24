@@ -20,7 +20,6 @@ tabPanel(
                       selected = "KRAKEN2 + 16S NCBI DB"),
           numericInput("min", "Minimum Length", value = 1400),
           numericInput("max", "Maximum Length", value = 1800),
-          checkboxInput("setup", "Setup"),
           actionButton("start_analysis", "Start Analysis")
         ),
         conditionalPanel(
