@@ -25,3 +25,8 @@ if(!require("pairwiseAdonis", character.only = TRUE)){
   suppressPackageStartupMessages(library("pairwiseAdonis", character.only = TRUE))
 }
 
+work_dir <- getwd()
+
+install_dir <- paste0(work_dir, "/Installation")
+
+system(paste0('bash ', install_dir,'/kraken_ncbi_install.sh'))
