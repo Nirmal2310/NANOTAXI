@@ -1,7 +1,6 @@
 tabPanel(
-# div("Terms & Conditions", style="font-size: 20px; font-weight: bold; color: #000000;
-#              font-family: serif")
-"Terms & Conditions",
+div("TERMS & CONDITIONS", style="font-size: 12px; font-weight: bold; color: #007B9A;
+             font-family: serif"),
          fluidRow(
            column(8, includeMarkdown("Tabs/Terms and Conditions.md"))
          )
