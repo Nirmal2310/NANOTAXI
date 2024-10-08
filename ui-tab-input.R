@@ -1,15 +1,14 @@
 tabPanel(
-  # div("Input Data", style="font-size: 20px; font-weight: bold; color: #000000;
-  #            font-family: serif")
-  "Input Data",
+  div("INPUT", style="font-size: 12px; font-weight: bold; color: #007B9A;
+             font-family: serif"),
   fluidRow(
     column(
       width = 3,
       wellPanel(
         radioButtons(
           "data_file_type",
-          "Use example data or upload the list",
-          c("Example Data" = "examplelist","Cohort Analysis" = "precomputed",
+          "Use Example or Upload List",
+          c("Example Data" = "examplelist", "Cohort Analysis" = "precomputed",
             "Real-Time Analysis" = "upload"),
           selected = "examplelist"
         ),
@@ -68,5 +67,3 @@ tabPanel(
       align="center",width=2)
   )
 )
-
-
