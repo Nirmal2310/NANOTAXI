@@ -1,7 +1,6 @@
 tabPanel(
-# div("Introduction", style="font-size: 20px; font-weight: bold; color: #000000;
-#              font-family: serif")
-         "Introduction",
+div("INTRODUCTION", style="font-size: 12px; font-weight: bold; color: #007B9A;
+             font-family: serif"),
          fluidRow(
            column(2, wellPanel(
              h4("Introduction"),
