@@ -8,7 +8,7 @@ tabPanel(
         radioButtons(
           "data_file_type",
           "Use Example or Upload List",
-          c("Example Data" = "examplelist", "Cohort Analysis" = "precomputed",
+          c("Example Data" = "examplelist", "Offline Analysis" = "precomputed",
             "Real-Time Analysis" = "upload"),
           selected = "examplelist"
         ),
