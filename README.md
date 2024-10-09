@@ -8,15 +8,15 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 
 - Faster Results from Real-time Workflow for Multiplexed Data
 - Easy to use GUI for Researchers with minimal coding background
-- Richer Insights from various Downstream analysis and publication ready plots
+- Richer Insights from various Downstream analyses and publication-ready plots
 - Offline Analysis using different pipelines available for Nanopore Sequencing
 
 
 ## Installation
 
-To run the app locally, please ensure that R version >= 4.3.3 and RStudio is installed.
+To run the app locally, please install R version >= 4.3.3 and RStudio.
 
-You can install R and all the required packages using a single command. This command will first install the conda, if not present and then create a new environment named nanotaxi-env.
+You can install R and all the required packages using a single command. If not present, this command will install the conda and then create a new environment named nanotaxi-env.
 
 ```bash
 if which conda >/dev/null; then
@@ -46,13 +46,13 @@ fi
 conda create -n nanotaxi-env --file Installation/nanotaxi-env.txt -y
 ```
 
-If you have installed R from the above command then to run the app please activate the conda environment first using the following command:
+If you have installed R from the above command, then to run the app, please activate the conda environment first using the following command:
 
 ```bash
 conda activate nanotaxi-env
 ```
 
-Launch the app using following command:
+Launch the app using the following command:
 
 ```r
 shiny::runApp("main_app.R")
@@ -65,32 +65,17 @@ You can also run the app directly from GitHub using the following command:
 shiny::runGitHub("NANOTAXI", "Nirmal2310")
 ```
 
-This app will download the conda environments and databases required for the classification of long reads in Real-time while starting up for the first time. So, please ensure that enough free space is available in the disk. 
+This app will download the conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system. 
 
-For offline analysis, you can tick the checkbox adjacent to setup. It will first download and install all the required softwares and databases and then start analyzing the data.
+To set up Offline Analysis, tick the checkbox adjacent to the setup option in **Offline Analysis** under the **INPUT** tab. It will first download and install all the required software and databases and then analyse the data.
 
 <img src="www/Offline_Setup.png" alt="Offline Setup" style="width: 100%"/>
 
 ## Usage/Examples
 
-The Test Dataset is from a [study](https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2023.1324494/full) published in Frontiers in Microbiology. In this study, the authors tested the utility of Nanopore 16s sequencing as a rapid dianostic approach for identifying bacteria in infected body fluids as opposed to traditional culture methods. They compared three pipelines: [Epi2me](https://nanoporetech.com/resource-centre/epi2me-wimp-workflow-quantitative-real-time-species-identification-metagenomic), [Emu](https://www.nature.com/articles/s41592-022-01520-4) and [NanoCLUST](https://academic.oup.com/bioinformatics/article/37/11/1600/5929694) and concluded that Emu demonstrated the highest concordance with the culture results.
+The Test Dataset is from a [study](https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2023.1324494/full) published in Frontiers in Microbiology. In this study, the authors tested the utility of Nanopore 16s sequencing as a rapid diagnostic approach for identifying bacteria in infected body fluids instead of traditional culture methods. They compared three pipelines: [Epi2me](https://nanoporetech.com/resource-centre/epi2me-wimp-workflow-quantitative-real-time-species-identification-metagenomic), [Emu](https://www.nature.com/articles/s41592-022-01520-4) and [NanoCLUST](https://academic.oup.com/bioinformatics/article/37/11/1600/5929694) and concluded that Emu demonstrated the highest concordance with the culture results.
 
-We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyze the test dataset comprising of 24 samples representing 24 barcodes and classified into four groups based on body fluids.
-
-<style>
-  .sample_info {
-    height: 400px;
-    overflow-y: scroll;
-    border: 1px solid #000000;
-
-  }
-
-  .sample_info th, .sample_info td {
-      border: 1px solid #000000;
-      border-spacing: 0;
-      padding-top: 5px; padding-left: 30px; padding-right: 30px; padding-bottom: 5px
-    }
-</style>
+We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyze the test dataset comprising 24 samples representing 24 barcodes and classified into four groups based on body fluids.
 
 <div  class="sample_info">
 
@@ -152,11 +137,11 @@ For detailed Information about NANOTAXI please refer to the [Documentation](http
 
 ## Feedback/Help
 
-If you have any feedback/issues, please reach out to us at nanotaxi.help@gmail.com or report the issue via [GitHub](https://github.com/Nirmal2310/NANOTAXI/issues).
+If you have any feedback/issues, please get in touch with us at nanotaxi.help@gmail.com or report the issue via [GitHub](https://github.com/Nirmal2310/NANOTAXI/issues).
 
 ## Acknowledgements
 
-#### Pipelines/Softwares Used in the App:
+#### Pipelines/Software Used in the App:
 - [KRAKEN2](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1891-0)
 - [EMU](https://www.nature.com/articles/s41592-022-01520-4)
 - [BLASTn](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_SPEC=GeoBlast&PAGE_TYPE=BlastSearch)
