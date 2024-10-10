@@ -67,6 +67,14 @@ shiny::runGitHub("NANOTAXI", "Nirmal2310")
 
 This app will download the conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system. 
 
+While setting up the MinKNOW app for sequencing, please make sure that under the barcoding setting, both **Trim barcodes** and **Barcode both ends** are enabled as shown below:
+
+<img src="www/Barcode_setting.png" alt="Barcode Setup" style="width: 100%"/>
+
+Also, in the **Output settings**, please select **Time elapsed** under **Based on** option and **Every 1 minute** under **Frequency** option as the app will read the output data every 2 minutes. The reference screenshot is shown below:
+
+<img src="www/Output_Setting.png" alt="Output Setting" style="width: 100%"/>
+
 To set up Offline Analysis, tick the checkbox adjacent to the setup option in **Offline Analysis** under the **INPUT** tab. It will first download and install all the required software and databases and then analyse the data.
 
 <img src="www/Offline_Setup.png" alt="Offline Setup" style="width: 100%"/>
