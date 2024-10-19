@@ -1368,7 +1368,24 @@ server <- function(input, output, session) {
       as.datatable(escape = FALSE, options = list(scrollX = TRUE), rownames = FALSE)
     }
 
-  }, height = 350)
+  }, ,height = 350, options = list(paging = TRUE,
+                                   pageLength = 10,
+                                   scrollX = TRUE,
+                                   scrollY = TRUE,
+                                   autoWidth = FALSE,
+                                   server = TRUE,
+                                   rownames = FALSE,
+                                   initComplete = JS("function(settings, json) {",
+                                                     "$(this.api().table().header()).css({'background-color': '#6C7AE0', 'color': '#FFFFFF', 'font-weight': 'bold'});",
+                                                     "$(this.api().table().body()).find('tr.odd').css({'background-color': '#FFFFFF', 'color': '#000000'})",
+                                                     "$(this.api().table().body()).find('tr.even').css({'background-color': '#F8F6FF', 'color': '#000000'})",
+                                                     "}"),
+                                   drawCallback = JS(
+                                     "function(settings) {",
+                                     "$(this.api().table().body()).find('tr.odd').css({'background-color': '#FFFFFF', 'color': '#000000'});",
+                                     "$(this.api().table().body()).find('tr.even').css({'background-color': '#F8F6FF', 'color': '#000000'});",
+                                     "}")
+                 ))
 
   output$plot_stacked_barplot <- renderPlotly({
 
