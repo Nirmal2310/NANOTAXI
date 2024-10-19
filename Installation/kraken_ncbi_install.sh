@@ -166,3 +166,4 @@ else
         pip install pandas==2.2.2
 
         conda activate base
+fi
