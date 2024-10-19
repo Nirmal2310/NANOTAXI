@@ -1,6 +1,0 @@
-562	306932.9709616875	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Escherichia	Escherichia coli
-624	28.895007175862784	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Shigella	Shigella sonnei
-623	14.52195237961417	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Shigella	Shigella flexneri
-1351	1442.4475145869278	Bacteria	Bacillota	Bacilli	Lactobacillales	Enterococcaceae	Enterococcus	Enterococcus faecalis
-37482	13.164564462008528	Bacteria	Bacillota	Bacilli	Bacillales	Thermoactinomycetaceae	Laceyella	Laceyella sacchari
-Unclassified	0.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified
