@@ -3,7 +3,7 @@ tabPanel(
              font-family: serif"),
          fluidRow(
            column(2, wellPanel(
-             h4("Additonal Information"),
+             h4("Additional Information"),
              a("Installation", href="#installation"),br(),
              a("Input Data", href="#inputdata"),br(),
              a("Pipeline", href="#algorithm"),br(),
