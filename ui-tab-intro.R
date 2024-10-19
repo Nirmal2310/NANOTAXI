@@ -10,11 +10,6 @@ div("INTRODUCTION", style="font-size: 12px; font-weight: bold; color: #007B9A;
            )
            ),
            column(8, includeMarkdown("Tabs/Instructions.md"))
-         ),
-         p(hr(), p(("ShinyApp created by Nirmal Singh Mahar and Ishaan Gupta*"), align = "center", width=2),
-           p(("Copyrigth (C) 2024, code licensed under GPLv3"), align="center", width=2),
-           p(("Code available on Github:"), a("https://github.com/Nirmal2310/NANOTAXI",
-           href="https://github.com/Nirmal2310/NANOTaxi"), align="center",width=2)
          )
   
 )
