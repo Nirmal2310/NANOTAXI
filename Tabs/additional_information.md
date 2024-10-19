@@ -3893,28 +3893,28 @@ The table displays the read counts per species for each barcode by default. User
 
 <br>
 <br>
-<img src="" alt="Taxon Table" style="width: 100%">
+<img src="taxon_table.png" alt="Taxon Table" style="width: 100%">
 
 ### **READ-LENGTH BAR PLOT**
 This bar plot displays the length distribution of reads per barcode. Reads with length >=1400 bp and <=1800 bp are shown with the bar color of **Cyan Azure** and reads with length smaller than 1400 bp or greater than 1800 bp are shown with the bar color of **Charm Pink**. Reads colored with **Cyan Azure** represents the true 16s reads and will be retained prior to read classification step. Remaining reads might be a result of chimera formation or are of low quality, and they will affect the downstream analysis. Because of that these reads are filtered prior to read classification step. Users can download the Read-Length Bar plot in **PNG** format.
 
 <br>
 <br>
-<img src="" alt="Read Length Plot" style="width: 100%">
+<img src="read_length_plot.png" alt="Read Length Plot" style="width: 100%">
 
 ### **Q-SCORE BAR PLOT**
 This bar plot displays the Q-Score (Read Quality) distribution of reads per barcode. Reads with Q-Score >=10 are shown with the bar color of **Cyan Azure** and reads with Q-Score <10 are shown with the bar color of **Charm Pink**. The poor quality reads (Q-Score <10) will have errors introduced during the sequencing and because of that they will affect the classification result and downstream analysis. Because of that these reads will be filtered out prior to read classification step. Users can download the Q-Score Bar plot in **PNG** format.
 
 <br>
 <br>
-<img src="" alt="Q-score Plot" style="width: 100%">
+<img src="q_score_plot.png" alt="Q-score Plot" style="width: 100%">
 
 ### **READ CLASSIFICATION BAR PLOT**
 This bar plot displays the classified reads for the top 10 species for each barcode by default. Users can select the number of distinct taxon to display and different taxon level upto **Kingdom** for each barcode, the plot will be adjusted accordingly. The classified reads will have length in between 1400 bp to 1800 bp and the Q-Score >= 10. Users can download the Read Classification Bar plot in **PNG** format.
 
 <br>
 <br>
-<img src="" alt="Classification Plot" style="width: 100%">
+<img src="Classification_plot.png" alt="Classification Plot" style="width: 100%">
 
 ## **COHORT ANALYSIS**
 
