@@ -124,7 +124,7 @@ The user can run the example dataset by selecting **Example Data** and clicking 
 
 ## Demo
 
-Please see the demo of Real-time classification by using the following [link]()
+Please see the demo of Real-time classification by using the following [link](https://youtu.be/LOkDb61RztI?si=2ywIz-i96st7GZby)
 
 ## Documentation
 
