@@ -61,9 +61,9 @@ tabPanel(
     )
   ),
   p(hr(), p(("ShinyApp created by Nirmal Singh Mahar and Ishaan Gupta*"), align = "center", width=2),
-    p(("Copyrigth (C) 2023, code licensed under GPLv3"), align="center", width=2),
-    p(("Code available on Github:"), a("https://github.com/Nirmal2310/NanoTAXI",
-                                       href="https://github.com/Nirmal2310/NanoTAXI"),
+    p(("Copyright (C) 2024, code licensed under GPLv3"), align="center", width=2),
+    p(("Code available on GitHub:"), a("https://github.com/Nirmal2310/NANOTAXI",
+                                       href="https://github.com/Nirmal2310/NANOTAXI"),
       align="center",width=2)
   )
 )
