@@ -128,7 +128,7 @@ Please see the demo of Real-time classification by using the following [link](ht
 
 ## Documentation
 
-For detailed Information about NANOTAXI please refer to the [Documentation](https://github.com/Nirmal2310/NANOTAXI/blob/main/Tabs/Help_Documentation.md).
+For detailed Information about NANOTAXI please refer to the [Documentation](https://github.com/Nirmal2310/NANOTAXI/blob/main/Tabs/additional_information.md).
 
 ## Roadmap
 
