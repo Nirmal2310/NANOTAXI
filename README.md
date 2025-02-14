@@ -128,15 +128,13 @@ Please see the demo of Real-time classification by using the following [link](ht
 
 ## Documentation
 
-For detailed Information about NANOTAXI, please refer to the [Documentation](https://github.com/Nirmal2310/NANOTAXI/blob/main/Tabs/additional_information.md).
+For detailed information about NANOTAXI, please refer to the [Documentation](https://github.com/Nirmal2310/NANOTAXI/blob/main/Tabs/additional_information.md).
 
 ## Roadmap
 
-- [ ] Add Differential Bacterial Abundance Analysis
+- [x] Add Differential Bacterial Abundance Analysis
 
-- [ ] Add more analysis pipelines for Offline Analysis
-
-- [ ] Add support for short-read 16s Data for Offline Analysis
+- [ ] Add Functional Profiling and Pathway Analysis
 
 ## Authors
 
