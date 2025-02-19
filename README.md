@@ -133,7 +133,6 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 ## Roadmap
 
 - [x] Add Differential Bacterial Abundance Analysis
-- [x] Add Liner Discrimination Analysis (LDA)
 - [ ] Add Functional Profiling and Pathway Analysis
 - [ ] Add support for Minimap2 + GSR DB (Real-time), Kraken2 + GTDB (Real-time) and Kraken2 + SILVA (Offline)
 
