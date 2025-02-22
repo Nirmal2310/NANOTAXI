@@ -81,7 +81,7 @@ To set up Offline Analysis, tick the checkbox adjacent to the setup option in **
 
 ## Usage/Examples
 
-The Test Dataset is from a [study](https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2023.1324494/full) published in Frontiers in Microbiology. In this study, the authors tested the utility of Nanopore 16s sequencing as a rapid diagnostic approach for identifying bacteria in infected body fluids instead of traditional culture methods. They compared three pipelines: [Epi2me](https://nanoporetech.com/resource-centre/epi2me-wimp-workflow-quantitative-real-time-species-identification-metagenomic), [Emu](https://www.nature.com/articles/s41592-022-01520-4) and [NanoCLUST](https://academic.oup.com/bioinformatics/article/37/11/1600/5929694) and concluded that Emu demonstrated the highest concordance with the culture results.
+The Test Dataset is from a [study](https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2023.1324494/full) published in Frontiers in Microbiology.
 
 We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyze the test dataset comprising 24 samples representing 24 barcodes and classified into four groups based on body fluids.
 
