@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/d4437e7c-a3b6-4910-9335-705c44adff76)# NANOTAXI
+# NANOTAXI
 
 Offering Real-time 16s DNA Classification of Long Read Sequencing.
 
