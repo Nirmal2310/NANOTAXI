@@ -1,4 +1,4 @@
-# NANOTAXI
+![image](https://github.com/user-attachments/assets/d4437e7c-a3b6-4910-9335-705c44adff76)# NANOTAXI
 
 Offering Real-time 16s DNA Classification of Long Read Sequencing.
 
@@ -89,30 +89,26 @@ We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyz
 
 | Barcode   | Sample      | Group     |
 | :--------:| :-------:   | ------- |
-| barcode01 | SRR25820705 | Peritoneal fluid |
-| barcode02 | SRR25820595 | Peritoneal fluid |
-| barcode03 | SRR25820577 | Peritoneal fluid |
-| barcode04 | SRR25820688 | Peritoneal fluid |
-| barcode05 | SRR25820552 | Peritoneal fluid |
-| barcode06 | SRR25820602 | Peritoneal fluid |
-| barcode07 | SRR25820592 | Peritoneal fluid |
-| barcode08 | SRR25820600 | Peritoneal dialysis fluid |
-| barcode09 | SRR25820610 | Peritoneal dialysis fluid |
-| barcode10 | SRR25820607 | Peritoneal dialysis fluid |
-| barcode11 | SRR25820665 | Peritoneal dialysis fluid |
-| barcode12 | SRR25820584 | Peritoneal dialysis fluid |
-| barcode13 | SRR25820557 | Peritoneal dialysis fluid |
-| barcode14 | SRR25820593 | Peritoneal dialysis fluid |
-| barcode15 | SRR25820684 | Ascitic fluid |
-| barcode16 | SRR25820637 | Ascitic fluid |
-| barcode17 | SRR25820677 | Ascitic fluid |
-| barcode18 | SRR25820680 | Ascitic fluid |
-| barcode19 | SRR25820682 | Ascitic fluid |
-| barcode20 | SRR25820575 | Ascitic fluid |
-| barcode21 | SRR25820674 | Joint aspirate |
-| barcode22 | SRR25820672 | Joint aspirate |
-| barcode23 | SRR25820649 | Joint aspirate |
-| barcode24 | SRR25820683 | Joint aspirate |
+| barcode01 | ERR13935186 | Crop Digesta |
+| barcode02 | ERR13935187 | Crop Digesta |
+| barcode03 | ERR13935188 | Crop Digesta |
+| barcode04 | ERR13935189 | Crop Digesta |
+| barcode05 | ERR13935191 | Crop Digesta |
+| barcode06 | ERR13935192 | Zymobiomics |
+| barcode07 | ERR13935193 | Zymobiomics |
+| barcode08 | ERR13935195 | Zymobiomics |
+| barcode09 | ERR13935223 | Zymobiomics |
+| barcode10 | ERR13935225 | Zymobiomics |
+| barcode11 | ERR13935170 | Feces |
+| barcode12 | ERR13935171 | Feces |
+| barcode13 | ERR13935172 | Feces |
+| barcode14 | ERR13935174 | Feces |
+| barcode15 | ERR13935176 | Feces |
+| barcode16 | ERR13935177 | Feces |
+| barcode17 | ERR13935178 | Feces |
+| barcode18 | ERR13935181 | Feces |
+| barcode19 | ERR13935182 | Feces |
+| barcode20 | ERR13935184 | Feces |
 
 </div>
 
@@ -133,7 +129,6 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 ## Roadmap
 
 - [x] Add Differential Bacterial Abundance Analysis
-- [ ] Add Functional Profiling and Pathway Analysis
 - [ ] Add support for Minimap2 + GSR DB (Real-time), Kraken2 + GTDB (Real-time) and Kraken2 + SILVA (Offline)
 
 ## Authors
@@ -184,8 +179,16 @@ If you have any feedback/issues, please contact us at nanotaxi.help@gmail.com or
 - [scales](https://github.com/r-lib/scales)
 - [viridis](https://github.com/sjmgarnier/viridis)
 - [circlize](https://github.com/jokergoo/circlize)
+- [ggrepel](https://cran.r-project.org/web/packages/ggrepel/vignettes/ggrepel.html)
 - [devtools](https://github.com/r-lib/devtools)
 - [compositions](https://cran.r-project.org/web/packages/compositions/index.html)
 - [forcats](https://github.com/tidyverse/forcats?tab=readme-ov-file)
+- [formattable](https://renkun-ken.github.io/formattable/)
+- [future](https://future.futureverse.org/)
+- [promises](https://rstudio.github.io/promises/)
+- [ggtext](https://wilkelab.org/ggtext/)
+- [FactoMineR](https://cran.r-project.org/web/packages/FactoMineR/index.html)
+- [ggforce](https://ggforce.data-imaginist.com/)
 - [ComplexHeatmap](https://github.com/jokergoo/ComplexHeatmap)
 - [pairwiseAdonis](https://github.com/pmartinezarbizu/pairwiseAdonis)
+- [ANCOM-BC2](https://github.com/FrederickHuangLin/ANCOMBC)
