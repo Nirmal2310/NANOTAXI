@@ -45,7 +45,7 @@ if [ -z "$data_path" ]
     helpFunction
 fi
 
-KRAKEN_NCBI=$(grep KRAKEN_NCBI ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_NCBI="//;s/"//g')
+KRAKEN_GTDB=$(grep KRAKEN_GTDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GTDB="//;s/"//g')
 
 TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
@@ -70,7 +70,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate kraken2
 
-        kraken2 --db $KRAKEN_NCBI --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
+        kraken2 --db $KRAKEN_GTDB --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
         kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
@@ -111,7 +111,7 @@ else
 
             conda activate kraken2
 
-            kraken2 --db $KRAKEN_NCBI --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
+            kraken2 --db $KRAKEN_GTDB --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
             kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
