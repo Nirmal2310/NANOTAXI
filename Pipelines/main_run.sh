@@ -73,7 +73,7 @@ else
 
     do
 
-    echo "bash $script_path/real_time_analysis.sh -d $data_path -b $barcode -m $min -M $max -t $r"
+    echo "bash $script_path/real_time_kraken.sh -d $data_path -b $barcode -m $min -M $max -t $r"
 
     done < "$data_path/barcode_list" | parallel -j "$parallel_jobs" {}
 fi
