@@ -137,15 +137,19 @@ if [ ! -d KRAKEN_NCBI ]; then
 
         zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $1"\t"$81}' > seqid_taxid.txt && rm -r bac120_metadata.tsv.gz ar53_metadata.tsv.gz
 
-        kraken2-build --add-to-library sequences.fasta --db KRAKEN_NCBI --use-ftp
-
         sed -i 's/ .*$//g' GTDB_16S_reps.fasta
 
         grep ">" GTDB_16S_reps.fasta | sed 's/>//g' | split -l 1000 - ids_chunk_
 
         source $path/bin/activate seqkit
 
-        parallel -j 16 "rg -f {} seqid_taxid.txt" ::: ids_chunk_* | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$1"|kraken:taxid|"$2}' > seq_id_replacement.txt && rm -r ids_chunk_*
+        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
+
+        chunk_number=$(ls ids_chunk_* | wc -l)
+
+        parallel_jobs=$(if [ $chunk_number -gt $threads ]; then echo $threads; else echo $chunk_number; fi)
+        
+        parallel -j $parallel_jobs "rg -f {} seqid_taxid.txt" ::: ids_chunk_* | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$1"|kraken:taxid|"$2}' > seq_id_replacement.txt && rm -r ids_chunk_*
 
         seqkit replace -p '^(\S+)' -r '{kv}$2' -k seq_id_replacement.txt GTDB_16S_reps.fasta > GTDB_16S_kraken2_ready.fasta
 
@@ -157,11 +161,15 @@ if [ ! -d KRAKEN_NCBI ]; then
 
         grep ">" GTDB_16S_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > KRAKEN_GTDB/seqid2taxid.map
 
-        kraken2-build --build --db KRAKEN_GTDB --threads 16
-        
-        cd KRAKEN_NCBI
+        kraken2-build --build --db KRAKEN_GTDB --threads $threads
 
-        grep -qF "export KRAKEN_NCBI=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_NCBI=\"$PWD\"" >> ~/.bashrc
+        kraken2-build --clean --db KRAKEN_GTDB
+
+        rm -r GTDB_16S_kraken2_ready.fasta GTDB_16S_reps.fasta seq_id_replacement.txt seqid_taxid.txt
+        
+        cd KRAKEN_GTDB
+
+        grep -qF "export KRAKEN_GTDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_GTDB=\"$PWD\"" >> ~/.bashrc
 
         source ~/.bashrc
 
@@ -171,9 +179,9 @@ if [ ! -d KRAKEN_NCBI ]; then
 
 fi
 
-cd $base_dir/DATA/KRAKEN_NCBI
+cd $base_dir/DATA/KRAKEN_GTDB
 
-grep -qF "export KRAKEN_NCBI=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_NCBI=\"$PWD\"" >> ~/.bashrc
+grep -qF "export KRAKEN_GTDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_GTDB=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 
