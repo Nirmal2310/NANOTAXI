@@ -46,6 +46,74 @@ else
 
 fi
 
+if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+
+        conda create -n taxonkit --file taxonkit.txt -y
+
+fi
+
+if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+
+        conda create --name nanofilt --file nanofilt.txt -y
+
+fi
+
+if { conda env list | grep "bbtools";} > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+
+        conda create --name bbtools --file bbtools.txt -y
+
+fi
+
+if { conda env list | grep "seqkit";} > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+
+        conda create --name seqkit --file seqkit.txt -y
+
+fi
+
+cd DATA
+
+if [ ! -d TAXONKIT_DATA ]; then
+
+        mkdir TAXONKIT_DATA
+
+        cd TAXONKIT_DATA
+
+        wget -c ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
+
+        tar -zxvf taxdump.tar.gz
+
+        rm -r taxdump.tar.gz
+
+        grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
+
+        source ~/.bashrc
+
+fi
+
+cd $base_dir/DATA/TAXONKIT_DATA
+
+grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
+
+source ~/.bashrc
+
+cd $base_dir
+
 if [ ! -d DATA ]; then
 
         mkdir DATA
@@ -86,64 +154,6 @@ fi
 cd $base_dir/DATA/KRAKEN_NCBI
 
 grep -qF "export KRAKEN_NCBI=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_NCBI=\"$PWD\"" >> ~/.bashrc
-
-source ~/.bashrc
-
-cd $base_dir
-
-if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
-
-        echo "Environment Exist"
-
-else
-
-        conda create -n taxonkit --file taxonkit.txt -y
-
-fi
-
-if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
-
-        echo "Environment Exist"
-
-else
-
-        conda create --name nanofilt --file nanofilt.txt -y
-
-fi
-
-if { conda env list | grep "bbtools";} > /dev/null 2>&1; then
-
-        echo "Environment Exist"
-
-else
-
-        conda create --name bbtools --file bbtools.txt -y
-
-fi
-
-cd DATA
-
-if [ ! -d TAXONKIT_DATA ]; then
-
-        mkdir TAXONKIT_DATA
-
-        cd TAXONKIT_DATA
-
-        wget -c ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz
-
-        tar -zxvf taxdump.tar.gz
-
-        rm -r taxdump.tar.gz
-
-        grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
-
-        source ~/.bashrc
-
-fi
-
-cd $base_dir/DATA/TAXONKIT_DATA
-
-grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 
