@@ -125,20 +125,40 @@ if [ ! -d KRAKEN_NCBI ]; then
 
         source $path/bin/activate kraken2
 
-        wget https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Archaea/archaea.16SrRNA.fna.gz -O archaea.16SrRNA.fasta.gz
+        wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/genomic_files_reps/bac120_ssu_reps.fna.gz
 
-        wget -c https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/bacteria.16SrRNA.fna.gz -O bacteria.16SrRNA.fasta.gz
+        wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/genomic_files_reps/ar53_ssu_reps.fna.gz
 
-        zcat bacteria.16SrRNA.fasta.gz archaea.16SrRNA.fasta.gz > sequences.fasta
+        zcat bac120_ssu_reps.fna.gz ar53_ssu_reps.fna.gz > GTDB_16S_reps.fasta && rm -r bac120_ssu_reps.fna.gz ar53_ssu_reps.fna.gz
 
-        rm -r archaea.16SrRNA.fasta.gz bacteria.16SrRNA.fasta.gz
+        wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/bac120_metadata.tsv.gz
 
-        kraken2-build --download-taxonomy --db KRAKEN_NCBI --use-ftp
+        wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/ar53_metadata.tsv.gz
+
+        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $1"\t"$81}' > seqid_taxid.txt && rm -r bac120_metadata.tsv.gz ar53_metadata.tsv.gz
 
         kraken2-build --add-to-library sequences.fasta --db KRAKEN_NCBI --use-ftp
 
-        kraken2-build --build --db KRAKEN_NCBI --use-ftp && rm -r sequences.fasta
+        sed -i 's/ .*$//g' GTDB_16S_reps.fasta
 
+        grep ">" GTDB_16S_reps.fasta | sed 's/>//g' | split -l 1000 - ids_chunk_
+
+        source $path/bin/activate seqkit
+
+        parallel -j 16 "rg -f {} seqid_taxid.txt" ::: ids_chunk_* | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$1"|kraken:taxid|"$2}' > seq_id_replacement.txt && rm -r ids_chunk_*
+
+        seqkit replace -p '^(\S+)' -r '{kv}$2' -k seq_id_replacement.txt GTDB_16S_reps.fasta > GTDB_16S_kraken2_ready.fasta
+
+        source $path/bin/activate kraken2
+
+        kraken2-build --download-taxonomy --db KRAKEN_GTDB --use-ftp --skip-maps
+
+        kraken2-build --add-to-library GTDB_16S_kraken2_ready.fasta --db KRAKEN_GTDB
+
+        grep ">" GTDB_16S_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > KRAKEN_GTDB/seqid2taxid.map
+
+        kraken2-build --build --db KRAKEN_GTDB --threads 16
+        
         cd KRAKEN_NCBI
 
         grep -qF "export KRAKEN_NCBI=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_NCBI=\"$PWD\"" >> ~/.bashrc
