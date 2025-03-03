@@ -212,6 +212,14 @@ if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
 
 else
         conda create --name minimap2 --file minimap2.txt
+
+        conda activate minimap2
+
+        pip install pandas
+
+        pip install pysam
+
+        conda activate base
 fi
 
 cd DATA
