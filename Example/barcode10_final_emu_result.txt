@@ -1,0 +1,17 @@
+1613	13910.836972552243	Bacteria	Bacillota	Bacilli	Lactobacillales	Lactobacillaceae	Limosilactobacillus	Limosilactobacillus fermentum
+28901	13329.526393887536	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Salmonella	Salmonella enterica
+1280	17896.232245546464	Bacteria	Bacillota	Bacilli	Bacillales	Staphylococcaceae	Staphylococcus	Staphylococcus aureus
+1351	9762.957097977138	Bacteria	Bacillota	Bacilli	Lactobacillales	Enterococcaceae	Enterococcus	Enterococcus faecalis
+1423	12552.648008918875	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus subtilis
+562	11630.30390013749	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Escherichia	Escherichia coli
+622	109.95173662399407	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Shigella	Shigella dysenteriae
+623	75.96701681765876	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Shigella	Shigella flexneri
+1639	14421.260734929769	Bacteria	Bacillota	Bacilli	Bacillales	Listeriaceae	Listeria	Listeria monocytogenes
+260554	80.27081726198007	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus halotolerans
+287	1256.2509358571722	Bacteria	Pseudomonadota	Gammaproteobacteria	Pseudomonadales	Pseudomonadaceae	Pseudomonas	Pseudomonas aeruginosa
+492670	26.1077543051197	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus velezensis
+1638	11.800610607267112	Bacteria	Bacillota	Bacilli	Bacillales	Listeriaceae	Listeria	Listeria ivanovii
+545	13.231416244337948	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Citrobacter	Citrobacter koseri
+28035	18.76505389512191	Bacteria	Bacillota	Bacilli	Bacillales	Staphylococcaceae	Staphylococcus	Staphylococcus lugdunensis
+37482	22.889304437744343	Bacteria	Bacillota	Bacilli	Bacillales	Thermoactinomycetaceae	Laceyella	Laceyella sacchari
+Unclassified	0.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	

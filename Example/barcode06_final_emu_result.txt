@@ -1,0 +1,21 @@
+1639	25109.239950533974	Bacteria	Bacillota	Bacilli	Bacillales	Listeriaceae	Listeria	Listeria monocytogenes
+28901	31253.552943903927	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Salmonella	Salmonella enterica
+1351	16257.79501814892	Bacteria	Bacillota	Bacilli	Lactobacillales	Enterococcaceae	Enterococcus	Enterococcus faecalis
+1613	27468.998368312346	Bacteria	Bacillota	Bacilli	Lactobacillales	Lactobacillaceae	Limosilactobacillus	Limosilactobacillus fermentum
+1280	28673.059779931038	Bacteria	Bacillota	Bacilli	Bacillales	Staphylococcaceae	Staphylococcus	Staphylococcus aureus
+562	27841.11619269184	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Escherichia	Escherichia coli
+622	93.90195136870969	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Shigella	Shigella dysenteriae
+623	207.720385782857	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Shigella	Shigella flexneri
+1423	25556.111592314202	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus subtilis
+492670	34.74582772315	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus velezensis
+1390	22.867406832771742	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus amyloliquefaciens
+260554	128.2679358756434	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus halotolerans
+1452	15.137737984090505	Bacteria	Bacillota	Bacilli	Bacillales	Bacillaceae	Bacillus	Bacillus atrophaeus
+287	4070.961590125031	Bacteria	Pseudomonadota	Gammaproteobacteria	Pseudomonadales	Pseudomonadaceae	Pseudomonas	Pseudomonas aeruginosa
+545	31.953157043185755	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Citrobacter	Citrobacter koseri
+1283	11.23938021481586	Bacteria	Bacillota	Bacilli	Bacillales	Staphylococcaceae	Staphylococcus	Staphylococcus haemolyticus
+1638	22.096874903527308	Bacteria	Bacillota	Bacilli	Bacillales	Listeriaceae	Listeria	Listeria ivanovii
+1296	12.880228987003967	Bacteria	Bacillota	Bacilli	Bacillales	Staphylococcaceae	Mammaliicoccus	Mammaliicoccus sciuri
+37482	65.91421482116746	Bacteria	Bacillota	Bacilli	Bacillales	Thermoactinomycetaceae	Laceyella	Laceyella sacchari
+28035	18.439462502455978	Bacteria	Bacillota	Bacilli	Bacillales	Staphylococcaceae	Staphylococcus	Staphylococcus lugdunensis
+Unclassified	0.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	

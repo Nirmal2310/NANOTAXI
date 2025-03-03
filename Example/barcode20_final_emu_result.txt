@@ -1,0 +1,70 @@
+89014	73727.90920477491	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia luti
+418240	68137.90691931364	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia wexlerae
+2479767	18910.60042091909	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia sp. SC05B48
+853	69699.09313876044	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Faecalibacterium	Faecalibacterium prausnitzii
+40520	4453.992445924807	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia obeum
+536633	1085.0322293599497	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia glucerasea
+745368	1699.0537547929353	Bacteria	Bacillota	Clostridia	Eubacteriales		Gemmiger	Gemmiger formicilis
+39488	2946.170429183473	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Anaerobutyricum	Anaerobutyricum hallii
+2109692	948.7475953025533	Bacteria	Bacillota	Erysipelotrichia	Erysipelotrichales	Erysipelotrichaceae		Erysipelotrichaceae bacterium GAM147
+871665	1263.7580157792179	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia faecis
+1912855	100.07767158158819	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Faecalimonas	Faecalimonas umbilicata
+208479	852.6854501770599	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Enterocloster	Enterocloster bolteae
+1834196	21.976269763844865	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Lachnoclostridium	Lachnoclostridium sp. YL32
+1981510	1021.8483140606086	Bacteria	Bacillota	Clostridia	Monoglobales	Monoglobaceae	Monoglobus	Monoglobus pectinilyticus
+288965	25.26277735347285	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Acetivibrio	Acetivibrio clariflavus
+1160721	518.5055345554161	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Ruminococcus	Ruminococcus bicirculans (ex Wegman et al. 2014)
+562	716.564750150068	Bacteria	Pseudomonadota	Gammaproteobacteria	Enterobacterales	Enterobacteriaceae	Escherichia	Escherichia coli
+37482	192.84110279028974	Bacteria	Bacillota	Bacilli	Bacillales	Thermoactinomycetaceae	Laceyella	Laceyella sacchari
+253314	17.467231526960333	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Acetivibrio	Acetivibrio straminisolvens
+33035	75.6781896312948	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia producta
+39486	1655.3434343896613	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Dorea	Dorea formicigenerans
+33038	517.9314068321829	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Mediterraneibacter	Mediterraneibacter gnavus
+39482	395.4832286600358	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Faecalicatena	Faecalicatena contorta
+1796615	81.26317282503382	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Blautia	Blautia caecimuris
+1150298	187.126242301657	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Fusicatenibacter	Fusicatenibacter saccharivorans
+39490	145.96236510747835	Bacteria	Bacillota	Clostridia	Eubacteriales	Eubacteriaceae	Eubacterium	Eubacterium ramulus
+33039	173.8553533037919	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Mediterraneibacter	[Ruminococcus] torques
+360807	345.1840552190267	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Roseburia	Roseburia inulinivorans
+1544	19.254724465780228	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Faecalicatena	Faecalicatena orotica
+154046	78.22314727899229	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Hungatella	Hungatella hathewayi
+2610895	15.01117195261369	Bacteria	Bacillota	Clostridia	Eubacteriales		Flintibacter	Flintibacter sp. KGMB00164
+351091	18.111375180986617	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Oscillibacter	Oscillibacter valericigenes
+1628085	181.9370510014582	Bacteria	Bacillota	Clostridia	Eubacteriales	Butyricicoccaceae	Agathobaculum	Agathobaculum butyriciproducens
+729	73.05757919269429	Bacteria	Pseudomonadota	Gammaproteobacteria	Pasteurellales	Pasteurellaceae	Haemophilus	Haemophilus parainfluenzae
+2086585	80.06306948144481	Bacteria	Bacillota	Clostridia	Eubacteriales	Maliibacteriaceae	Maliibacterium	Maliibacterium massiliense
+1673717	33.026028921777424	Bacteria	Bacillota	Clostridia	Eubacteriales	Acutalibacteraceae	Anaeromassilibacillus	Anaeromassilibacillus senegalensis
+649756	334.1296330929228	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Anaerostipes	Anaerostipes hadrus
+29370	31.916368305078805	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Lacrimispora	Lacrimispora sphenoides
+69825	15.187352952410757	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Lacrimispora	Lacrimispora indolis
+84030	117.84562655040557	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Lacrimispora	Lacrimispora saccharolytica
+116085	57.765189763120915	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Coprococcus	Coprococcus catus
+1712515	196.36873107182822	Bacteria	Bacillota	Clostridia	Eubacteriales	Butyricicoccaceae	Butyricicoccus	Butyricicoccus faecihominis
+410072	370.30919564681074	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Coprococcus	Coprococcus comes
+88431	199.79159799018933	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Dorea	Dorea longicatena
+29347	28.023227660879623	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Lachnoclostridium	[Clostridium] scindens
+301301	41.15219672870765	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Roseburia	Roseburia hominis
+342942	32.0253311740618	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Mediterraneibacter	Mediterraneibacter glycyrrhizinilyticus
+1796618	24.767665179351845	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Cuneatibacter	Cuneatibacter caecimuris
+2109691	81.68641292963771	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae		Lachnospiraceae bacterium GAM79
+74426	11.00867631670736	Bacteria	Actinomycetota	Coriobacteriia	Coriobacteriales	Coriobacteriaceae	Collinsella	Collinsella aerofaciens
+820	44.03470526682944	Bacteria	Bacteroidota	Bacteroidia	Bacteroidales	Bacteroidaceae	Bacteroides	Bacteroides uniformis
+1515	17.335214983057938	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Acetivibrio	Acetivibrio thermocellus
+357276	37.0291839743793	Bacteria	Bacteroidota	Bacteroidia	Bacteroidales	Bacteroidaceae	Phocaeicola	Phocaeicola dorei
+180332	12.427464169558569	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Robinsoniella	Robinsoniella peoriensis
+47678	11.00867631670736	Bacteria	Bacteroidota	Bacteroidia	Bacteroidales	Bacteroidaceae	Bacteroides	Bacteroides caccae
+1308	78.06152297301583	Bacteria	Bacillota	Bacilli	Lactobacillales	Streptococcaceae	Streptococcus	Streptococcus thermophilus
+28116	33.026028950122075	Bacteria	Bacteroidota	Bacteroidia	Bacteroidales	Bacteroidaceae	Bacteroides	Bacteroides ovatus
+1550024	31.024451430772043	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Ruthenibacterium	Ruthenibacterium lactatiformans
+187327	14.011042584900276	Bacteria	Bacillota	Negativicutes	Acidaminococcales	Acidaminococcaceae	Acidaminococcus	Acidaminococcus intestini
+1849041	16.075830632599132	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Harryflintia	Harryflintia acetispora
+1871035	15.471658641744995	Bacteria	Bacillota				Negativibacillus	Negativibacillus massiliensis
+1720200	31.502162452197652	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Anaerotruncus	Anaerotruncus rubiinfantis
+2093857	88.97368110624494	Bacteria	Bacillota	Clostridia	Eubacteriales	Oscillospiraceae	Dysosmobacter	Dysosmobacter welbionis
+2025876	33.026028950122075	Bacteria	Bacteroidota	Bacteroidia	Bacteroidales	Tannerellaceae	Parabacteroides	Parabacteroides sp. CT06
+1512	14.963752951261194	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Lachnoclostridium	[Clostridium] symbiosum
+46503	24.01893014554333	Bacteria	Bacteroidota	Bacteroidia	Bacteroidales	Tannerellaceae	Parabacteroides	Parabacteroides merdae
+114527	11.00867631670736	Bacteria	Bacillota	Clostridia	Peptostreptococcales	Anaerovoracaceae	Mogibacterium	Mogibacterium diversum
+33043	12.00946590259055	Bacteria	Bacillota	Clostridia	Lachnospirales	Lachnospiraceae	Coprococcus	Coprococcus eutactus
+446660	12.009465072771667	Bacteria	Actinomycetota	Coriobacteriia	Eggerthellales	Eggerthellaceae	Adlercreutzia	Adlercreutzia equolifaciens
+Unclassified	0.0	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	Unclassified	
