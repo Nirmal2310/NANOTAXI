@@ -15,18 +15,21 @@ tabPanel(
         conditionalPanel(
           condition = "input.data_file_type == 'upload'",
           fileInput("inputfile", "Select the sample Information File", accept = ".csv", multiple = FALSE),
-          selectInput("pipeline", "Select Analysis Tool", choices = list("KRAKEN2 + 16S NCBI DB"),
-                      selected = "KRAKEN2 + 16S NCBI DB"),
+          textInput("control", "Select Control Group", value = ""),
+          selectInput("pipeline", "Select Analysis Tool", choices = list("KRAKEN2 + GTDB", "Minimap2 + GSR DB"),
+                      selected = "Minimap2 + GSR DB"),
           numericInput("min", "Minimum Length", value = 1400),
           numericInput("max", "Maximum Length", value = 1800),
+          numericInput("iden", "Percent Identity", value = 85),
+          numericInput("cov", "Percent Coverage", value = 85),
           actionButton("start_analysis", "Start Analysis")
         ),
         conditionalPanel(
           condition = "input.data_file_type == 'precomputed'",
           textInput("fastqdir", "Enter the Directory Containing Raw Data", value = ""),
           fileInput("metafile", "Select the sample Information File", accept = ".csv", multiple = FALSE),
-          selectInput("pipeline", "Select Analysis Tool", choices = list("BLASTn + 16s DB", "Kraken2 + Greengenes",
-                                                             "Qiime2", "Centrifuge",
+          textInput("control", "Select Control Group", value = ""),
+          selectInput("pipeline", "Select Analysis Tool", choices = list("BLASTn + 16s DB", "Kraken2 + SILVA",
                                                              "EMU + Standard DB"),
                       selected = "BLASTn + 16s DB"),
           selectInput("tax", "Taxon Level", choices = list("Species", "Genus",
@@ -41,6 +44,7 @@ tabPanel(
         ),
         conditionalPanel(
           condition = "input.data_file_type == 'examplelist'",
+          textInput("control", "Select Control Group", value = ""),
           actionButton("example_run", "Use Example Data")
         )
     )),
