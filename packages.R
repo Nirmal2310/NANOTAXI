@@ -29,4 +29,4 @@ work_dir <- getwd()
 
 install_dir <- paste0(work_dir, "/Installation")
 
-system(paste0('bash ', install_dir,'/kraken_ncbi_install.sh'))
+system(paste0('bash ', install_dir,'/realtime_install.sh'))
