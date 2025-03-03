@@ -213,13 +213,6 @@ if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
 else
         conda create --name minimap2 --file minimap2.txt
 
-        conda activate minimap2
-
-        pip install pandas
-
-        pip install pysam
-
-        conda activate base
 fi
 
 cd DATA
@@ -235,6 +228,8 @@ if [ ! -d GSR_DB ]; then
         awk -F "\t" '{print $7}' > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
 
         mv GSR-DB_full-16S_filt_taxa.txt GSR-DB_full-16S_filt_seqs.fasta GSR_DB/
+
+        cd GSR_DB
 
         grep -qF "export GSR_DB=\"$PWD\"" ~/.bashrc || echo "export GSR_DB=\"$PWD\"" >> ~/.bashrc
 
