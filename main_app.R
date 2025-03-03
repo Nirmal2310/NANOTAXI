@@ -1,7 +1,9 @@
 source("packages.R")
 
+plan(multisession)
+
 # UI
-ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height="100%", width="15%"), "",
+ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height="100%", width="12%"), "",
               style="position: absolute; top: 3px; left: 10px; background-color:white"),
               id = "main_navbar",
   tags$head(
@@ -101,6 +103,10 @@ server <- function(input, output, session) {
 
   plot_real_heatmap <- reactiveVal()
 
+  plot_daa_volcano <- reactiveVal()
+
+  table_ancombc_daa <- reactiveVal()
+
   observeEvent(input$example_run, {
     
     route("Example")
@@ -147,6 +153,11 @@ server <- function(input, output, session) {
     }
   })
 
+  observeEvent(input$example_run, {
+    
+  
+  })
+
   observe({
     if (is_running()) {
       
@@ -171,10 +182,23 @@ server <- function(input, output, session) {
   observe({
 
     req(is_running(), initial_delay_done(), status_checked(), state() == "Sequencing")
-    
-    run_realtime_scripts()
 
-    invalidateLater(120000, session)
+    if(input$pipeline == "KRAKEN2 + GTDB")
+    {
+      future({
+        run_realtime_kraken_scripts()
+        }) %...>% {
+          invalidateLater(120000, session)
+        }
+    }
+    else if(input$pipeline == "Minimap2 + GSR DB")
+    {
+      future({
+        run_realtime_minimap2_scripts()
+        }) %...>% {
+          invalidateLater(120000, session)
+        }
+    }
     
   })
 
@@ -323,7 +347,7 @@ server <- function(input, output, session) {
 
   }
 
-  run_realtime_scripts <- function() {
+  run_realtime_kraken_scripts <- function() {
 
     script_path <- paste0(getwd(), "/Scripts")
 
@@ -332,8 +356,14 @@ server <- function(input, output, session) {
     output_path_check <- paste0(script_path, "/get_minknow_output_dir.py")
 
     reads_path <- paste0(py_run_file(output_path_check)$data_directory, "/fastq_pass")
+
+    min <- input$min
+
+    max <- input$max
+
+    taxa <- input$tax
     
-    system(paste0("bash ",pipeline_path,"/main_run.sh -d ",reads_path," -s ", pipeline_path, " -m 1400 -M 1800 -t Species 2>&1 | tee -a ", reads_path, "/realtime_run.log"))
+    system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ",reads_path," -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa," 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 
@@ -391,9 +421,85 @@ server <- function(input, output, session) {
 
   }
 
-  example_analysis <- function(path, file_list, lineage) 
+  run_realtime_minimap2_scripts <- function() {
+
+    script_path <- paste0(getwd(), "/Scripts")
+
+    pipeline_path <- paste0(getwd(), "/Pipelines")
+    
+    output_path_check <- paste0(script_path, "/get_minknow_output_dir.py")
+
+    reads_path <- paste0(py_run_file(output_path_check)$data_directory, "/fastq_pass")
+
+    min <- input$min
+
+    max <- input$max
+
+    identity <- input$iden
+
+    coverage <- input$cov
+    
+    system(paste0("bash ",pipeline_path,"/main_minimap2_run.sh -d ", reads_path, " -s ", pipeline_path, " -m ", min, " -M ", max," -i ", identity, " -c ", coverage," 2>&1 | tee -a ", reads_path, "/realtime_minimap2_run.log"))
+
+    length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
+
+    sample_list(data.frame(Barcode = length_list))
+    
+    mean_read_length_df <- data.frame()
+
+    quality_data_list <- list()
+
+    hist_data_list <- list()
+
+    for(i in 1:length(length_list))
+    {
+      
+      tmp <- read.table(file = paste0(reads_path, "/", length_list[i], "/", length_list[i], "_average_length.txt"), sep = "\t", header = FALSE)
+
+      mean_read_length_df <- rbind(mean_read_length_df, tmp)
+
+      quality_data_list[[i]] <- read.table(file = paste0(reads_path, "/", length_list[i], "/", length_list[i], "_quality.txt"), sep = "\t", header = FALSE)
+
+      colnames(quality_data_list[[i]]) <- "Phred"
+
+      hist_data_list[[i]] <- read.table(file = paste0(reads_path, "/", length_list[i], "/", length_list[i], "_hist.txt"), sep = "\t", header = FALSE)
+
+      colnames(hist_data_list[[i]]) <- c("Bin", "Counts")
+    
+    }
+    
+    colnames(mean_read_length_df) <- c("Barcode", "Mean_Length")
+
+    mean_df(mean_read_length_df)
+
+    hist_list(hist_data_list)
+
+    qual_list(quality_data_list)
+
+    classification_data_list <- list()
+
+    classified_samples <- gsub("/.*$", "", list.files(reads_path, pattern = "final_minimap2_result.txt", recursive = TRUE))
+
+    classified_samples_list(data.frame(Barcode = classified_samples))
+
+    for (i in 1:length(classified_samples))
+    {
+        classification_data_list[[i]] <- read.delim(file = paste0(reads_path, "/", classified_samples[i], "/", classified_samples[i],
+        "_final_minimap2_result.txt"), header = FALSE, sep = "\t")
+        
+        colnames(classification_data_list[[i]]) <- c("TAX_ID", "Counts", "Kingdom", "Phylum",
+                                            "Class", "Order", "Family", "Genus", "Species")
+        
+        classification_data_list[[i]][classification_data_list[[i]]==""] <- "Unclassified"
+    }
+
+    classified_list(classification_data_list)
+
+  }
+
+  example_analysis <- function(path, file_list, lineage, prevalence_cutoff, abundance_cutoff) 
   {
-    samples_header <- gsub("_final_blast_result","",file_list)
+    samples_header <- gsub("_final_emu_result","",file_list)
     
     sample_data_list <- list()
     
@@ -406,16 +512,19 @@ server <- function(input, output, session) {
       sample_data_list[[i]] <- read.delim(paste0(path,"/",file_list[i],".txt"), header = FALSE)
 
       colnames(sample_data_list[[i]]) <- c("TAX_ID", "Counts", "Superkingdom", "Phylum",
-                                                              "Class", "Order", "Family", "Genus", "Species")
+                                            "Class", "Order", "Family", "Genus",
+                                            "Species")
 
       sample_data_list[[i]][sample_data_list[[i]]==""] <- "Unclassified"
 
       col_num <- which(colnames(sample_data_list[[i]])==lineage)
 
-      abundance_data_list[[i]] <- sample_data_list[[i]] %>% group_by(sample_data_list[[i]][,col_num]) %>% 
-      summarise(Counts = sum(Counts))
+      abundance_data_list[[i]] <- sample_data_list[[i]] %>% group_by(.data[[lineage]]) %>% 
+        summarise(Counts = sum(Counts))
 
-      rel_abundance_data_list[[i]] <- abundance_data_list[[i]] %>% mutate(Freq = (Counts/sum(Counts))*100)
+      abundance_data_list[[i]] <- abundance_data_list[[i]] %>% filter(.data[[lineage]] != "Unclassified")
+
+      rel_abundance_data_list[[i]] <- abundance_data_list[[i]] %>% mutate(Freq = (Counts/sum(Counts)))
 
       rel_abundance_data_list[[i]] <- rel_abundance_data_list[[i]][,-2]
 
@@ -424,6 +533,16 @@ server <- function(input, output, session) {
       colnames(abundance_data_list[[i]]) <- c(lineage, samples_header[i])
 
     }
+
+    counts_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
+
+    counts_data[is.na(counts_data)] <- 0
+
+    counts_data <- as.data.frame(counts_data)
+
+    counts_matrix <- as.matrix(counts_data[,-1])
+
+    rownames(counts_matrix) <- counts_data[, which(colnames(counts_data)==lineage)]
 
     rel_abundance_data <- rel_abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
@@ -435,29 +554,23 @@ server <- function(input, output, session) {
 
     rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
 
-    rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+    pre_cutoff <- round((length(samples_header)*prevalence_cutoff)/100,0)
 
-    rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_filtered_matrix)),] %>% as.data.frame()
+    mean_cutoff <- abundance_cutoff/100
 
-    abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
+    rel_abundance_filtered_matrix <- rel_abundance_matrix[rowSums(rel_abundance_matrix>0)>=pre_cutoff & rowMeans(rel_abundance_matrix)>=mean_cutoff,]
 
-    abundance_data <- as.data.frame(abundance_data)
+    rel_abundance_filtered_matrix[rel_abundance_filtered_matrix==0] <- 1e-10
+    
+    rel_abundance_renormalized_matrix <- apply(rel_abundance_filtered_matrix, 2 , function(x) x/sum(x))
 
-    abundance_data[is.na(abundance_data)] <- 0
-
-    abundance_matrix <- abundance_data[,-1]
-
-    rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
-
-    return(list('rel_abundance_data' = rel_abundance_data,
-    'rel_abundance_filtered_data' = rel_abundance_filtered_data,
-    'rel_abundance_matrix' = rel_abundance_matrix,
-    'rel_abundance_filtered_matrix' = rel_abundance_filtered_matrix,
-    'abundance_data' = abundance_data,
-    'abundance_matrix' = abundance_matrix))
+    return(list(
+    'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
+    'counts_matrix' = counts_matrix,
+    'counts_data' = counts_data))
   }
   
-  cohort_realtime_analysis <- function(classification_list, sample_list, lineage)
+  cohort_realtime_analysis <- function(classification_list, sample_list, lineage, prevalence_cutoff, abundance_cutoff)
   {
     data <- classification_list
 
@@ -470,10 +583,12 @@ server <- function(input, output, session) {
 
         col_num <- which(colnames(data[[i]])==lineage)
         
-        abundance_data_list[[i]] <- data[[i]] %>% group_by(data[[i]][, col_num]) %>% 
+        abundance_data_list[[i]] <- sample_data_list[[i]] %>% group_by(.data[[lineage]]) %>% 
         summarise(Counts = sum(Counts))
 
-        rel_abundance_data_list[[i]] <- abundance_data_list[[i]] %>% mutate(Freq = (Counts/sum(Counts))*100)
+        abundance_data_list[[i]] <- abundance_data_list[[i]] %>% filter(.data[[lineage]] != "Unclassified")
+
+        rel_abundance_data_list[[i]] <- abundance_data_list[[i]] %>% mutate(Freq = (Counts/sum(Counts)))
 
         rel_abundance_data_list[[i]] <- rel_abundance_data_list[[i]][,-2]
 
@@ -482,6 +597,15 @@ server <- function(input, output, session) {
         colnames(abundance_data_list[[i]]) <- c(lineage, sample_list[i])
       
       }
+    counts_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
+
+    counts_data[is.na(counts_data)] <- 0
+
+    counts_data <- as.data.frame(counts_data)
+
+    counts_matrix <- as.matrix(counts_data[,-1])
+
+    rownames(counts_matrix) <- counts_data[, which(colnames(counts_data)==lineage)]
 
     rel_abundance_data <- rel_abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
@@ -493,29 +617,23 @@ server <- function(input, output, session) {
 
     rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
 
-    rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+    pre_cutoff <- round((length(sample_list)*prevalence_cutoff)/100,0)
 
-    rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_filtered_matrix)),] %>% as.data.frame()
+    mean_cutoff <- abundance_cutoff/100
 
-    abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
+    rel_abundance_filtered_matrix <- rel_abundance_matrix[rowSums(rel_abundance_matrix>0)>=pre_cutoff & rowMeans(rel_abundance_matrix)>=mean_cutoff,]
 
-    abundance_data <- as.data.frame(abundance_data)
+    rel_abundance_filtered_matrix[rel_abundance_filtered_matrix==0] <- 1e-10
+    
+    rel_abundance_renormalized_matrix <- apply(rel_abundance_filtered_matrix, 2 , function(x) x/sum(x))
 
-    abundance_data[is.na(abundance_data)] <- 0
-
-    abundance_matrix <- abundance_data[,-1]
-
-    rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
-
-    return(list('rel_abundance_data' = rel_abundance_data,
-    'rel_abundance_filtered_data' = rel_abundance_filtered_data,
-    'rel_abundance_matrix' = rel_abundance_matrix,
-    'rel_abundance_filtered_matrix' = rel_abundance_filtered_matrix,
-    'abundance_data' = abundance_data,
-    'abundance_matrix' = abundance_matrix))
+    return(list(
+      'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
+      'counts_data' = counts_data,
+      'counts_matrix' = counts_matrix))
   }
 
-  cohort_offline_analysis <- function(result_dir, lineage) {
+  cohort_offline_analysis <- function(result_dir, lineage, prevalence_cutoff, abundance_cutoff) {
     
     file_list <- gsub(".txt", "", list.files(result_dir))[grep("\\_final.*result.txt", list.files(result_dir))]
 
@@ -538,10 +656,12 @@ server <- function(input, output, session) {
       
       col_num <- which(colnames(sample_data_list[[i]])==lineage)
 
-      abundance_data_list[[i]] <- sample_data_list[[i]] %>% group_by(sample_data_list[[i]][,col_num]) %>% 
-      summarise(Counts = sum(Counts))
+      abundance_data_list[[i]] <- sample_data_list[[i]] %>% group_by(.data[[lineage]]) %>% 
+        summarise(Counts = sum(Counts))
 
-      rel_abundance_data_list[[i]] <- abundance_data_list[[i]] %>% mutate(Freq = (Counts/sum(Counts))*100)
+      abundance_data_list[[i]] <- abundance_data_list[[i]] %>% filter(.data[[lineage]] != "Unclassified")
+
+      rel_abundance_data_list[[i]] <- abundance_data_list[[i]] %>% mutate(Freq = (Counts/sum(Counts)))
 
       rel_abundance_data_list[[i]] <- rel_abundance_data_list[[i]][,-2]
 
@@ -550,6 +670,16 @@ server <- function(input, output, session) {
       colnames(abundance_data_list[[i]]) <- c(lineage, samples_header[i])
     
     }
+
+    counts_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
+
+    counts_data[is.na(counts_data)] <- 0
+
+    counts_data <- as.data.frame(counts_data)
+
+    counts_matrix <- as.matrix(counts_data[,-1])
+
+    rownames(counts_matrix) <- counts_data[, which(colnames(counts_data)==lineage)]
 
     rel_abundance_data <- rel_abundance_data_list %>% purrr::reduce(full_join, by=lineage)
 
@@ -561,63 +691,67 @@ server <- function(input, output, session) {
 
     rownames(rel_abundance_matrix) <- rel_abundance_data[,which(colnames(rel_abundance_data)==lineage)]
 
-    rel_abundance_filtered_matrix <- rel_abundance_matrix[apply(rel_abundance_matrix, 1, function(row) any(mean(row) > 0.1 )), ]
+    pre_cutoff <- round((length(samples_header)*prevalence_cutoff)/100,0)
 
-    rel_abundance_filtered_data <- rel_abundance_data[which(rel_abundance_data[,1] %in% rownames(rel_abundance_matrix)),] %>% as.data.frame()
+    mean_cutoff <- abundance_cutoff/100
 
-    abundance_data <- abundance_data_list %>% purrr::reduce(full_join, by=lineage)
+    rel_abundance_filtered_matrix <- rel_abundance_matrix[rowSums(rel_abundance_matrix>0)>=pre_cutoff & rowMeans(rel_abundance_matrix)>=mean_cutoff,]
 
-    abundance_data <- as.data.frame(abundance_data)
+    rel_abundance_filtered_matrix[rel_abundance_filtered_matrix] <- 1e-10
 
-    abundance_data[is.na(abundance_data)] <- 0
-
-    abundance_matrix <- abundance_data[,-1]
-
-    rownames(abundance_matrix) <- abundance_data[,which(colnames(abundance_data)==lineage)]
-
-    return(list('rel_abundance_data'=rel_abundance_data,
-    'rel_abundance_matrix'=rel_abundance_matrix,
-    'rel_abundance_filtered_data'=rel_abundance_filtered_data,
-    'rel_abundance_filtered_matrix'=rel_abundance_filtered_matrix,
-    'abundance_data' = abundance_data,
-    'abundance_matrix' = abundance_matrix))
+    rel_abundance_renormalized_matrix <- apply(rel_abundance_filtered_matrix, 2, function(x) x/sum(x))
+    
+    return(list(
+      'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
+      'counts_data' = counts_data,
+      'counts_matrix' = counts_matrix))
   }
 
   stacked_barplot_function <- function(stacked_df, lineage, top_n)
   {
-    required_col <- which(colnames(stacked_df)==lineage)
+    stacked_plot_data <- as.data.frame(stacked_df)
+    
+    stacked_plot_data[[lineage]] <- rownames(stacked_df)
 
-    stacked_df[,required_col] <- as.character(stacked_df[,required_col])
+    rownames(stacked_plot_data) <- NULL
 
-    stacked_df <- stacked_df %>% 
-        pivot_longer(cols = -all_of(required_col), names_to = "Sample_Id", values_to = "Abundance") %>% 
-        filter(Abundance > 0)
+    stacked_plot_data <- stacked_plot_data %>% dplyr::select(c(all_of(lineage), everything()))
 
-    stacked_df <- stacked_df %>% group_by(Sample_Id) %>%
+    required_col <- which(colnames(stacked_plot_data)==lineage)
+
+    stacked_plot_data[,required_col] <- as.character(stacked_plot_data[,required_col])
+
+    stacked_plot_data[,-1] <- stacked_plot_data[,-1]*100
+
+    stacked_plot_data <- stacked_plot_data %>% 
+      pivot_longer(cols = -all_of(required_col), names_to = "Sample_Id", values_to = "Abundance") %>% 
+      filter(Abundance > 0)
+    
+    stacked_plot_data <- stacked_plot_data %>% group_by(Sample_Id) %>% 
       arrange(desc(Abundance)) %>% dplyr::slice(1:ifelse(n()<top_n,n(),top_n))
 
-    stacked_df$Sample_Id <- gsub("barcode","", stacked_df$Sample_Id)
+    stacked_plot_data$Sample_Id <- gsub("barcode", "", stacked_plot_data$Sample_Id)
 
-    temp <- stacked_df %>% group_by(Sample_Id) %>% summarise(Abundance = 100-sum(Abundance)) %>% mutate(Species="Others") %>% 
+    temp <- stacked_plot_data %>% group_by(Sample_Id) %>% summarise(Abundance = 100-sum(Abundance)) %>% mutate(Species="Others") %>% 
       dplyr::select(Species, Sample_Id, Abundance)
 
-    colnames(temp) <- colnames(stacked_df)
+    colnames(temp) <- colnames(stacked_plot_data)
 
-    stacked_df <- rbind(stacked_df, temp) %>% arrange(Sample_Id)
+    stacked_plot_data <- rbind(stacked_plot_data, temp) %>% arrange(Sample_Id)
 
-    total_abundance <- stacked_df %>%
+    total_abundance <- stacked_plot_data %>%
       group_by(!!sym(lineage)) %>%
       summarise(Total_Abundance = sum(Abundance)) %>%
       arrange(Total_Abundance)
 
-    stacked_df[[required_col]] <- factor(stacked_df[[required_col]], 
+    stacked_plot_data[[required_col]] <- factor(stacked_plot_data[[required_col]], 
                                 levels = c("Others", total_abundance[[required_col]][total_abundance[[required_col]] != "Others"]))
 
     fill_colors <- c("Others" = "#D3D3D3",setNames(viridis_pal(option = "D")(
-      length(levels(stacked_df[[required_col]]))-1), 
-      levels(stacked_df[[required_col]])[levels(stacked_df[[required_col]]) != "Others"]))
+      length(levels(stacked_plot_data[[required_col]]))-1), 
+      levels(stacked_plot_data[[required_col]])[levels(stacked_plot_data[[required_col]]) != "Others"]))
 
-    stacked_barplot <- ggplot(stacked_df, aes(x = Sample_Id, y = Abundance, fill = !!sym(lineage))) +
+    stacked_barplot <- ggplot(stacked_plot_data, aes(x = Sample_Id, y = Abundance, fill = !!sym(lineage))) +
     geom_bar(stat = "identity", position = "stack", color = "black", linewidth=0.2) +
     theme_linedraw() +
     theme(
@@ -633,27 +767,43 @@ server <- function(input, output, session) {
       panel.grid.minor = element_blank()
     ) +
     guides(fill = guide_legend(ncol = 4)) +
-    labs(x = "BARCODE", y="% RELATIVE ABUNDANCE", fill = lineage) + 
+    labs(x = "BARCODE", y="RELATIVE ABUNDANCE (%)", fill = lineage) + 
     scale_fill_manual(values = fill_colors) +
     scale_y_continuous(expand = c(0, 0), limits = c(0,102))
 
     return(stacked_barplot)
   }
 
-  diversity_boxplot_function <- function(alpha_diversity_data, lineage, sample_metadata)
+  diversity_boxplot_function <- function(counts_data, lineage, sample_metadata)
   {
-    required_col <- which(colnames(alpha_diversity_data)==lineage)
-      
-    alpha_diversity_data[,required_col] <- as.character(alpha_diversity_data[,required_col])
-      
-    alpha_diversity_data <- alpha_diversity_data %>%
-      pivot_longer(cols = -(required_col), names_to = "Sample_Id", values_to = "Abundance") %>%
-      filter(Abundance > 0)
     
-    alpha_diversity_data <- alpha_diversity_data %>% 
+    counts_data_long <- counts_data %>% pivot_longer(cols = -!!sym(lineage), names_to = "Sample", values_to = "Counts")
+
+    rarefaction_cutoff <- counts_data_long %>% group_by(Sample) %>% 
+      summarise(Total = sum(Counts), Singletons = sum(Counts==1), GC = 100*(1-(Singletons/Total))) %>% 
+      filter(GC>=95) %>% summarise(Min = min(Total)) %>% pull(Min)
+
+    rarefaction_cutoff <- round(rarefaction_cutoff, digits = 0)
+
+    counts_data_wide <- counts_data_long %>% pivot_wider(names_from = !!sym(lineage), values_from = Counts, values_fill = 0) %>% 
+      as.data.frame()
+
+    counts_data_wide <- counts_data_wide %>% dplyr::select(Sample, everything())
+
+    rownames(counts_data_wide) <- counts_data_wide$Sample
+
+    counts_data_wide <- counts_data_wide[,-1]
+
+    counts_data_wide <- round(counts_data_wide, digits = 0)
+
+    alpha_diversity_data <- vegan::rrarefy(counts_data_wide, rarefaction_cutoff) %>% 
+      as.data.frame() %>% rownames_to_column("Sample_Id") %>% 
+      pivot_longer(cols = -Sample_Id, names_to = lineage, values_to = "Counts") %>% 
       group_by(Sample_Id) %>% 
-      summarise(Shannon = diversity(Abundance, index = "shannon"),
-                Simpson = diversity(Abundance, index = "simpson"))
+      summarise(
+        Shannon = diversity(Counts, index = "shannon"),
+        Simpson = diversity(Counts, index = "simpson")
+      )
     
     alpha_diversity_data <- inner_join(alpha_diversity_data, sample_metadata)
     
@@ -663,7 +813,7 @@ server <- function(input, output, session) {
                                         names_to = "Diversity", values_to = "Value")
     
     alpha_div_p <- compare_means(Value~Group, data = alpha_diversity_data, method = "wilcox",
-                                p.adjust.method = "holm", group.by = "Diversity")
+                                p.adjust.method = "BH", group.by = "Diversity")
 
     get_legend<-function(myggplot){
       tmp <- ggplot_gtable(ggplot_build(myggplot))
@@ -728,14 +878,26 @@ server <- function(input, output, session) {
     shannon_plot <- shannon_plot + theme(legend.position="none")
     
     diversity_facet <- as_ggplot(grid.grabExpr(grid.arrange(shannon_plot,
-                                        simpson_plot, legend, ncol=3, widths=c(2.2, 2.2, 1.0))))
-
+                                        simpson_plot, legend, ncol=3, widths=c(2.2, 2.2, 1.0)))) +
+      labs(caption = paste0("Alpha Diversity metrices calculated on rarified data with the 
+                                        cutoff library size of ", scales::comma(rarefaction_cutoff), " reads.<br>The P-value
+                                        is calculated using Kruskal-Walis Test with Benjamini-Hochberg Correction.")) +
+                                          theme(plot.caption = element_markdown(
+                                            color = "#0F6E73", size = 15,
+                                            margin = margin(20,0,5,0), face = "bold",
+                                            hjust = 0.5
+                                          ))
     return(diversity_facet)
   }
 
-  diversity_pcoa_function <- function(matrix, lineage, sample_metadata)
+  diversity_pcoa_function <- function(mat, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
   {
-    pcoa_dist <- wcmdscale(vegdist(t(matrix), method = "aitchison", pseudocount=0.5), k=2, eig = TRUE)
+    
+    pcoa_data <- mat %>% as.matrix()
+
+    transformed_data <- t(compositions::clr(t(pcoa_data)))
+
+    pcoa_dist <- wcmdscale(vegdist(t(transformed_data), method = "euclidean"), k=2, eig = TRUE)
 
     pcoa_df <- pcoa_dist$points[,1:2] %>% as.data.frame()
   
@@ -751,8 +913,8 @@ server <- function(input, output, session) {
   
     colnames(pcoa_df) <- c("Axis.1", "Axis.2", "Sample_Id", "Group")
 
-    pcoa_plot <- ggplot(data = pcoa_df, aes(x = Axis.1, y = Axis.2, color = Group)) +
-      geom_point(size=5) +
+    pcoa_plot <- ggplot(data = pcoa_df, aes(x = Axis.1, y = Axis.2, fill = Group)) +
+      geom_point(size=5, shape = 21, color = "black") +
       stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
       scale_color_manual(values = pal_aaas("default")(length(levels(pcoa_df$Group)))) +
       scale_fill_manual(values = pal_aaas("default")(length(levels(pcoa_df$Group)))) +
@@ -761,6 +923,10 @@ server <- function(input, output, session) {
       ylab(paste0("PC2 (", pcoa.var[2], "%", ")")) +
       geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
       geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
+      ggtitle("Principal Coordination Analysis (PCoA) ordination plot using Aitchison Distance") +
+      labs(caption = paste0("The TSS Normalized Data was filtered to keep the taxon with ", prevalence_cutoff, 
+                            "% prevalence and mean relative abundace >= ", abundance_cutoff,"%.<br>CLR transformation
+                            was applied on the filtered data and Euclidean Distance was calculated and plotted.")) +
       theme(
         axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
@@ -768,16 +934,20 @@ server <- function(input, output, session) {
         axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-      ) +
-      ggtitle("Principal Coordination Analysis (PCoA) ordination plot using Aitchison Distance")
+        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5),
+        plot.caption = element_markdown(
+          color = "#0F6E73", size = 15,
+          margin = margin(20, 0, 10, 0), face = "bold",
+          hjust = 0.5
+        )
+      )
     
     return(pcoa_plot)
   }
 
-  diversity_nmds_function <- function(matrix, lineage, sample_metadata)
+  diversity_nmds_function <- function(mat, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
   {
-    nmds_dist <- metaMDS(t(matrix), distance = "bray", trymax = 100)
+    nmds_dist <- metaMDS(t(mat), distance = "bray", trymax = 1000)
 
     nmds_df <- as.data.frame(nmds_dist$points)
 
@@ -785,12 +955,16 @@ server <- function(input, output, session) {
 
     nmds_df$Group <- factor(nmds_df$Group)
 
-    nmds_plot <- ggplot(data = nmds_df, aes(x = MDS1, y = MDS2, color = Group)) +
-      geom_point(size=5) +
+    nmds_plot <- ggplot(data = nmds_df, aes(x = MDS1, y = MDS2, fill = Group)) +
+      geom_point(size=5, shape = 21, color = "black") +
       stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
       scale_color_manual(values = pal_aaas("default")(length(levels(nmds_df$Group)))) +
       scale_fill_manual(values = pal_aaas("default")(length(levels(nmds_df$Group)))) +
       theme_linedraw() +
+      ggtitle("Non-metric MultiDimensional Scaling (NMDS) ordination plot with Bray-Curtis Distance") +
+      labs(caption = paste0("The TSS Normalized Data was filtered to keep taxon with ", prevalence_cutoff,
+                            "% prevalence and mean relative abundance >= ", abundance_cutoff,"%.<br>Bray-Curtis
+                            Distance was calculated on the filtered data and plotted.")) +
       theme(
         axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
@@ -798,59 +972,79 @@ server <- function(input, output, session) {
         axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7", vjust = -1),
         legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
+        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5),
+        plot.caption = element_markdown(
+          color = "#0F6E73", size = 15,
+          margin = margin(20, 0, 10, 0), face = "bold",
+          hjust = 0.5
+        )
       ) +
       geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
-      geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
-      ggtitle("Non-metric MultiDimensional Scaling (NMDS) ordination plot with Bray-Curtis Distance")
+      geom_hline(yintercept = 0, color = "black", linetype = "dashed")
 
     return(nmds_plot)
   }
 
-  diversity_pca_function <- function(matrix, lineage, sample_metadata)
+  diversity_pca_function <- function(mat, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff, top_taxa)
   {
-    clr_transformed_abundance_matrix <- clr(matrix+0.5) %>% as.data.frame()
+    
+    pca_data <- mat %>% as.matrix()
 
-    pca <- prcomp(t(clr_transformed_abundance_matrix), scale. = FALSE, center = TRUE,
-            retx = TRUE)
+    transformed_data <- t(clr(t(pca_data)))
 
-    pca.var <- pca$sdev^2
+    pca_out <- FactoMineR::PCA(transformed_data, scale.unit = TRUE, ncp = 5, graph = FALSE)
+    
+    pca_data <- pca_out$var$coord %>% as.data.frame() %>% rownames_to_column("Sample_Id")
 
-    pca.var.per <- round(pca.var/sum(pca.var)*100, 1)
+    pca_data <- inner_join(pca_data, sample_metadata)
 
-    pca_df <- data.frame(Sample_Id = rownames(pca$x), X=pca$x[,1], Y=pca$x[,2])
+    indv_data <- pca_out$ind$coord %>% head(n=top_taxa)
 
-    pca_df <- inner_join(pca_df, sample_metadata)
+    sample_metadata$Group <- factor(sample_metadata$Group)
 
-    pca_df$Group <- factor(pca_df$Group)
-
-    pca_plot <- ggplot(data = pca_df, aes(x = X, y = Y, color = Group)) +
-      geom_point(size=5) +
-      stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
-      xlab(paste0("PC1 (", pca.var.per[1], "%", ")")) +
-      ylab(paste0("PC2 (", pca.var.per[2], "%", ")")) +
-      scale_color_manual(values = pal_aaas("default")(length(levels(pca_df$Group)))) +
-      scale_fill_manual(values = pal_aaas("default")(length(levels(pca_df$Group)))) +
+    pca_plot <- ggplot(data = pca_data, aes(x = Dim.1, y = Dim.2, fill = Group)) +
+      geom_point(size=5, shape = 21, color = "black") +
+      stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.4, geom = "polygon") +
+      xlab(paste0("PC1 (", round(pca_out$eig[1,2],1), "%", ")")) +
+      ylab(paste0("PC2 (", round(pca_out$eig[2,2],1), "%", ")")) +
+      geom_segment(data = indv_data, aes(x=0, y=0, xend = Dim.1, yend = Dim.2), inherit.aes = FALSE,
+                  arrow = arrow(type = "closed", length = unit(0.05, "inches")), color = "#0773C1") +
+      geom_text_repel(data = indv_data, aes(Dim.1, Dim.2), inherit.aes = FALSE, label = rownames(indv_data), color = "#0773C1", max.overlaps = top_taxa) +
+      scale_color_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
+      scale_fill_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
       theme_linedraw() +
+      ggtitle("Principal Component Analysis (PCA) Bi-Plot using CLR Transformed Data") +
+      labs(caption = paste0("The TSS Normalized Data was filtered to keep taxon with ", prevalence_cutoff,
+                            "% prevalence and mean relative abundance >= ", abundance_cutoff,"%.<br>CLR transformation
+                            was applied on the filtered data and biplot was plotted, showing loadings of top ",top_taxa,
+                            " taxon.")) +
       theme(
         axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-        axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7", vjust = -5),
+        axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
         legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
+        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5),
+        plot.caption = element_markdown(
+          color = "#0F6E73", size = 15,
+          margin = margin(20, 0, 10, 0), face = "bold",
+          hjust = 0.5
+        )
       ) +
       geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
-      geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
-      ggtitle("Principal Component Analysis (PCA) Plot using CLR Transformed Data")
+      geom_hline(yintercept = 0, color = "black", linetype = "dashed")
 
     return(pca_plot)
   }
 
-  diversity_permanova_function <- function(matrix, lineage, sample_metadata)
+  diversity_permanova_function <- function(mat, lineage, sample_metadata)
   {
-    perm_dist <- vegdist(t(matrix), method = "aitchison", pseudocount=0.5)
+    filtered_data <- mat %>% as.matrix()
+
+    transformed_data <- t(compositions::clr(t(filtered_data)))
+
+    perm_dist <- vegdist(t(transformed_data), method = "euclidean")
 
     permanova_res <- pairwise.adonis(perm_dist, as.factor(sample_metadata$Group), p.adjust.m = "BH")
 
@@ -861,47 +1055,249 @@ server <- function(input, output, session) {
     return(permanova_res)
   }
 
-  diversity_heatmap_function <- function(matrix, lineage, sample_metadata)
+  diversity_heatmap_function <- function(mat, lineage, sample_metadata)
   {
-    heatmap_df <- as.data.frame(log10(matrix+0.00001))
+    
+    data <- mat %>% as.matrix()
+    
+    transformed_data <- t(clr(t(data)))
 
-    sample_annotation <- data.frame(sample_metadata$Group)
+    heatmap_df <- as.data.frame(transformed_data)
 
     sample_metadata$Group <- factor(sample_metadata$Group)
+
+    sample_annotation <- data.frame(sample_metadata$Group)
 
     colnames(sample_annotation) <- "Group"
 
     sample_annotation$Group <- factor(sample_annotation$Group)
 
     col_list <- list(Group = setNames(pal_aaas("default")(length(levels(sample_metadata$Group))), 
-    levels(sample_metadata$Group)))
-
-    row_annotate <- rowAnnotation(
+                                 levels(sample_metadata$Group)))
+    
+    col_annotate <- columnAnnotation(
     df = sample_annotation,
-    col = col_list, show_annotation_name = FALSE)
+    col = col_list,
+    show_annotation_name = FALSE,
+    annotation_legend_param = list(
+      Group = list(
+        title = "Groups",
+        title_gp = gpar(fontsize = 12, fontface = "bold"),
+        labels_gp = gpar(fontsize = 10),
+        direction = "horizontal"
+        )
+      )
+    )
+    row_dend <- hclust(dist(heatmap_df, method = "euclidean"), method = "complete")
 
-    row_dend <-  hclust(dist(t(heatmap_df)), method = "complete")
+    column_dend <- hclust(dist(t(heatmap_df), method = "euclidean"), method = "complete")
 
-    column_dend <- hclust(dist(heatmap_df), method = "complete")
+    tmp <- heatmap_df %>% 
+      pivot_longer(cols = everything(), 
+              names_to = "Sample",
+              values_to = "Abundance")
+    
+    heatmap_matrix <- as.matrix(heatmap_df)
 
-    tmp <- heatmap_df %>% pivot_longer(cols = 1:length(colnames(heatmap_df)), names_to = "Sample",
-                                      values_to = "Abundance")
-
-    col_fun <- colorRamp2(c(2, 0, -6), c("#1010fe", "#FFD700", "#FF1212"))
-
-    heatmap_plot <- Heatmap(t(heatmap_df), heatmap_legend_param = list(title = expression("Log"[10]*"Relative Abundance"),
-                                            title_gp = gpar(fontsize = 10)),
-                          row_names_gp = gpar(fontsize = 10, fontface = "bold"),
-                          cluster_rows = color_branches(row_dend),
-                          cluster_columns = color_branches(column_dend),
-                          show_column_names = FALSE,
-                          show_row_names = TRUE,
-                          right_annotation = row_annotate,
-                          col = col_fun(seq(min(tmp$Abundance), max(tmp$Abundance))))
+    breaks <- seq(
+      -ceiling(max(abs(heatmap_matrix))), ceiling(max(abs(heatmap_matrix))),
+      length.out = ifelse(max(abs(heatmap_matrix))>5, 2*ceiling(max(abs(heatmap_matrix))), 10 ) 
+    )
+    
+    col_fun <- colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks)-1)
+    
+    prevalence <- rowSums(data > 1e-9)
+    
+    heatmap_plot <- Heatmap(
+      heatmap_matrix,
+      name = "CLR",
+      
+      # Improve row styling
+      row_names_gp = gpar(fontsize = 8),
+      row_names_max_width = unit(5, "cm"),
+      row_names_side = "right",
+      
+      # Enhanced clustering visualization
+      cluster_rows = color_branches(row_dend, k = 4),
+      cluster_columns = color_branches(column_dend, k = 4),
+      
+      # Improve column styling
+      show_column_names = TRUE,
+      column_names_gp = gpar(fontsize = 10, fontface = "bold"),
+      column_title = NULL,
+      column_title_gp = gpar(fontsize = 14, fontface = "bold"),
+      column_dend_height = unit(15, "mm"),
+    
+      bottom_annotation = col_annotate,
+    
+      right_annotation = rowAnnotation(
+        Prevalence = anno_barplot(prevalence,
+        gp = gpar(fill = "#008B45FF", color = "white"),
+        ylim = c(1,25)),
+        annotation_name_rot = 0,
+        annotation_name_side = "top",
+        annotation_name_align = TRUE,
+        annotation_name_gp = gpar(fontsize = 12, fontface = "bold"),
+        border = TRUE,
+        width = unit(2.5, "cm")
+      ),
+      
+      # Enhanced color settings
+      col = col_fun,
+      
+      # Add better heatmap styling
+      rect_gp = gpar(col = "white", lwd = 0.15),
+      
+      # Improve legend appearance
+      heatmap_legend_param = list(
+        title_gp = gpar(fontsize = 12, fontface = "bold"),
+        labels_gp = gpar(fontsize = 10),
+        legend_height = unit(4, "cm"),
+        grid_width = unit(0.5, "cm")
+      ),
+      
+      # Add better clustering appearance
+      clustering_distance_rows = "euclidean",
+      clustering_distance_columns = "euclidean",
+      clustering_method_rows = "complete",
+      clustering_method_columns = "complete"
+    )
+    
+    # Convert to ggplot for additional customization if needed
 
     heatmap_ggplot <- as_ggplot(grid.grabExpr(print(heatmap_plot)))
 
     return(heatmap_ggplot)
+  }
+
+  daa_volcano_plot <- function(counts_matrix, lineage, sample_metadata, control_group, prevalence_cutoff, counts_cutoff) {
+    
+    daa_matrix <- counts_matrix
+
+    counts_cutoff <- counts_cutoff
+    
+    metadata <- sample_metadata
+
+    rownames(metadata) <- metadata$Sample_Id
+
+    control <- control_group
+
+    metadata$Group <- as.factor(metadata$Group)
+
+    metadata$Group <- relevel(metadata$Group, ref = control)
+
+    prev_cutoff <- prevalence_cutoff/100
+
+    output <- ancombc2(data = daa_matrix, meta_data = metadata,
+        taxa_are_rows = TRUE,
+        fix_formula = "Group", rand_formula = NULL,
+        p_adj_method = "BH", pseudo_sens = TRUE,
+        prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
+        group = "Group", struc_zero = TRUE, neg_lb = FALSE,
+        alpha = 0.05, n_cl = 2, verbose = TRUE,
+        global = FALSE, pairwise = FALSE, 
+        dunnet = TRUE, trend = FALSE,
+        iter_control = list(tol = 1e-5, max_iter = 20, 
+        verbose = FALSE),
+        em_control = list(tol = 1e-5, max_iter = 100),
+        lme_control = lme4::lmerControl(), 
+        mdfdr_control = list(fwer_ctrl_method = "BH", B = 100), 
+        trend_control = NULL)
+    
+    res_dunn <- output$res_dunn
+
+    total_groups <- length(levels(metadata$Group))
+
+    req_start_values <- c("passed_ss_Group", "diff_Group", "lfc_Group", "q_Group")
+
+    out_col_values <- c("Sensitive", "Significance", "LFC", "P_adj")
+
+    req_columns <- outer(levels(metadata$Group)[2:total_groups], req_start_values, function(x,y) paste0(y, x)) %>% 
+      as.vector()
+
+    filtered_dunn <- res_dunn[,c(1,which(colnames(res_dunn) %in% req_columns))]
+
+    long_data_list <- list()
+
+    for(i in 1:length(req_start_values)) {
+      long_data_list[[i]] <- filtered_dunn %>% dplyr::select(c(taxon, starts_with(req_start_values[i]))) %>% 
+        pivot_longer(cols = -taxon, names_to = "Comparison", values_to = out_col_values[i])
+
+      long_data_list[[i]]$Comparison <- sub(req_start_values[i], "", long_data_list[[i]]$Comparison)
+    }
+
+    final_data <- purrr::reduce(long_data_list, left_join, by=c("taxon", "Comparison"))
+
+    final_data <- final_data %>% dplyr::select(taxon, everything())
+
+    colnames(final_data)[1] <- lineage
+
+    final_data <- final_data %>% filter(Sensitive==TRUE)
+
+    final_data$Comparison <- paste0(control, " - ", final_data$Comparison)
+
+    final_data$Significance <- factor(final_data$Significance, levels = c("TRUE", "FALSE"))
+
+    n_comp <- length(unique(final_data$Comparison))
+
+    total_plots <- ifelse(n_comp %% 2 == 0, n_comp, n_comp+1)
+
+    if(total_plots==2) {
+      volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Significance)) +
+        geom_point(aes(color = Significance), alpha = 0.6, size = 5) +
+        facet_wrap(~Comparison, nrow = 1, ncol = 2, scales = "free") +
+        scale_color_manual(values = c("#09b241","#f10505")) +
+        geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+        geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
+        labs(
+          x = "Log2 Fold Change",
+          y = "-Log10(Adjusted P-value)"
+        ) +
+        theme_classic() +
+        geom_label_repel(aes(label = !!sym(lineage)), size = 5, color = "#2b71c2", box.padding = 0.5) +
+        theme(
+          axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
+          strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
+          strip.background = element_blank()
+        )
+    } else if(total_plots>2) {
+      volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Significance)) +
+        geom_point(aes(color = Significance), alpha = 0.6, size = 5) +
+        facet_wrap(~Comparison, nrow = total_plots/2, ncol = total_plots/2, scales = "free") +
+        scale_color_manual(values = c("#09b241","#f10505")) +
+        geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+        geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
+        labs(
+          x = "Log2 Fold Change",
+          y = "-Log10(Adjusted P-value)"
+        ) +
+        theme_classic() +
+        geom_label_repel(aes(label = !!sym(lineage)), size = 5, color = "#2b71c2", box.padding = 0.5) +
+        theme(
+          axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+          axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
+          strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
+          strip.background = element_blank()
+        ) 
+    }
+    
+    return(list(
+      'volcano_plot' = volcano_plot,
+      'daa_result' = final_data
+    ))
+
+
   }
   
   observe(
@@ -964,7 +1360,6 @@ server <- function(input, output, session) {
     }
   })
 
-
   output$fileUploaded <- reactive({
     
     return(!is.null(input_data_reactive()))
@@ -1009,13 +1404,17 @@ server <- function(input, output, session) {
 
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
       
       sample_list <- classified_samples_list()$Barcode
 
       lineage <- input$taxa
 
-      abundance_data <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$abundance_data
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      abundance_data <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       abundance_val(abundance_data)
 
@@ -1025,14 +1424,18 @@ server <- function(input, output, session) {
     
     else if(route()=="Example")
     {
-      req(input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
         
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])
                       
       lineage <- input$taxa
 
-      abundance_data <- example_analysis("Example", file_list, lineage)$abundance_data
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      abundance_data <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       abundance_val(abundance_data)
 
@@ -1042,13 +1445,17 @@ server <- function(input, output, session) {
 
     else if(route()=="Offline")
     {
-      req(result_dir_val(), input$taxa)
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       dir <- result_dir_val()
 
-      abundance_data <- cohort_offline_analysis(dir, lineage)$abundance_data
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      abundance_data <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       abundance_val(abundance_data)
 
@@ -1097,7 +1504,7 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste0(lineage,"_Relative_Abundance_Data_", Sys.Date(), ".csv")
+        paste0(lineage,"_Counts_Data_", Sys.Date(), ".csv")
         },
       content = function(file) {
         write.csv(abundance_val(), file, row.names = FALSE, quote = FALSE)
@@ -1391,15 +1798,19 @@ server <- function(input, output, session) {
 
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, input$top_taxa, classified_samples_list())
+      req(cohort_analysis_list(), input$taxa, input$top_taxa, classified_samples_list(), input$prevalence_cutoff, input$abundance_cutoff)
 
       sample_list <- classified_samples_list()$Barcode
 
       top_n <- input$top_taxa
 
       lineage <- input$taxa
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      stacked_df <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$rel_abundance_data
+      stacked_df <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       stacked_barplot <- stacked_barplot_function(stacked_df, lineage, top_n)
 
@@ -1411,15 +1822,20 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(input$taxa, input$top_taxa)
+      req(input$taxa, input$top_taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])
+      
       lineage <- input$taxa
 
       top_n <- input$top_taxa
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      stacked_df <- example_analysis("Example", file_list, lineage)$rel_abundance_data
+      stacked_df <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       stacked_barplot <- stacked_barplot_function(stacked_df, lineage, top_n)
 
@@ -1431,15 +1847,19 @@ server <- function(input, output, session) {
 
     else if(route()=="Offline")
     {
-      req(result_dir_val(), input$taxa, input$top_taxa)
+      req(result_dir_val(), input$taxa, input$top_taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       top_n <- input$top_taxa
 
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
       dir <- result_dir_val()
 
-      stacked_df <- cohort_offline_analysis(dir, lineage)$rel_abundance_data
+      stacked_df <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       stacked_barplot <- stacked_barplot_function(stacked_df, lineage, top_n)
 
@@ -1454,15 +1874,19 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       sample_list <- classified_samples_list()$Barcode
 
       lineage <- input$taxa
       
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      alpha_diversity_data <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$rel_abundance_filtered_data
+      alpha_diversity_data <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       diversity_facet <- diversity_boxplot_function(alpha_diversity_data, lineage, sample_metadata)
 
@@ -1474,15 +1898,20 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
       
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])
+      
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      alpha_diversity_data <- example_analysis("Example", file_list, lineage)$rel_abundance_filtered_data
+      alpha_diversity_data <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       diversity_facet <- diversity_boxplot_function(alpha_diversity_data, lineage, sample_metadata)
 
@@ -1494,15 +1923,19 @@ server <- function(input, output, session) {
     
     else if(route() == "Offline")
     {
-      req(result_dir_val(), input$taxa)
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       dir <- result_dir_val()
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      alpha_diversity_data <- cohort_offline_analysis(dir, lineage)$rel_abundance_filtered_data
+      alpha_diversity_data <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       diversity_facet <- diversity_boxplot_function(alpha_diversity_data, lineage, sample_metadata)
 
@@ -1518,7 +1951,7 @@ server <- function(input, output, session) {
 
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       sample_list <- classified_samples_list()$Barcode
 
@@ -1526,9 +1959,13 @@ server <- function(input, output, session) {
       
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$abundance_cutoff
+
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
 
       plot_pcoa_dot(pcoa_plot)
 
@@ -1539,18 +1976,26 @@ server <- function(input, output, session) {
     else if(route()=="Example")
     {
       
-      req(input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])
                       
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- example_analysis("Example", file_list, lineage)$abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$abundance_cutoff
+
+      matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
 
       plot_pcoa_dot(pcoa_plot)
 
@@ -1560,7 +2005,7 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(result_dir_val(), input$taxa)
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       dir <- result_dir_val()
 
@@ -1568,9 +2013,13 @@ server <- function(input, output, session) {
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- cohort_offline_analysis(dir, lineage)$abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$abundance_cutoff
+
+      matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
 
       plot_pcoa_dot(pcoa_plot)
 
@@ -1584,7 +2033,7 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       sample_list <- classified_samples_list()$Barcode
 
@@ -1592,9 +2041,13 @@ server <- function(input, output, session) {
       
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$rel_abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
     
-      nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata)
+      nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
       
       plot_nmds_dot(nmds_plot)
 
@@ -1604,17 +2057,22 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
       
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])
+      
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- example_analysis("Example", file_list, lineage)$rel_abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$abundance_cutoff
+
+      matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
       
       plot_nmds_dot(nmds_plot)
 
@@ -1624,7 +2082,7 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(result_dir_val(), input$taxa)
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       dir <- result_dir_val()
 
@@ -1632,9 +2090,13 @@ server <- function(input, output, session) {
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- cohort_offline_analysis(dir, lineage)$rel_abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$prevalence_cutoff
+
+      matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
       
       plot_nmds_dot(nmds_plot)
 
@@ -1648,7 +2110,7 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
 
       sample_list <- classified_samples_list()$Barcode
 
@@ -1656,9 +2118,15 @@ server <- function(input, output, session) {
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$abundance_cutoff
+
+      top_taxa <- input$biplot_taxa
+
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff, top_taxa)
 
       plot_pca_dot(pca_plot)
       
@@ -1668,17 +2136,23 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
 
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])                
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- example_analysis("Example", file_list, lineage)$abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$abundance_cutoff
+
+      top_taxa <- input$biplot_taxa
+
+      matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff, top_taxa)
 
       plot_pca_dot(pca_plot)
       
@@ -1688,7 +2162,7 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(result_dir_val(), input$taxa)
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
 
       dir <- result_dir_val()
 
@@ -1696,9 +2170,15 @@ server <- function(input, output, session) {
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- cohort_offline_analysis(dir, lineage)$abundance_matrix
+      prevalence_cutoff <- input$prevalence_cutoff
 
-      pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata)
+      abundance_cutoff <- input$abundance_cutoff
+
+      top_taxa <- input$biplot_taxa
+
+      matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff, top_taxa)
 
       plot_pca_dot(pca_plot)
       
@@ -1712,15 +2192,19 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       sample_list <- classified_samples_list()$Barcode
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$abundance_matrix
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       permanova_res <- diversity_permanova_function(matrix, lineage, sample_metadata)
 
@@ -1732,15 +2216,19 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- example_analysis("Example", file_list, lineage)$abundance_matrix
+      matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
       
       permanova_res <- diversity_permanova_function(matrix, lineage, sample_metadata)
 
@@ -1752,15 +2240,19 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(result_dir_val(), input$taxa)
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       dir <- result_dir_val()
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- cohort_offline_analysis(dir, lineage)$abundance_matrix
+      matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
       
       permanova_res <- diversity_permanova_function(matrix, lineage, sample_metadata)
 
@@ -1797,15 +2289,19 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       sample_list <- classified_samples_list()$Barcode
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage)$rel_abundance_filtered_matrix
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       heatmap_ggplot <- diversity_heatmap_function(matrix, lineage, sample_metadata)
 
@@ -1817,15 +2313,20 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
-      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_blast_result.txt$",
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
                                                                                                 list.files("Example/"))])
+      
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- example_analysis("Example", file_list, lineage)$rel_abundance_filtered_matrix
+      matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       heatmap_ggplot <- diversity_heatmap_function(matrix, lineage, sample_metadata)
 
@@ -1837,15 +2338,19 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(result_dir_val(), input$taxa)
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       dir <- result_dir_val()
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- cohort_offline_analysis(dir, lineage)$rel_abundance_filtered_matrix
+      matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       heatmap_ggplot <- diversity_heatmap_function(matrix, lineage, sample_metadata)
 
@@ -1855,38 +2360,132 @@ server <- function(input, output, session) {
     
     }
   
+  }, height = 1100)
+
+  output$plot_volcano <- renderPlot({
+    
+    if(route()=="Realtime")
+    {
+      req(cohort_analysis_list(), input$taxa, classified_samples_list(), input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff, input$counts_cutoff, input$control)
+
+      sample_list <- classified_samples_list()$Barcode
+
+      lineage <- input$taxa
+
+      sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      counts_cutoff <- input$counts_cutoff
+
+      control <- input$control
+
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_matrix
+
+      volcano_plot <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$volcano_plot
+
+      daa_result <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$daa_result
+
+      plot_daa_volcano(volcano_plot)
+
+      table_ancombc_daa(daa_result)
+      
+      volcano_plot
+    }
+    else if(route()=="Example")
+    {
+      req(input$taxa, input$prevalence_cutoff, input$counts_cutoff, input$abundance_cutoff, input$control)
+
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$", list.files("Example/"))])
+
+      lineage <- input$taxa
+
+      sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      counts_cutoff <- input$counts_cutoff
+
+      control <- input$control
+
+      matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_matrix
+
+      volcano_plot <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$volcano_plot
+
+      daa_result <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$daa_result
+
+      plot_daa_volcano(volcano_plot)
+
+      table_ancombc_daa(daa_result)
+
+      volcano_plot
+    }
+    else if(route()=="Offline")
+    {
+      req(result_dir_val(), input$taxa, input$prevalence_cutoff, input$counts_cutoff, input$abundance_cutoff, input$control)
+      
+      dir <- result_dir_val()
+      
+      lineage <- input$taxa
+      
+      sample_metadata <- input_data_reactive()$data
+      
+      prevalence_cutoff <- input$prevalence_cutoff
+      
+      abundance_cutoff <- input$abundance_cutoff
+      
+      counts_cutoff <- input$counts_cutoff
+      
+      control <- input$control
+      
+      matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$counts_matrix
+      
+      volcano_plot <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$volcano_plot
+
+      daa_result <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$daa_result
+      
+      plot_daa_volcano(volcano_plot)
+
+      table_ancombc_daa(daa_result)
+      
+      volcano_plot
+    }
   }, height = 600)
 
   output$download_readlength_plot <- downloadHandler(
     req(input$barcode_select),
     filename = function() {
-      paste0("Read_Length_Histogram_", input$barcode_select, "_", Sys.Date(), ".png")
+      paste0("Read_Length_Histogram_", input$barcode_select, "_", Sys.Date(), ".pdf")
     },
     content = function(file) {
       ggsave(file, plot_read_histogram(), width = 13.69, height = 8.27,
-      units = "in", dpi = "retina", bg = "white")
+      units = "in", dpi = 600, bg = "white", device = "pdf")
     }
   )
 
   output$download_qscore_plot <- downloadHandler(
     req(input$barcode_select),
     filename = function() {
-      paste0("Phred_Score_Histogram_", input$barcode_select, "_", Sys.Date(), ".png")
+      paste0("Phred_Score_Histogram_", input$barcode_select, "_", Sys.Date(), ".pdf")
     },
     content = function(file) {
       ggsave(file, plot_q_histogram(), width = 13.69, height = 8.27,
-      units = "in", dpi = "retina", bg = "white")
+      units = "in", dpi = 600, bg = "white", device = "pdf")
     }
   )
 
   output$download_classification_plot <- downloadHandler(
     req(input$barcode_select, input$taxon_select),
     filename = function() {
-      paste0(input$taxon_select,"_Classification_", input$barcode_select, "_", Sys.Date(), ".png")
+      paste0(input$taxon_select,"_Classification_", input$barcode_select, "_", Sys.Date(), ".pdf")
     },
     content = function(file) {
       ggsave(file, plot_taxa_bar(), width = 13.69, height = 8.27,
-      units = "in", dpi = "retina", bg = "white")
+      units = "in", dpi = 600, bg = "white", device = "pdf")
     }
   )
 
@@ -1904,11 +2503,11 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste("Stacked_bar_plot_", lineage,"_", Sys.Date(), ".png", sep = "")
+        paste("Stacked_bar_plot_", lineage,"_", Sys.Date(), ".pdf", sep = "")
       },
       content = function(file) {
         ggsave(file, plot_taxa_stacked(),
-               width = 18, height = 9, units = "in", dpi = "retina", bg = "white")
+               width = 18, height = 9, units = "in", dpi = "retina", bg = "white", device = "pdf")
       }
     )
     
@@ -1916,11 +2515,11 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste("Alpha_Diversity_plot_", lineage, "_", Sys.Date(), ".png", sep = "")
+        paste("Alpha_Diversity_plot_", lineage, "_", Sys.Date(), ".pdf", sep = "")
       },
       content = function(file) {
         ggsave(file, plot_diversity_box(),
-               width = 13.69, height = 8.27, units = "in", dpi = "retina", bg = "white")
+               width = 13.69, height = 8.27, units = "in", dpi = 600, bg = "white", device = "pdf")
         
       }
     )
@@ -1929,11 +2528,11 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste("PCoA_plot_", lineage, "_", Sys.Date(), ".png", sep = "")
+        paste("PCoA_plot_", lineage, "_", Sys.Date(), ".pdf", sep = "")
       },
       content = function(file) {
         ggsave(file, plot_pcoa_dot(),
-               width = 13.69, height = 8.27, units = "in", dpi = "retina", bg = "white")
+               width = 13.69, height = 8.27, units = "in", dpi = 600, bg = "white", device = "pdf")
       }
     )
     
@@ -1941,12 +2540,12 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste("NMDS_plot_", lineage, "_", Sys.Date(), ".png", sep = "")
+        paste("NMDS_plot_", lineage, "_", Sys.Date(), ".pdf", sep = "")
       },
       content = function(file) {
         
         ggsave(file, plot_nmds_dot(),
-               width = 13.69, height = 8.27, units = "in", dpi = "retina", bg = "white")
+               width = 13.69, height = 8.27, units = "in", dpi = 600, bg = "white", device = "pdf")
         
       }
     )
@@ -1955,11 +2554,11 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste("PCA_plot_", lineage, "_", Sys.Date(), ".png", sep = "")
+        paste("PCA_plot_", lineage, "_", Sys.Date(), ".pdf", sep = "")
       },
       content = function(file) {
         ggsave(file, plot_pca_dot(),
-               width = 13.69, height = 8.27, units = "in", dpi = "retina", bg = "white")
+               width = 13.69, height = 8.27, units = "in", dpi = 600, bg = "white", device = "pdf")
         }
     )
     
@@ -1967,11 +2566,11 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste("HeatMap_", lineage, "_", Sys.Date(), ".png", sep = "")
+        paste("HeatMap_", lineage, "_", Sys.Date(), ".pdf", sep = "")
       },
       content = function(file) {
         ggsave(file, plot_real_heatmap(),
-               width = 13.69, height = 8.27, units = "in", dpi = "retina", bg = "white")
+               width = 10, height = 12, units = "in", dpi = 600, bg = "white", device = "pdf")
         
       }
     )
@@ -1980,10 +2579,33 @@ server <- function(input, output, session) {
       filename = function() {
         req(input$taxa)
         lineage <- input$taxa
-        paste0("PERMANOVA_Result_", lineage, "_",Sys.Date(), ".tsv")
+        paste0("PERMANOVA_Result_", lineage, "_",Sys.Date(), ".csv")
         },
       content = function(file) {
-        write.csv(table_permanova(), file, row.names = FALSE, quote = FALSE, sep = "\t")
+        write.csv(table_permanova(), file, row.names = FALSE, quote = FALSE)
+      }
+    )
+  
+    output$download_daa <- downloadHandler(
+      filename = function() {
+        req(input$taxa)
+        lineage <- input$taxa
+        paste("DAA_Volcano_", lineage, "_", Sys.Date(), ".pdf", sep="")
+      },
+      content = function(file) {
+        ggsave(file, plot_daa_volcano(),
+                width = 13.69, height = 8.27, units = "in", dpi = 600, bg = "white", device = "pdf")
+      }
+    )
+
+    output$download_daa_csv <- downloadHandler(
+      filename = function() {
+        req(input$taxa)
+        lineage <- input$taxa
+        paste("DAA_ANCOMBC2_", lineage, "_final_", Sys.Date(), ".csv", sep = "")
+      },
+      content = function(file) {
+        write.csv(table_ancombc_daa(), file, row.names = FALSE, quote = FALSE)
       }
     )
 
