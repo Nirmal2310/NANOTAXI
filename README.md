@@ -149,15 +149,21 @@ If you have any feedback/issues, please contact us at nanotaxi.help@gmail.com or
 - [TaxonKit](https://www.sciencedirect.com/science/article/pii/S1673852721000837)
 - [BBTools](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/)
 - [NanoFilt](https://academic.oup.com/bioinformatics/article/34/15/2666/4934939?login=true)
+- [SeqKit](https://onlinelibrary.wiley.com/doi/10.1002/imt2.191)
+- [Minimap2](https://academic.oup.com/bioinformatics/article/34/18/3094/4994778)
+- [GNU Parallel](https://zenodo.org/records/14911163)
 
 #### Databases Used in the App:
-- [Greengenes](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1489311/)
+- [GTDB](https://academic.oup.com/nar/article/50/D1/D785/6370255)
 - [NCBI 16s Database](https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/)
+- [GSR DB](https://journals.asm.org/doi/10.1128/msystems.00950-23)
+- [SILVA](https://pmc.ncbi.nlm.nih.gov/articles/PMC3531112/)
 
 #### Python Packages Used in the App:
 - [minknow-api](https://github.com/nanoporetech/minknow_api) = 6.0.4
 - [grpcio](https://pypi.org/project/grpcio/) = 1.60.1
 - [pandas](https://pypi.org/project/pandas/)
+- [pysam](https://pysam.readthedocs.io/en/latest/index.html#danecek-2021)
 
 #### R Packages Used in the App:
 - [shiny](https://cran.r-project.org/web/packages/shiny/index.html)
