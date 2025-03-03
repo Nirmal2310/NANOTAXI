@@ -36,7 +36,7 @@ base_dir=$PWD
 
 source ~/.bashrc
 
-if { conda env list |  grep "kraken2"; } > /dev/null 2>&1; then
+if { conda env list |  grep -w "kraken2"; } > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
@@ -46,7 +46,7 @@ else
 
 fi
 
-if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
+if { conda env list | grep -w "taxonkit";} > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
@@ -56,7 +56,7 @@ else
 
 fi
 
-if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
+if { conda env list | grep -w "nanofilt";} > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
@@ -66,7 +66,7 @@ else
 
 fi
 
-if { conda env list | grep "bbtools";} > /dev/null 2>&1; then
+if { conda env list | grep -w "bbtools";} > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
@@ -76,7 +76,7 @@ else
 
 fi
 
-if { conda env list | grep "seqkit";} > /dev/null 2>&1; then
+if { conda env list | grep -w "seqkit";} > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
@@ -121,7 +121,7 @@ fi
 
 cd DATA
 
-if [ ! -d KRAKEN_NCBI ]; then
+if [ ! -d KRAKEN_GTDB ]; then
 
         source $path/bin/activate kraken2
 
@@ -187,7 +187,7 @@ source ~/.bashrc
 
 cd $base_dir
 
-if { conda env list |  grep "minknow_api"; } > /dev/null 2>&1; then
+if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
@@ -205,3 +205,39 @@ else
 
         conda activate base
 fi
+
+if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
+
+        echo "Environment Exist"
+
+else
+        conda create --name minimap2 --file minimap2.txt
+fi
+
+cd DATA
+
+if [ ! -d GSR_DB ]; then
+
+        wget -c https://manichanh.vhir.org/gsrdb/GSR-DB_full-16S.tar.gz
+
+        tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
+
+        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g;s/_/ /g' GSR-DB_full-16S_filt_taxa.txt | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print "FeatureID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"; else print $0}' | \
+        awk -F "\t" '{print $7}' > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
+
+        mv GSR-DB_full-16S_filt_taxa.txt GSR-DB_full-16S_filt_seqs.fasta GSR_DB/
+
+        grep -qF "export GSR_DB=\"$PWD\"" ~/.bashrc || echo "export GSR_DB=\"$PWD\"" >> ~/.bashrc
+
+        cd $base_dir
+
+fi
+
+cd $base_dir/DATA/GSR_DB
+
+grep -qF "export GSR_DB=\"$PWD\"" ~/.bashrc || echo "export GSR_DB=\"$PWD\"" >> ~/.bashrc
+
+source ~/.bashrc
+
+cd $base_dir
