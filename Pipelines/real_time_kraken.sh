@@ -4,12 +4,12 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -b barcode01 -m 1400 -M 1800 -t S"
+   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -b barcode01 -m 1400 -M 1800 -i 85"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-b <str> Barcode Name."
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
-   echo -e "\t-t <str> Minimum Taxonomy Rank. [default: S]"
+   echo -e 
    exit 1 # Exit script after printing help
 }
 
@@ -45,7 +45,7 @@ if [ -z "$data_path" ]
     helpFunction
 fi
 
-KRAKEN_GTDB=$(grep KRAKEN_GTDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GTDB="//;s/"//g')
+KRAKEN_NCBI=$(grep KRAKEN_NCBI ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_NCBI="//;s/"//g')
 
 TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
@@ -70,7 +70,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate kraken2
 
-        kraken2 --db $KRAKEN_GTDB --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
+        kraken2 --db $KRAKEN_NCBI --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
         kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
@@ -111,7 +111,7 @@ else
 
             conda activate kraken2
 
-            kraken2 --db $KRAKEN_GTDB --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
+            kraken2 --db $KRAKEN_NCBI --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
             kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
