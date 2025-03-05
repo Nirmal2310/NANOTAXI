@@ -226,8 +226,7 @@ if [ ! -d GSR_DB ]; then
         tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
 
         sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g;s/_/ /g' GSR-DB_full-16S_filt_taxa.txt | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print "FeatureID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"; else print $0}' | \
-        awk -F "\t" '{print $7}' > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print "FeatureID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"; else print $0}' > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
 
         mv GSR-DB_full-16S_filt_taxa.txt GSR-DB_full-16S_filt_seqs.fasta GSR_DB/
 
