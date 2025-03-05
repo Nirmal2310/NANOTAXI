@@ -219,6 +219,8 @@ cd DATA
 
 if [ ! -d GSR_DB ]; then
 
+        mkdir GSR_DB
+
         wget -c https://manichanh.vhir.org/gsrdb/GSR-DB_full-16S.tar.gz
 
         tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
