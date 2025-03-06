@@ -77,7 +77,8 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate minimap2
 
-        minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16s.fasta | samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16s.bam
+        minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16s.fasta | \
+	 samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16s.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16s.bam
 
         python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16s.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
         awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $0}' > $data_path/$barcode/${barcode}_16s.temp
