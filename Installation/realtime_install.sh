@@ -234,6 +234,8 @@ if [ ! -d GSR_DB ]; then
 
         grep -qF "export GSR_DB=\"$PWD\"" ~/.bashrc || echo "export GSR_DB=\"$PWD\"" >> ~/.bashrc
 
+        source ~/.bashrc
+
         cd $base_dir
 
 fi
