@@ -487,7 +487,7 @@ server <- function(input, output, session) {
         classification_data_list[[i]] <- read.delim(file = paste0(reads_path, "/", classified_samples[i], "/", classified_samples[i],
         "_final_minimap2_result.txt"), header = FALSE, sep = "\t")
         
-        colnames(classification_data_list[[i]]) <- c("TAX_ID", "Counts", "Kingdom", "Phylum",
+        colnames(classification_data_list[[i]]) <- c("Counts", "Kingdom", "Phylum",
                                             "Class", "Order", "Family", "Genus", "Species")
         
         classification_data_list[[i]][classification_data_list[[i]]==""] <- "Unclassified"
@@ -511,7 +511,7 @@ server <- function(input, output, session) {
     {
       sample_data_list[[i]] <- read.delim(paste0(path,"/",file_list[i],".txt"), header = FALSE)
 
-      colnames(sample_data_list[[i]]) <- c("TAX_ID", "Counts", "Superkingdom", "Phylum",
+      colnames(sample_data_list[[i]]) <- c("TAX_ID", "Counts", "Kingdom", "Phylum",
                                             "Class", "Order", "Family", "Genus",
                                             "Species")
 
@@ -649,7 +649,7 @@ server <- function(input, output, session) {
     {
       sample_data_list[[i]] <- read.delim(file = paste0(result_dir, "/", file_list[i], ".txt"), header = FALSE)
 
-      colnames(sample_data_list[[i]]) <- c("TAX_ID", "Counts", "Superkingdom", "Phylum",
+      colnames(sample_data_list[[i]]) <- c("TAX_ID", "Counts", "Kingdom", "Phylum",
                                                                 "Class", "Order", "Family", "Genus", "Species")
                             
       sample_data_list[[i]][sample_data_list[[i]]==""] <- "Unclassified"
