@@ -61,7 +61,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
     
     conda activate nanofilt
     
-    ls $data_path/$barcode/*fastq.gz | xargs zcat | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16s.fasta
+    ls $data_path/$barcode/*fastq.gz | xargs zcat | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16S.fasta
 
     conda activate bbtools
 
@@ -73,22 +73,22 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
     ls $data_path/$barcode/*fastq.gz | xargs zcat | bioawk -c fastx '{print meanqual($qual)}' > $data_path/$barcode/${barcode}_quality.txt
 
-    if [ "$(grep ">" $data_path/$barcode/${barcode}_16s.fasta | wc -l)" -gt 0 ]; then
+    if [ "$(grep ">" $data_path/$barcode/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
         conda activate minimap2
 
-        minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16s.fasta | \
-	 samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16s.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16s.bam
+        minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | \
+	 samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
 
-        python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16s.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $0}' > $data_path/$barcode/${barcode}_16s.temp
+        python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $0}' > $data_path/$barcode/${barcode}_16S.temp
 
         conda activate taxonkit
 
-        taxonkit name2taxid -i 1 -j 2 --data-dir $TAXONKIT_DB $data_path/$barcode/${barcode}_16s.temp | awk 'BEGIN{FS="\t";OFS="\t"}{print $3, $2}' | \
+        taxonkit name2taxid -i 1 -j 2 --data-dir $TAXONKIT_DB $data_path/$barcode/${barcode}_16S.temp | awk 'BEGIN{FS="\t";OFS="\t"}{print $3, $2}' | \
             taxonkit reformat --threads 2 --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $data_path/$barcode/${barcode}_final_minimap2_result.txt
 
-        rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16s.temp $data_path/$barcode/${barcode}_16s.bam
+        rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.temp $data_path/$barcode/${barcode}_16S.bam
         
         ls $data_path/$barcode/*fastq.gz > $data_path/$barcode/processed_files.txt
     
@@ -108,7 +108,7 @@ else
 
         conda activate nanofilt
 
-        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16s.fasta
+        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16S.fasta
 
         conda activate bbtools
 
@@ -120,21 +120,21 @@ else
 
         ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | bioawk -c fastx '{print meanqual($qual)}' >> $data_path/$barcode/${barcode}_quality.txt
 
-        if [ "$(grep ">" $data_path/$barcode/${barcode}_16s.fasta | wc -l)" -gt 0 ]; then
+        if [ "$(grep ">" $data_path/$barcode/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
             conda activate minimap2
 
-            minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16s_filt_seqs.fasta $data_path/$barcode/${barcode}_16s.fasta | samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16s.bam
+            minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam
 
-            python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16s.bam -t $GSR_DB/GSR-DB_full-16s_filt_taxa.txt -i $identity -c $coverage | \
-                awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $0}' > $data_path/$barcode/${barcode}_16s.temp
+            python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
+                awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $0}' > $data_path/$barcode/${barcode}_16S.temp
 
             conda activate taxonkit
 
-            taxonkit name2taxid -i 1 -j 2 --data-dir $TAXONKIT_DB $data_path/$barcode/${barcode}_16s.temp | awk 'BEGIN{FS="\t";OFS="\t"}{print $3, $2}' | \
+            taxonkit name2taxid -i 1 -j 2 --data-dir $TAXONKIT_DB $data_path/$barcode/${barcode}_16S.temp | awk 'BEGIN{FS="\t";OFS="\t"}{print $3, $2}' | \
                 taxonkit reformat --threads 2 --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $data_path/$barcode/${barcode}_final_minimap2_result.txt
             
-            rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16s.temp $data_path/$barcode/${barcode}_16s.bam
+            rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.temp $data_path/$barcode/${barcode}_16S.bam
 
             ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt >> $data_path/$barcode/processed_files.txt
         
