@@ -86,6 +86,11 @@ else
 
 fi
 
+if [ ! -d DATA ]; then
+
+        mkdir DATA
+fi
+
 cd DATA
 
 if [ ! -d TAXONKIT_DATA ]; then
@@ -113,11 +118,6 @@ grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$
 source ~/.bashrc
 
 cd $base_dir
-
-if [ ! -d DATA ]; then
-
-        mkdir DATA
-fi
 
 cd DATA
 
