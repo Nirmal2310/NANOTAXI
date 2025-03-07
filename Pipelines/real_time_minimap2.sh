@@ -76,7 +76,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
         conda activate minimap2
 
         minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | \
-	 samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
+	 samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
 
         python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
         awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/${barcode}_final_minimap2_result.txt
@@ -117,7 +117,8 @@ else
 
             conda activate minimap2
 
-            minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam
+            minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | \
+	     samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam
 
             python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
                 awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/${barcode}_final_minimap2_result.txt
