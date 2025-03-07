@@ -61,6 +61,8 @@ def extract_alignment_data(bam_file, taxa_file, identity, coverage):
 
         final_data = final_data.groupby('Species', as_index = False)["COUNT"].sum()
 
+        final_data = pd.merge(final_data, taxa_data, on='Species')
+
         final_data.to_csv(sys.stdout, sep = "\t", index=False)
     
     except Exception as e:
