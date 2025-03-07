@@ -54,8 +54,6 @@ fi
 
 GSR_DB=$(grep GSR_DB ~/.bashrc | tail -n 1 | sed 's/export GSR_DB="//;s/"//g')
 
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
 
 if [ ! -f $data_path/$barcode/processed_files.txt ]; then
     
@@ -81,14 +79,9 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 	 samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
 
         python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $0}' > $data_path/$barcode/${barcode}_16S.temp
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/${barcode}_final_minimap2_result.txt
 
-        conda activate taxonkit
-
-        taxonkit name2taxid -i 1 -j 2 --data-dir $TAXONKIT_DB $data_path/$barcode/${barcode}_16S.temp | awk 'BEGIN{FS="\t";OFS="\t"}{print $3, $2}' | \
-            taxonkit reformat --threads 2 --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $data_path/$barcode/${barcode}_final_minimap2_result.txt
-
-        rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.temp $data_path/$barcode/${barcode}_16S.bam
+        rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
         
         ls $data_path/$barcode/*fastq.gz > $data_path/$barcode/processed_files.txt
     
@@ -127,14 +120,9 @@ else
             minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | samtools view -@ 1 -F 2034 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam
 
             python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
-                awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $0}' > $data_path/$barcode/${barcode}_16S.temp
-
-            conda activate taxonkit
-
-            taxonkit name2taxid -i 1 -j 2 --data-dir $TAXONKIT_DB $data_path/$barcode/${barcode}_16S.temp | awk 'BEGIN{FS="\t";OFS="\t"}{print $3, $2}' | \
-                taxonkit reformat --threads 2 --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $data_path/$barcode/${barcode}_final_minimap2_result.txt
+                awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/${barcode}_final_minimap2_result.txt
             
-            rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.temp $data_path/$barcode/${barcode}_16S.bam
+            rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
 
             ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt >> $data_path/$barcode/processed_files.txt
         
