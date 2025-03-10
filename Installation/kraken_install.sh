@@ -34,6 +34,8 @@ fi
 
 base_dir=$PWD
 
+script_dir=$(dirname "$(readlink -f "$0")")
+
 source ~/.bashrc
 
 if { conda env list |  grep "kraken2"; } > /dev/null 2>&1; then
@@ -42,7 +44,7 @@ if { conda env list |  grep "kraken2"; } > /dev/null 2>&1; then
 
 else
 
-        conda create --name kraken2 --file kraken.txt
+        conda create --name kraken2 --file $script_dir/kraken.txt
 
 fi
 
@@ -57,7 +59,7 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 
 else
 
-        conda create --name nanofilt --file nanofilt.txt
+        conda create --name nanofilt --file $script_dir/nanofilt.txt
 
 fi
 
@@ -67,7 +69,7 @@ if { conda env list | grep "seqkit";} > /dev/null 2>&1; then
 
 else
 
-        conda create --name seqkit --file seqkit.txt
+        conda create --name seqkit --file $script_dir/seqkit.txt
 
 fi
 
@@ -77,7 +79,7 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 
 else
         
-        conda create -n taxonkit --file taxonkit.txt
+        conda create -n taxonkit --file $script_dir/taxonkit.txt
         
 fi
 
