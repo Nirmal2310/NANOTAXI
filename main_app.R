@@ -583,7 +583,7 @@ server <- function(input, output, session) {
 
         col_num <- which(colnames(data[[i]])==lineage)
         
-        abundance_data_list[[i]] <- sample_data_list[[i]] %>% group_by(.data[[lineage]]) %>% 
+        abundance_data_list[[i]] <- data[[i]] %>% group_by(.data[[lineage]]) %>% 
         summarise(Counts = sum(Counts))
 
         abundance_data_list[[i]] <- abundance_data_list[[i]] %>% filter(.data[[lineage]] != "Unclassified")
@@ -1564,7 +1564,7 @@ server <- function(input, output, session) {
       df <- classified_list()[[which(classified_samples_list()$Barcode == input$barcode_select)]]
 
       df <- df %>% dplyr::select(c(!!sym(input$taxon_select), Counts)) %>% 
-      dplyr::filter(!!sym(input$taxon_select) !="Unclassified") %>% dplyr::summarise(Counts = sum(Counts))
+      dplyr::filter(!!sym(input$taxon_select) !="Unclassified") %>% dplyr::group_by(!!sym(taxa)) %>% dplyr::summarise(Counts = sum(Counts))
     
       classified_reads <- df$Counts
 
