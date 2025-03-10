@@ -46,7 +46,7 @@ done
 
 if [ -z "$data_path" ] && [ -z "$script_path" ];then
     
-    echo "Please provide the path to the directory containing the data and scripts";
+	echo "Please provide the path to the directory containing the data and scripts";
     
 	helpFunction
 fi
@@ -65,7 +65,6 @@ else
 
     conda activate parallel
 
-
     n=$(cat "$data_path/barcode_list" | wc -l)
 
     if [ "$n" -gt 8 ]; then parallel_jobs=8; else parallel_jobs="$n"; fi
@@ -74,7 +73,7 @@ else
 
     do
 
-    echo "bash $script_path/real_time_analysis_minimap2.sh -d $data_path -b $barcode -m $min -M $max -i $identity -c $coverage"
+    	echo "bash $script_path/real_time_analysis_minimap2.sh -d $data_path -b $barcode -m $min -M $max -i $identity -c $coverage"
 
     done < "$data_path/barcode_list" | parallel -j "$parallel_jobs" {}
 fi
