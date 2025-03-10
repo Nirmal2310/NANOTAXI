@@ -35,13 +35,15 @@ base_dir=$PWD
 
 source ~/.bashrc
 
+script_dir=$(dirname "$(readlink -f "$0")")
+
 if { conda env list |  grep "blast"; } > /dev/null 2>&1; then
 
         echo "Environment Exist"
 
 else
 
-        conda create --name blast --file blast.txt
+        conda create --name blast --file $script_dir/blast.txt
 
 fi
 
@@ -88,7 +90,7 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 
 else
         
-        conda create -n nanofilt --file nanofilt.txt
+        conda create -n nanofilt --file $script_dir/nanofilt.txt
         
 fi
 
@@ -98,7 +100,7 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 
 else
         
-        conda create -n taxonkit --file taxonkit.txt
+        conda create -n taxonkit --file $script_dir/taxonkit.txt
         
 fi
 
