@@ -197,13 +197,11 @@ else
 
         conda create --name minknow_api --file $script_dir/minknow_api.txt -y
 
+        conda init
+
         conda activate minknow_api
 
         pip install minknow-api==6.0.4
-
-        pip install grpcio==1.60.1
-
-        pip install pandas==2.2.2
 
         conda activate base
 fi
