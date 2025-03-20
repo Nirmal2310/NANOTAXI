@@ -195,7 +195,7 @@ if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
 
 else
 
-        conda create --name minknow_api --file minknow_api.txt -y
+        conda create --name minknow_api --file $script_dir/minknow_api.txt -y
 
         conda activate minknow_api
 
@@ -213,7 +213,7 @@ if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
         echo "Environment Exist"
 
 else
-        conda create --name minimap2 --file minimap2.txt
+        conda create --name minimap2 --file $script_dir/minimap2.txt
 
 fi
 
