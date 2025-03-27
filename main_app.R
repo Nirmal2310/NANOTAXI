@@ -1566,9 +1566,9 @@ server <- function(input, output, session) {
       taxa <- input$taxon_select
 
       df <- df %>% dplyr::select(c(!!sym(input$taxon_select), Counts)) %>% 
-      dplyr::filter(!!sym(taxa) !="Unclassified") %>% dplyr::group_by(!!sym(taxa)) %>% dplyr::summarise(Counts = sum(Counts))
+      dplyr::filter(!!sym(taxa) !="Unclassified") %>% dplyr::summarise(Total_Counts = sum(Counts))
     
-      classified_reads <- df$Counts
+      classified_reads <- df$Total_Counts
 
       classified_reads
     }
