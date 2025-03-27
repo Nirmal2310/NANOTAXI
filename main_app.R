@@ -1563,8 +1563,10 @@ server <- function(input, output, session) {
       
       df <- classified_list()[[which(classified_samples_list()$Barcode == input$barcode_select)]]
 
+      taxa <- input$taxon_select
+
       df <- df %>% dplyr::select(c(!!sym(input$taxon_select), Counts)) %>% 
-      dplyr::filter(!!sym(input$taxon_select) !="Unclassified") %>% dplyr::group_by(!!sym(taxa)) %>% dplyr::summarise(Counts = sum(Counts))
+      dplyr::filter(!!sym(taxa) !="Unclassified") %>% dplyr::group_by(!!sym(taxa)) %>% dplyr::summarise(Counts = sum(Counts))
     
       classified_reads <- df$Counts
 
