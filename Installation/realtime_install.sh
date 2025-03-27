@@ -203,6 +203,8 @@ else
 
         pip install minknow-api==6.0.4
 
+        pip install pysam
+
         conda activate base
 fi
 
