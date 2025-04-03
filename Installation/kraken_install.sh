@@ -117,7 +117,7 @@ if [ ! -d KRAKEN_DATA ]; then
 
         kraken2-build --download-taxonomy --db KRAKEN_DATA --use-ftp  --skip-maps
 
- 	wget -c https://www.arb-silva.de/fileadmin/silva_databases/current/Exports/SILVA_138.2_SSURef_NR99_tax_silva_trunc.fasta.gz -O SILVA_138.2_ref.fasta.gz && gunzip SILVA_138.2_ref.fasta.gz
+ 	wget -c https://www.arb-silva.de/fileadmin/silva_databases/current/Exports/SILVA_138.2_SSURef_NR99_tax_silva.fasta.gz -O SILVA_138.2_ref.fasta.gz && gunzip SILVA_138.2_ref.fasta.gz
 
   	source $path/bin/activate taxonkit
 
