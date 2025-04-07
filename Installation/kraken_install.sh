@@ -119,6 +119,14 @@ if [ ! -d KRAKEN_DATA ]; then
 
  	wget -c https://www.arb-silva.de/fileadmin/silva_databases/current/Exports/SILVA_138.2_SSURef_NR99_tax_silva.fasta.gz -O SILVA_138.2_ref.fasta.gz && gunzip SILVA_138.2_ref.fasta.gz
 
+  	source $path/bin/activate seqkit
+
+   	seqkit faidx SILVA_138.2_ref.fasta
+
+    	awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' SILVA_138.2_ref.fasta.fai > silva_filtered_ids
+
+     	seqkit faidx -X silva_filtered_ids SILVA_138.2_ref.fasta > temp && mv temp SILVA_138.2_ref.fasta
+
   	source $path/bin/activate taxonkit
 
    	grep ">" SILVA_138.2_ref.fasta | grep "Bacteria\|Archaea" | sed 's/>//g;s/ /\t/' | sed 's/;/\t/g' | awk -F "\t" '{print $1"\t"$8}' | \
@@ -143,7 +151,7 @@ if [ ! -d KRAKEN_DATA ]; then
 
       	kraken2-build --clean --db KRAKEN_DATA
 
-       	rm -r SILVA_138.2_16S_kraken2_ready.fasta SILVA_138.2_ref.fasta* SILVA_138.2_16S.fasta* seq_id_replacement.txt
+       	rm -r SILVA_138.2_16S_kraken2_ready.fasta SILVA_138.2_ref.fasta* SILVA_138.2_16S.fasta* seq_id_replacement.txt silva_filtered_ids
 
         cd KRAKEN_DATA
 
