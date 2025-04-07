@@ -141,6 +141,14 @@ if [ ! -d KRAKEN_GTDB ]; then
 
         sed -i 's/ .*$//g' GTDB_16S_reps.fasta
 
+        source $path/bin/activate seqkit
+
+        seqkit faidx GTDB_16S_reps.fasta
+
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' > gtdb_filtered_ids
+
+        seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > temp && mv temp GTDB_16S_reps.fasta
+
         grep ">" GTDB_16S_reps.fasta | sed 's/>//g' | split -l 1000 - ids_chunk_
 
         source $path/bin/activate seqkit
@@ -167,7 +175,7 @@ if [ ! -d KRAKEN_GTDB ]; then
 
         kraken2-build --clean --db KRAKEN_GTDB
 
-        rm -r GTDB_16S_kraken2_ready.fasta GTDB_16S_reps.fasta seq_id_replacement.txt seqid_taxid.txt
+        rm -r GTDB_16S_kraken2_ready.fasta GTDB_16S_reps.fasta seq_id_replacement.txt seqid_taxid.txt gtdb_filtered_ids
         
         cd KRAKEN_GTDB
 
