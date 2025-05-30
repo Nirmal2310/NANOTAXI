@@ -81,9 +81,9 @@ To set up Offline Analysis, tick the checkbox adjacent to the setup option in **
 
 ## Usage/Examples
 
-The Test Dataset is from a [study](https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2023.1324494/full) published in Frontiers in Microbiology.
+The Test Dataset is taken from the Bioproject ID [PRJEB82315](https://www.ebi.ac.uk/ena/browser/view/PRJEB82315).
 
-We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyze the test dataset comprising 24 samples representing 24 barcodes and classified into four groups based on body fluids.
+We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyse the test dataset comprising 24 samples representing 24 barcodes and classified into three groups based on body fluids.
 
 <div  class="sample_info">
 
