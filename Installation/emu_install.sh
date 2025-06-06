@@ -52,6 +52,8 @@ if { conda env list |  grep "emu"; } > /dev/null 2>&1; then
 	        pip install osfclient
 	
 	        source $path/bin/activate base
+
+  		conda list -n emu --explicit > $script_dir/emu.txt
   		
         fi
 
@@ -75,6 +77,7 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
                 conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
+		conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
   		
         fi
 
@@ -130,6 +133,7 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
                 conda create --name taxonkit --file $script_dir/taxonkit.txt -y && rm -r _current_env.txt
+		conda list -n taxonkit --explicit > $script_dir/taxonkit.txt
         fi
 
 else
