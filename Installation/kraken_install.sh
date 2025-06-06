@@ -48,8 +48,6 @@ if { conda env list |  grep "kraken2"; } > /dev/null 2>&1; then
                 conda create --name kraken2 --file $script_dir/kraken.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
 
         conda create --name kraken2 --file $script_dir/kraken.txt
@@ -71,8 +69,6 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
                 conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
 
         conda create --name nanofilt --file $script_dir/nanofilt.txt
@@ -89,8 +85,6 @@ if { conda env list | grep "seqkit";} > /dev/null 2>&1; then
                 conda create --name seqkit --file $script_dir/seqkit.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
 
         conda create --name seqkit --file $script_dir/seqkit.txt
@@ -106,8 +100,6 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
         else
                 conda create --name taxonkit --file $script_dir/taxonkit.txt -y && rm -r _current_env.txt
         fi
-
-        conda activate base
 
 else
         
