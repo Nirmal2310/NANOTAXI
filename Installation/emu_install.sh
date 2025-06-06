@@ -40,7 +40,22 @@ script_dir=$(dirname "$(readlink -f "$0")")
 
 if { conda env list |  grep "emu"; } > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate emu && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/emu.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name emu --file $script_dir/emu.txt && rm -r _current_env.txt
+	
+  		source $path/bin/activate emu
+	
+	        pip install osfclient
+	
+	        source $path/bin/activate base
+  		
+        fi
+
+        conda activate base
 
 else
 
@@ -56,7 +71,16 @@ fi
 
 if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+	conda activate nanofilt && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/nanofilt.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name nanofilt --file $script_dir/nanofilt.txt && rm -r _current_env.txt
+  		
+        fi
+
+        conda activate base        
 
 else
         
@@ -104,7 +128,15 @@ cd $base_dir
 
 if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate taxonkit && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/taxonkit.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name taxonkit --file $script_dir/taxonkit.txt && rm -r _current_env.txt
+        fi
+
+        conda activate base
 
 else
         
