@@ -40,12 +40,12 @@ source ~/.bashrc
 
 if { conda env list |  grep "kraken2"; } > /dev/null 2>&1; then
 
-        conda activate kraken2 && conda list --explicit > _current_env.txt
+        conda list -n kraken2 --explicit > _current_env.txt
 
         if diff -q $script_dir/kraken.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name kraken2 --file $script_dir/kraken.txt && rm -r _current_env.txt
+                conda create --name kraken2 --file $script_dir/kraken.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
@@ -63,12 +63,12 @@ fi
 
 if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 
-        conda activate nanofilt && conda list --explicit > _current_env.txt
+        conda list -n nanofilt --explicit > _current_env.txt
 
         if diff -q $script_dir/nanofilt.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name nanofilt --file $script_dir/nanofilt.txt && rm -r _current_env.txt
+                conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
@@ -81,12 +81,12 @@ fi
 
 if { conda env list | grep "seqkit";} > /dev/null 2>&1; then
 
-        conda activate seqkit && conda list --explicit > _current_env.txt
+        conda list -n seqkit --explicit > _current_env.txt
 
         if diff -q $script_dir/seqkit.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name seqkit --file $script_dir/seqkit.txt && rm -r _current_env.txt
+                conda create --name seqkit --file $script_dir/seqkit.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
@@ -99,12 +99,12 @@ fi
 
 if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 
-        conda activate taxonkit && conda list --explicit > _current_env.txt
+        conda list -n taxonkit --explicit > _current_env.txt
 
         if diff -q $script_dir/taxonkit.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name taxonkit --file $script_dir/taxonkit.txt && rm -r _current_env.txt
+                conda create --name taxonkit --file $script_dir/taxonkit.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
