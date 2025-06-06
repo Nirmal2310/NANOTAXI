@@ -48,8 +48,6 @@ if { conda env list |  grep -w "kraken2"; } > /dev/null 2>&1; then
                 conda create --name kraken2 --file $script_dir/kraken.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
 
         conda create --name kraken2 --file $script_dir/kraken.txt
@@ -65,8 +63,6 @@ if { conda env list | grep -w "taxonkit";} > /dev/null 2>&1; then
         else
                 conda create --name taxonkit --file $script_dir/taxonkit.txt -y && rm -r _current_env.txt
         fi
-
-        conda activate base
 
 else
 
@@ -84,8 +80,6 @@ if { conda env list | grep -w "nanofilt";} > /dev/null 2>&1; then
                 conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
 
         conda create --name nanofilt --file $script_dir/nanofilt.txt
@@ -102,8 +96,6 @@ if { conda env list | grep -w "bbtools";} > /dev/null 2>&1; then
                 conda create --name bbtools --file $script_dir/bbtools.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
 
         conda create --name bbtools --file $script_dir/bbtools.txt
@@ -119,8 +111,6 @@ if { conda env list | grep -w "seqkit";} > /dev/null 2>&1; then
         else
                 conda create --name seqkit --file $script_dir/seqkit.txt -y && rm -r _current_env.txt
         fi
-
-        conda activate base
 
 else
 
@@ -256,8 +246,6 @@ if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
                 
         fi
 
-        conda activate base
-
 else
 
         conda create --name minknow_api --file $script_dir/minknow_api.txt -y
@@ -282,8 +270,6 @@ if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
         else
                 conda create --name minimap2 --file $script_dir/minimap2.txt -y && rm -r _current_env.txt
         fi
-
-        conda activate base
 
 else
         conda create --name minimap2 --file $script_dir/minimap2.txt
