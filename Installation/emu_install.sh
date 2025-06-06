@@ -67,6 +67,8 @@ else
 
         source $path/bin/activate base
 
+ 	conda list -n emu --explicit > $script_dir/emu.txt
+
 fi
 
 if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
@@ -84,7 +86,7 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 else
         
         conda create -n nanofilt --file $script_dir/nanofilt.txt
-        
+        conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
 fi
 
 
@@ -139,7 +141,7 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 else
         
         conda create -n taxonkit --file $script_dir/taxonkit.txt
-        
+        conda list -n taxonkit --explicit > $script_dir/taxonkit.txt
 fi
 
 cd DATA
