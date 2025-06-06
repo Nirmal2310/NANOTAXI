@@ -242,7 +242,7 @@ if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
         if diff -q $script_dir/minknow_api.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name minknow_api --file $script_dir/minknow_api.txt && rm -r _current_env.txt
+                conda create --name minknow_api --file $script_dir/minknow_api.txt -y && rm -r _current_env.txt
 
                 conda init
 
@@ -280,7 +280,7 @@ if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
         if diff -q $script_dir/minimap2.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name minimap2 --file $script_dir/minimap2.txt && rm -r _current_env.txt
+                conda create --name minimap2 --file $script_dir/minimap2.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
