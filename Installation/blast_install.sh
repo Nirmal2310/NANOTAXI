@@ -39,12 +39,12 @@ script_dir=$(dirname "$(readlink -f "$0")")
 
 if { conda env list |  grep "blast"; } > /dev/null 2>&1; then
 
-        conda activate blast && conda list --explicit > _current_env.txt
+        conda list -n blast --explicit > _current_env.txt
 
         if diff -q $script_dir/blast.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name blast --file $script_dir/blast.txt && rm -r _current_env.txt
+                conda create --name blast --file $script_dir/blast.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
@@ -94,12 +94,12 @@ cd $base_dir
 
 if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
 
-        conda activate nanofilt && conda list --explicit > _current_env.txt
+        conda list -n nanofilt --explicit > _current_env.txt
 
         if diff -q $script_dir/nanofilt.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name nanofilt --file $script_dir/nanofilt.txt && rm -r _current_env.txt
+                conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
@@ -112,12 +112,12 @@ fi
 
 if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
 
-        conda activate taxonkit && conda list --explicit > _current_env.txt
+        conda list -n taxonkit --explicit > _current_env.txt
 
         if diff -q $script_dir/taxonkit.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name taxonkit --file $script_dir/taxonkit.txt && rm -r _current_env.txt
+                conda create --name taxonkit --file $script_dir/taxonkit.txt -y && rm -r _current_env.txt
         fi
 
         conda activate base
