@@ -40,7 +40,15 @@ script_dir=$(dirname "$(readlink -f "$0")")
 
 if { conda env list |  grep -w "kraken2"; } > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate kraken2 && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/kraken.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name kraken2 --file $script_dir/kraken.txt && rm -r _current_env.txt
+        fi
+
+        conda activate base
 
 else
 
@@ -50,7 +58,15 @@ fi
 
 if { conda env list | grep -w "taxonkit";} > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate taxonkit && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/taxonkit.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name taxonkit --file $script_dir/taxonkit.txt && rm -r _current_env.txt
+        fi
+
+        conda activate base
 
 else
 
@@ -60,7 +76,15 @@ fi
 
 if { conda env list | grep -w "nanofilt";} > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate nanofilt && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/nanofilt.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name nanofilt --file $script_dir/nanofilt.txt && rm -r _current_env.txt
+        fi
+
+        conda activate base
 
 else
 
@@ -70,7 +94,15 @@ fi
 
 if { conda env list | grep -w "bbtools";} > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate bbtools && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/bbtools.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name bbtools --file $script_dir/bbtools.txt && rm -r _current_env.txt
+        fi
+
+        conda activate base
 
 else
 
@@ -80,7 +112,15 @@ fi
 
 if { conda env list | grep -w "seqkit";} > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate seqkit && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/seqkit.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name seqkit --file $script_dir/seqkit.txt && rm -r _current_env.txt
+        fi
+
+        conda activate base
 
 else
 
@@ -197,7 +237,26 @@ cd $base_dir
 
 if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate minknow_api && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/minknow_api.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name minknow_api --file $script_dir/minknow_api.txt && rm -r _current_env.txt
+
+                conda init
+
+                conda activate minknow_api
+
+                pip install minknow-api==6.0.4
+        
+                pip install pysam
+
+                conda activate base
+                
+        fi
+
+        conda activate base
 
 else
 
@@ -216,7 +275,15 @@ fi
 
 if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
 
-        echo "Environment Exist"
+        conda activate minimap2 && conda list --explicit > _current_env.txt
+
+        if diff -q $script_dir/minimap2.txt _current_env.txt > /dev/null; then
+                echo "Environment exists and up to date." && rm -r _current_env.txt
+        else
+                conda create --name minimap2 --file $script_dir/minimap2.txt && rm -r _current_env.txt
+        fi
+
+        conda activate base
 
 else
         conda create --name minimap2 --file $script_dir/minimap2.txt
