@@ -102,8 +102,6 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
                 conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
         
         conda create -n nanofilt --file $script_dir/nanofilt.txt
@@ -119,8 +117,6 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
         else
                 conda create --name taxonkit --file $script_dir/taxonkit.txt -y && rm -r _current_env.txt
         fi
-
-        conda activate base
 
 else
         
