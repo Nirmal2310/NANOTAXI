@@ -55,8 +55,6 @@ if { conda env list |  grep "emu"; } > /dev/null 2>&1; then
   		
         fi
 
-        conda activate base
-
 else
 
         conda create --name emu --file $script_dir/emu.txt
@@ -79,8 +77,6 @@ if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
                 conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
   		
         fi
-
-        conda activate base        
 
 else
         
@@ -135,8 +131,6 @@ if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
         else
                 conda create --name taxonkit --file $script_dir/taxonkit.txt -y && rm -r _current_env.txt
         fi
-
-        conda activate base
 
 else
         
