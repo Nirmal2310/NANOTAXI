@@ -47,8 +47,6 @@ if { conda env list |  grep "blast"; } > /dev/null 2>&1; then
                 conda create --name blast --file $script_dir/blast.txt -y && rm -r _current_env.txt
         fi
 
-        conda activate base
-
 else
 
         conda create --name blast --file $script_dir/blast.txt
