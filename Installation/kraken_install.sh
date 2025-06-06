@@ -143,6 +143,8 @@ source ~/.bashrc
 
 cd $base_dir
 
+cd DATA
+
 if [ ! -d KRAKEN_DATA ]; then
                 
         source $path/bin/activate kraken2
