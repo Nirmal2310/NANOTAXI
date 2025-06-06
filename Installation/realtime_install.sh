@@ -52,6 +52,7 @@ if { conda env list |  grep -w "kraken2"; } > /dev/null 2>&1; then
 else
 
         conda create --name kraken2 --file $script_dir/kraken.txt
+        conda list -n kraken2 --explicit > $script_dir/kraken.txt
 
 fi
 
@@ -69,6 +70,7 @@ if { conda env list | grep -w "taxonkit";} > /dev/null 2>&1; then
 else
 
         conda create -n taxonkit --file $script_dir/taxonkit.txt
+        conda list -n taxonkit --explicit > $script_dir/taxonkit.txt
 
 fi
 
@@ -86,6 +88,7 @@ if { conda env list | grep -w "nanofilt";} > /dev/null 2>&1; then
 else
 
         conda create --name nanofilt --file $script_dir/nanofilt.txt
+        conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
 
 fi
 
@@ -103,6 +106,7 @@ if { conda env list | grep -w "bbtools";} > /dev/null 2>&1; then
 else
 
         conda create --name bbtools --file $script_dir/bbtools.txt
+        conda list -n bbtools --explicit > $script_dir/bbtools.txt
 
 fi
 
@@ -120,6 +124,7 @@ if { conda env list | grep -w "seqkit";} > /dev/null 2>&1; then
 else
 
         conda create --name seqkit --file $script_dir/seqkit.txt
+        conda list -n seqkit --explicit > $script_dir/seqkit.txt
 
 fi
 
@@ -266,6 +271,8 @@ else
         pip install pysam
 
         conda activate base
+
+        conda list -n minknow_api --explicit > $script_dir/minknow_api.txt
 fi
 
 if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
@@ -281,6 +288,7 @@ if { conda env list |  grep -w "minimap2"; } > /dev/null 2>&1; then
 
 else
         conda create --name minimap2 --file $script_dir/minimap2.txt
+        conda list -n minimap2 --explicit > $script_dir/minimap2.txt
 
 fi
 
