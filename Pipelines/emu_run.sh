@@ -4,8 +4,9 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: emu_run.sh -p '/path/to/the/directory'-t 16 -m 1400 -M 1800"
-   echo -e "\t-p <path> Path to directory containing passed raw data"
+   echo "Usage: emu_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800"
+   echo -e "\t-p <path> Path to directory containing passed raw data."
+   echo -e "\t-k <str> Kit-Name."
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
@@ -22,12 +23,15 @@ EMU_DB=$(grep EMU_DB ~/.bashrc | tail -n 1 | sed 's/export EMU_DB="//;s/"//g')
 
 TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
-while getopts "p:t:m:M:" opt
+while getopts "p:k:t:m:M:" opt
 do
     case "$opt" in
     p )
     	path="$OPTARG"
     	;;
+    k )
+        kit_name="$OPTARG"
+        ;;
     t )
         threads="$OPTARG"
         ;;
@@ -50,10 +54,11 @@ fi
 
 if [ ! -f $path/barcode_list ]
 	then
-	for x in {01..24..01}
-	do
-	echo barcode$x
-	done > $path/barcode_list
+	for i in `ls -d $path/barcode*/`
+    do 
+	    [ "$(find $i -type f)" ] && echo $i
+
+    done | sed "s|$path||g;s/\///g" > $path/barcode_list
 fi
 
 while read barcode
@@ -62,7 +67,7 @@ do
 
     conda activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | NanoFilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | dorado trim --threads $threads --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
     conda activate emu
 

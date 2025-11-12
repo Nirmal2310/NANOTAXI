@@ -4,8 +4,9 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -b barcode01 -m 1400 -M 1800 -i 85"
+   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85"
    echo -e "\t-d <str> Path Containing Sequencing Data."
+   echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
@@ -13,15 +14,18 @@ helpFunction()
    exit 1 # Exit script after printing help
 }
 
-while getopts "d:b:m:M:t:" opt
+while getopts "d:k:b:m:M:t:" opt
 do
     case "$opt" in
     d )
         data_path="$OPTARG"
         ;;
+    k )
+        kit_name="$OPTARG"
+        ;;
     b )
-	barcode="$OPTARG"
-	;;
+        barcode="$OPTARG"
+        ;;
     m )
     	min="$OPTARG"
     	;;
@@ -54,17 +58,17 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
     
     conda activate nanofilt
     
-    ls $data_path/$barcode/*fastq.gz | xargs zcat | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16S.fasta
+    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16S.fasta
 
     conda activate bbtools
 
-    ls $data_path/$barcode/*fastq.gz | xargs zcat | readlength.sh in=stdin.fq out=$data_path/$barcode/${barcode}_hist_temp.txt bin=10 round=t -ignorebadquality
+    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | readlength.sh in=stdin.fq out=$data_path/$barcode/${barcode}_hist_temp.txt bin=10 round=t -ignorebadquality
 
     paste -d "\t" <(echo $barcode) <(grep "#Avg" $data_path/$barcode/${barcode}_hist_temp.txt | cut -f2) > $data_path/$barcode/${barcode}_average_length.txt
 
     grep -v "#" $data_path/$barcode/${barcode}_hist_temp.txt | awk '{print $1"\t"$2}' > $data_path/$barcode/${barcode}_hist.txt
 
-    ls $data_path/$barcode/*fastq.gz | xargs zcat | bioawk -c fastx '{print meanqual($qual)}' > $data_path/$barcode/${barcode}_quality.txt
+    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | bioawk -c fastx '{print meanqual($qual)}' > $data_path/$barcode/${barcode}_quality.txt
 
     if [ "$(grep ">" $data_path/$barcode/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
@@ -95,11 +99,11 @@ else
 
         conda activate nanofilt
 
-        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16S.fasta
+        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16S.fasta
 
         conda activate bbtools
 
- 	ls $data_path/$barcode/*fastq.gz | xargs zcat | readlength.sh in=stdin.fq out=$data_path/$barcode/${barcode}_hist_temp.txt bin=10 round=t -ignorebadquality
+ 	    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | readlength.sh in=stdin.fq out=$data_path/$barcode/${barcode}_hist_temp.txt bin=10 round=t -ignorebadquality
 
         paste -d "\t" <(echo $barcode) <(grep "#Avg" $data_path/$barcode/${barcode}_hist_temp.txt | cut -f2) > $data_path/$barcode/${barcode}_average_length.txt
 

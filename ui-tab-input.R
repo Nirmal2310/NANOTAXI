@@ -29,6 +29,7 @@ tabPanel(
           textInput("fastqdir", "Enter the Directory Containing Raw Data", value = ""),
           fileInput("metafile", "Select the sample Information File", accept = ".csv", multiple = FALSE),
           textInput("control", "Select Control Group", value = ""),
+          selectInput("kitname", "Kit Name", choices = list("SQK-16S024", "SQK-16S114-24"), selected = "SQK-16S114-24"),
           selectInput("pipeline", "Select Analysis Tool", choices = list("BLASTn + 16s DB", "Kraken2 + SILVA",
                                                              "EMU + Standard DB"),
                       selected = "BLASTn + 16s DB"),
