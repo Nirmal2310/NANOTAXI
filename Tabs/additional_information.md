@@ -82,7 +82,7 @@ This app will download the conda environments and databases required to classify
 
 While setting up the MinKNOW app for sequencing, please make sure that under the **barcoding setting**, both **Trim barcodes** and **Barcode both ends** are enabled as shown below:
 
-<img src="Barcode_Setting.png" alt="Barcode Setup" style="width: 100%"/>
+<img src="Barcode_Setting.png" alt="Barcode Setup" style="width: 40%"/>
 <p></p>
 
 Also, in the **Output settings**, please select **Time elapsed** under **Based on** option and **Every 1 minute** under **Frequency** option as the app will read the 
@@ -204,9 +204,7 @@ $$
 
 <img src="NANOTAXI.png" alt="NANOTAXI" style="width: 100%"/>
 
-<br>
-
-<p style="font-size: 20px; font-weight: bold; text-align: center;">NANAOTAXI OVERVIEW</p>
+<p style="font-size: 30px; font-weight: bold; text-align: center;">NANAOTAXI OVERVIEW</p>
 
 <a name="outputdata"></a> 
 
@@ -831,16 +829,12 @@ Example Output File: [Cohort Consolidated Data](Species_Counts_Data.csv)
 <a name="vis"></a> 
 
 # **DATA VISUALIZATIONS**
-<br>
 <a name="realtime"></a>
-<br>
 
 ## **REAL-TIME ANALYSIS**
 
 ### **TAXON COUNTS TABLE**
 The table displays the read counts per species for each barcode by default. Users can select different taxa level till **Kingdom** for each barcode, the table will be adjusted accordingly. Users can download the counts table in **CSV (comma-seperated-values)** format.
-
-<br>
 
 <style>
   .classification_data {
@@ -899,11 +893,9 @@ The bar plot displays the classified reads for the top N species for each barcod
 <br>
 
 ## **COHORT ANALYSIS**
-<br>
-
 <a name="cohortanalysis"></a>
 
-To test the use case of NANOTAXI, we analysed the publicly analysed dataset from the **Bioproject ID PRJEB82315**. The dataset comprised 24 samples categorised into three groups: **Crop Digesta**, **Zymobiomics** and **Faeces**. We tested the dataset using the offline route of NANOTAXI with **Emu + 16S DB** as the classification pipeline. 
+To test the use case of NANOTAXI, we analysed the publicly analysed dataset from the **Bioproject ID PRJEB82315**. The dataset comprised 24 samples categorised into three groups: **Crop Digesta**, **Zymobiomics** and **Feces**. We tested the dataset using the offline route of NANOTAXI with **Emu + 16S DB** as the classification pipeline. 
 
 ### **TAXON STACKED BAR PLOT**
 The stacked bar plot represents the top most prevelant species across each barcode. The Y-axis represents the Relative Abundance (%) and X-axis represents each barcode.<br>
