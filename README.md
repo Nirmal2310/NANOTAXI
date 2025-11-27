@@ -114,13 +114,13 @@ We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analys
 
 <br>
 
-The user can run the example dataset by selecting **Example Data** and clicking **Use Example Data** under **INPUT** tab.
+The user can run the example dataset by selecting **Example Data**, add the control group name in **Select Control Group** and clicking **Use Example Data** under **INPUT** tab.
 
 <img src="www/Example_run.png" alt="Example Run" style="width: 100%"/>
 
 ## Demo
 
-Please see the demo of Real-time classification by using the following [link](https://youtu.be/LOkDb61RztI?si=2ywIz-i96st7GZby)
+Please see the demo of Real-time classification by using the following [link](TODO)
 
 ## Documentation
 
@@ -129,7 +129,7 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 ## Roadmap
 
 - [x] Add Differential Abundance Analysis.
-- [x] Add support for Minimap2 + GSR DB (Real-time), Kraken2 + GTDB (Real-time) and Kraken2 + SILVA (Offline)
+- [x] Add support for Minimap2 + GSR DB (Real-time), Kraken2 + GTDB (Real-time) and Kraken2 + MIMt (Offline)
 
 ## Authors
 
