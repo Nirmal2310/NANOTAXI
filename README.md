@@ -67,7 +67,7 @@ shiny::runGitHub("NANOTAXI", "Nirmal2310")
 
 This app will download the conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system. 
 
-While setting up the MinKNOW app for sequencing, please make sure that under the **barcoding setting**, both **Trim barcodes** and **Barcode both ends** are enabled as shown below:
+While setting up the MinKNOW app for sequencing, please make sure that under the **barcoding setting**, both **Trim barcodes** and **Barcode both ends** are disabled as shown below:
 
 <img src="www/Barcode_Setting.png" alt="Barcode Setup" style="width: 100%"/>
 
