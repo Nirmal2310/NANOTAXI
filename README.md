@@ -157,7 +157,7 @@ If you have any feedback/issues, please contact us at nanotaxi.help@gmail.com or
 - [GTDB](https://academic.oup.com/nar/article/50/D1/D785/6370255)
 - [NCBI 16s Database](https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/)
 - [GSR DB](https://journals.asm.org/doi/10.1128/msystems.00950-23)
-- [SILVA](https://pmc.ncbi.nlm.nih.gov/articles/PMC3531112/)
+- [MIMt](https://link.springer.com/article/10.1186/s40793-024-00634-w)
 
 #### Python Packages Used in the App:
 - [minknow-api](https://github.com/nanoporetech/minknow_api) = 6.0.4
