@@ -254,7 +254,7 @@ server <- function(input, output, session) {
       }
     }
     
-    else if(input$pipeline == "Kraken2 + Greengenes")
+    else if(input$pipeline == "Kraken2 + MIMt")
     {
       if(input$setup)
       {
@@ -1240,7 +1240,12 @@ server <- function(input, output, session) {
 
     final_data$Comparison <- paste0(control, " - ", final_data$Comparison)
 
-    final_data$Significance <- factor(final_data$Significance, levels = c("TRUE", "FALSE"))
+    final_data$Name <- ifelse(final_data$LFC < -1 & final_data$P_adj < 0.05, "Downregulated",
+                              ifelse(final_data$LFC > 1 & final_data$P_adj < 0.05, "Upregulated", "Not Significant"))
+    
+    final_data$Name <- factor(final_data$Name, levels = c("Upregulated", "Downregulated", "Not Significant"))
+
+    color_group <- c("Upregulated" = "#F6807F", "Downregulated" = "#9EB5F0", "Not Significant" = "#A7A7A7")
 
     n_comp <- length(unique(final_data$Comparison))
 
@@ -1250,7 +1255,7 @@ server <- function(input, output, session) {
       volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Significance)) +
         geom_point(aes(color = Significance), alpha = 0.6, size = 5) +
         facet_wrap(~Comparison, nrow = 1, ncol = 2, scales = "free") +
-        scale_color_manual(values = c("#09b241","#f10505")) +
+        scale_color_manual(values = color_group) +
         geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
         geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
         labs(
@@ -1274,7 +1279,7 @@ server <- function(input, output, session) {
       volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Significance)) +
         geom_point(aes(color = Significance), alpha = 0.6, size = 5) +
         facet_wrap(~Comparison, nrow = total_plots/2, ncol = total_plots/2, scales = "free") +
-        scale_color_manual(values = c("#09b241","#f10505")) +
+        scale_color_manual(values = color_group) +
         geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
         geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
         labs(

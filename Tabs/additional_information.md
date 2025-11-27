@@ -82,7 +82,7 @@ This app will download the conda environments and databases required to classify
 
 While setting up the MinKNOW app for sequencing, please make sure that under the **barcoding setting**, both **Trim barcodes** and **Barcode both ends** are enabled as shown below:
 
-<img src="Barcode_Setting.png" alt="Barcode Setup" style="width: 40%"/>
+<img src="Barcode_Setting.png" alt="Barcode Setup" style="width: 100%"/>
 <p></p>
 
 Also, in the **Output settings**, please select **Time elapsed** under **Based on** option and **Every 1 minute** under **Frequency** option as the app will read the 
@@ -202,7 +202,7 @@ $$
 
 <br>
 
-<img src="NANOTAXI.png" alt="NANOTAXI" style="width: 50%"/>
+<img src="NANOTAXI.png" alt="NANOTAXI" style="width: 100%"/>
 
 <br>
 
@@ -903,6 +903,8 @@ The bar plot displays the classified reads for the top N species for each barcod
 
 <a name="cohortanalysis"></a>
 
+To test the use case of NANOTAXI, we analysed the publicly analysed dataset from the **Bioproject ID PRJEB82315**. The dataset comprised 24 samples categorised into three groups: **Crop Digesta**, **Zymobiomics** and **Faeces**. We tested the dataset using the offline route of NANOTAXI with **Emu + 16S DB** as the classification pipeline. 
+
 ### **TAXON STACKED BAR PLOT**
 The stacked bar plot represents the top most prevelant species across each barcode. The Y-axis represents the Relative Abundance (%) and X-axis represents each barcode.<br>
 The plot attached below is showing top 10 species across all barcodes, but this can be customizable in the app. You can select any number between 1-25 and any taxa level between Phylum-Species.
@@ -925,7 +927,11 @@ $$
 
 F1 = Number of Singleton OTUs, N = Sum of counts for all OTUs.
 
-If a sample has a Good's Coverage Index = 95%, this means that 5% of reads in that sample are from OTUs that appear only once in that sample.
+If a sample has a Good's Coverage Index = 95%, this means that 5% of reads in that sample are from OTUs that appear only once in that sample.<br>
+<br>
+Comparison of alpha diversity across three groups revealed significantly higher alpha diversity of faeces samples, indicating a richer and more even microbial community in faecal material. The Zymobiomics synthetic community shows low diversity reflecting its defined taxonomic composition.
+
+
 
 ### **NMDS PLOT**
 
@@ -948,11 +954,12 @@ In the figure, the barcodes are projected onto the first two principal component
 <br>
 <img src="PCoA_plot_Species.png" alt="PCoA Plot" style="width: 100%"/>
 
-### **PCA PLOT**
+### **PCA BI-PLOT**
 
 The scatter plot shows the result of **Principal Component Analysis (PCA)** analysis using the species counts table. The species read counts are first transformed using **Centered Log-Ratio (CLR)** Transformation.<br>
 Since the counts data is compositional in nature, it is constrained by a constant sum. This introduces a dependence between variable. The CLR transformation is used to remove this constraint, transforming the data into a space where traditional statisitical analyses can be applied.<br>
-The barcodes are projected on the first two principal components (PCs) and the percent variance explained by those PCs are displayed along the x and y axes.
+The barcodes are projected on the first two principal components (PCs) and the percent variance explained by those PCs are displayed along the x and y axes.<br>
+The PCA biplot revealed distinct clusters for each group. Faecal samples clustered distinctly from crop digesta, driven primarily by taxa such as Escherichia coli and Enterococcus faecalis, whereas crop digesta was associated with lactobacilli-rich profiles. The Zymobiomics mock community formed a separate cluster, reflecting its standardised composition and minimal overlap with biological samples.
 <br>
 <br>
 <img src="PCA_plot_Species.png" alt="PCA Plot" style="width: 100%"/>
@@ -1006,12 +1013,10 @@ Both barcodes and Species were clustered based on Realtive Abundance (%) with Eu
 ### **Differential Abundance Analysis**
 
 <br>
+The volcano plot summarises a differential abundance analysis (DAA) comparing bacterial species. The x-axis shows log2 fold change and y axis show -log10 adjusted p-value. The red color represents enriched species, blue color represents deenriched species and grey color represents non-significant species.
 <br>
-
-
-
-
-
+The differential abundance analysis revealed no significant 
+differences between the faeces and crop digesta groups. In contrast, taxa including Escherichia coli, Enterococcus faecalis, and Shigella dysenteriae were significantly enriched in faeces relative to the Other Groups. These results indicate that faecal samples contain distinct and selectively enriched bacterial taxa not present in the mock community.
 
 <img src="DAA_Volcano_Species.png" alt="DAA" style="width: 100%"/>
 
@@ -1034,13 +1039,13 @@ Both barcodes and Species were clustered based on Realtive Abundance (%) with Eu
 
 <div class="DAA_Data">
 
-| Species                 | Comparison             | Sensitive | Significance | LFC          | P_adj    |    
-| :---------------------  | :--------------------  | :-------  | :----------  | :----------  | :------  |
-| Enterococcus faecalis   |   Feces - Zymobiomics  | TRUE      | TRUE         | 3.000436358  | 0.011682 |
-| Escherichia coli        |   Feces - Crop Digesta | TRUE      | FALSE        | 0.377108777  | 0.983946 |
-| Escherichia coli        |   Feces - Zymobiomics  | TRUE      | TRUE         | 4.489400576  | 1.12E-05 |
-| Laceyella sacchari      |   Feces - Crop Digesta | TRUE      | FALSE        | -0.014010492 | 1        |
-| Laceyella sacchari      |   Feces - Zymobiomics  | TRUE      | FALSE        | -0.51981009  | 1        |
-| Shigella dysenteriae    |   Feces - Zymobiomics  | TRUE      | TRUE         | 2.267545374  | 0.034676 |
+| Species                 | Comparison             | Sensitive | Significance | LFC          | P_adj    | Name            |    
+| :---------------------  | :--------------------  | :-------  | :----------  | :----------  | :------  | :-------------- |
+| Enterococcus faecalis   |   Feces - Zymobiomics  | TRUE      | TRUE         | 3.000436358  | 0.011682 | Upregulated     |
+| Escherichia coli        |   Feces - Crop Digesta | TRUE      | FALSE        | 0.377108777  | 0.983946 | Not Significant |
+| Escherichia coli        |   Feces - Zymobiomics  | TRUE      | TRUE         | 4.489400576  | 1.12E-05 | Upregulated     |
+| Laceyella sacchari      |   Feces - Crop Digesta | TRUE      | FALSE        | -0.014010492 | 1        | Not Significant |
+| Laceyella sacchari      |   Feces - Zymobiomics  | TRUE      | FALSE        | -0.51981009  | 1        | Not Significant |
+| Shigella dysenteriae    |   Feces - Zymobiomics  | TRUE      | TRUE         | 2.267545374  | 0.034676 | Not Significant |
 
 </div>

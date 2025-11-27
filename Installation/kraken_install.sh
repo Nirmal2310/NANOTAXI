@@ -151,39 +151,27 @@ if [ ! -d KRAKEN_DATA ]; then
 
         kraken2-build --download-taxonomy --db KRAKEN_DATA --use-ftp  --skip-maps
 
- 	wget -c https://www.arb-silva.de/fileadmin/silva_databases/current/Exports/SILVA_138.2_SSURef_NR99_tax_silva.fasta.gz -O SILVA_138.2_ref.fasta.gz && gunzip SILVA_138.2_ref.fasta.gz
+ 	wget -c https://people.biopolis.pt/bu/mimt/downloads/16S_files/MIMt-16S_M2c_25_10_taxid.fna.gz -O MIMt.fasta.gz && gunzip MIMt.fasta.gz
 
-  	source $path/bin/activate seqkit
-
-   	seqkit faidx SILVA_138.2_ref.fasta
-
-    	awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' SILVA_138.2_ref.fasta.fai > silva_filtered_ids
-
-  	source $path/bin/activate taxonkit
-
-   	grep ">" SILVA_138.2_ref.fasta | grep "Bacteria\|Archaea" | sed 's/>//g;s/ /\t/' | sed 's/;/\t/g' | awk -F "\t" '{print $1"\t"$8}' | \
-    		taxonkit name2taxid -i 2 --data-dir $TAXONKIT_DB | awk 'BEGIN{FS="\t";OFS="\t"}{print $1, $1"|kraken:taxid|"$3}' > seq_id_replacement.txt
+        grep ">" MIMt.fasta | sed 's/>//g' | awk 'BEGIN{FS="\t";OFS="\t"}{print $1, $1"|kraken:taxid|"$2}' > seq_id_replacement.txt
 
       	source $path/bin/activate seqkit
 
-       	awk -F "\t" '{print $1}' seq_id_replacement.txt | seqkit faidx -X - SILVA_138.2_ref.fasta | \
-		awk 'BEGIN{RS=">";FS="\n"}NR>1{printf ">%s\n",$1;for (i=2;i<=NF;i++) {gsub(/U/,"T",$i); printf "%s\n",$i}}' | sed '/^$/d' > SILVA_138.2_16S.fasta
-
-  	seqkit replace -p '^(\S+)' -r '{kv}$2' -k seq_id_replacement.txt SILVA_138.2_16S.fasta > SILVA_138.2_16S_kraken2_ready.fasta
+        seqkit replace -p '^(\S+)(.*)' -r '{kv}' -k seq_id_replacement.txt MIMt.fasta > MIMt_kraken2_ready.fasta
 
    	threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
 
    	source $path/bin/activate kraken2
 
-    	kraken2-build --add-to-library SILVA_138.2_16S_kraken2_ready.fasta --db KRAKEN_DATA
+    	kraken2-build --add-to-library MIMt_kraken2_ready.fasta --db KRAKEN_DATA
 
-     	grep ">" SILVA_138.2_16S_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > KRAKEN_DATA/seqid2taxid.map
+     	grep ">" MIMt_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > KRAKEN_DATA/seqid2taxid.map
 
      	kraken2-build --build --db KRAKEN_DATA --threads $threads
 
       	kraken2-build --clean --db KRAKEN_DATA
 
-       	rm -r SILVA_138.2_16S_kraken2_ready.fasta SILVA_138.2_ref.fasta* SILVA_138.2_16S.fasta* seq_id_replacement.txt silva_filtered_ids
+       	rm -r MIMt.fasta seq_id_replacement.txt MIMt_kraken2_ready.fasta
 
         cd KRAKEN_DATA
 
