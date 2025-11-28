@@ -320,26 +320,52 @@ window.Quarto = {
 </section>
 <section id="backend-pipeline" class="level2">
 <h2 class="anchored" data-anchor-id="backend-pipeline"><strong>BACKEND PIPELINE</strong></h2>
-<p>When the list is uploaded, the data is then analyzed by the app. The app first utilizes fastp and bbtools for data pre-processing (removing adapter sequences, low quality reads and host contamination). The preprocessed FASTQ reads are then assembled using SPADES in De Novo fashion. The assembled metagenome is then binned in MAGs (Metagenome Assembled Genomes) using metaWRAP. All the MAGs with % Completeness &gt;= 55 and % Contamination &lt;= 10 are retained for further analysis. Users can change the cutoff while starting the analysis in the Input Data tab. The binned MAGs are annotated using GTDBtk. Antimicrobial Resistance Genes (ARGs) from the binned MAGs are then identified using RGI with CARD database. The uniquely mapped read counts for each ARG are calculated using SAMtools. The final table from the unix pipeline contains the ARO term, Counts, Bacterial Classification and other information. The counts for each ARG terms are then normalized using GPCM method in R and then utilized for further analysis and visualization in R. To determine resistome Case-Control association, we calculated RPKM value (equation 2) of each ARG gene per sample. We then summed up the ARG RPKM abundance per sample and compared the abundance between the Case and Control Groups. To assess the statistical significance of this assosiation, we have used Wilcox rank-sum test. Graphical abstract of Metashiny is shown below: <br></p>
-<p><span class="math display">\[
-  CLR(x_{i}) = log(\frac{x_{i}}{g(x)}) \quad(1)
-\]</span></p>
-<p><span class="math display">\[
-  x = (x_{1},x_{2},x_{3},x_{4}.......,x_{D})
-\]</span></p>
-<p><span class="math display">\[
-  x_{i}\ represents\ the\ abundance\ of\ taxon\ i\ in\ a\ sample,\ and\ D\ is\ the\ total\ number\ of\ taxa.
-\]</span></p>
-<p><span class="math display">\[
-  g(x) = (\prod_{i=1}^{D}x_{i})^\frac{1}{D};\ g(x)\ =\ Geometric\ Mean\ of\ x
-\]</span></p>
-<p><span class="math display">\[
-  BC_{ij} =  \frac{{\sum |x_{ik} - x_{jk}|}}{\sum |x_{ik} + x_{jk}|};\ BC_{ij} = Bray-Curtis\ Dissimilarity\ between\ sample\ i\ and\ j  \quad(2)
-\]</span></p>
-<p><span class="math display">\[  
-  x_{ik}\ and\ x_{jk}\ are\ the\ abundances\ of\ species\ k\ in\ samples\ i\ and\ j,\ respectively
-\]</span></p>
-<p><br></p>
+<p>NANOTAXI is a bioinformatics platform designed for real-time and post-run analysis of nanopore 16S sequencing data. It offers distinct online (live) and offline (post-run) workflows to accommodate different research needs.</p>
+</section>
+<section id="real-time-online-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="real-time-online-analysis">Real-Time Online Analysis</h2>
+<p>During a live sequencing run, NANOTAXI connects to the MinKNOW software via its API to automatically capture new reads as they are generated.</p>
+<section id="workflow-steps" class="level3">
+<h3 class="anchored" data-anchor-id="workflow-steps">Workflow Steps:</h3>
+<ol type="1">
+<li><strong>Data Processing:</strong> The workflow begins by filtering raw FASTQ files using NanoFilt to retain high-quality, full-length 16S reads.</li>
+<li><strong>Taxonomic Classification:</strong> Users can choose one of two classification methods for the filtered reads:
+<ul>
+<li><strong>Kraken2</strong> with the GTDB database.</li>
+<li><strong>Minimap2</strong> with the GSR database.</li>
+</ul></li>
+<li><strong>Per-Barcode Results:</strong> The classification results for each barcode are presented as a table and a relative abundance bar plot. NANOTAXI also generates bar plots for read-length and Q-score distributions.</li>
+</ol>
+<p>This entire analysis updates every two minutes to incorporate new data.</p>
+</section>
+<section id="cohort-level-analysis-online" class="level3">
+<h3 class="anchored" data-anchor-id="cohort-level-analysis-online">Cohort-Level Analysis (Online)</h3>
+<p>Thirty minutes after a run begins, NANOTAXI initiates a cohort-level analysis, which updates every 10 minutes. This provides an overview of the entire experiment by performing common microbiome analyses, including:</p>
+<ul>
+<li>Relative abundance (stacked bar plot)</li>
+<li>Alpha diversity analysis</li>
+<li>Beta diversity analysis</li>
+<li>Differential abundance analysis</li>
+</ul>
+<p>To ensure the best quality results, NANOTAXI uses the best practices available to analyse microbiome data. For this we have referenced the review article by <a href="https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2017.02224/full">Gloor et al.</a>, published in Frontiers in Microbiology.</p>
+</section>
+</section>
+<section id="offline-post-run-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="offline-post-run-analysis">Offline Post-Run Analysis</h2>
+<p>The offline mode allows users to re-analyze completed experiments with greater flexibility.</p>
+<section id="available-pipelines" class="level3">
+<h3 class="anchored" data-anchor-id="available-pipelines">Available Pipelines:</h3>
+<p>It supports multiple taxonomic classification pipelines, including: * <strong>Kraken2</strong> with the MIMt Database * <strong>BLASTn</strong> with the NCBI 16S Database * <strong>EMU</strong> with the EMU 16S Database</p>
+<p>After processing, a comprehensive cohort-level analysis is performed, mirroring the analyses available in the real-time workflow.</p>
+</section>
+</section>
+<section id="output-and-accessibility" class="level2">
+<h2 class="anchored" data-anchor-id="output-and-accessibility">Output and Accessibility</h2>
+<ul>
+<li><strong>Downloadable Results:</strong> All plots and tables generated by NANOTAXI can be downloaded as high-resolution images and CSV files, respectively.</li>
+<li><strong>Easy Installation:</strong> To ensure ease of use, the platform automatically installs all required tools and databases, making it accessible to researchers and clinicians with minimal computational expertise.</li>
+</ul>
+<p>Graphical abstract of <strong>NANOTAXI</strong> is shown below:</p>
 <p><img src="NANOTAXI.png" alt="NANOTAXI" style="width: 100%"></p>
 <p style="font-size: 30px; font-weight: bold; text-align: center;">
 NANAOTAXI OVERVIEW
