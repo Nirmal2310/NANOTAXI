@@ -16,11 +16,11 @@ ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height="10
                     background-color: white}'))
   ),
   useShinyjs(),
-  source("ui-tab-intro.R", local = TRUE)$value,
-  source("ui-tab-input.R", local = TRUE)$value,
-  source("ui-tab-cohort-analysis.R", local = TRUE)$value,
-  source("ui-tab-help.R", local = TRUE)$value,
-  source("ui-tab-conditions.R", local = TRUE)$value
+  source("UI/ui-tab-intro.R", local = TRUE)$value,
+  source("UI/ui-tab-input.R", local = TRUE)$value,
+  source("UI/ui-tab-cohort-analysis.R", local = TRUE)$value,
+  source("UI/ui-tab-help.R", local = TRUE)$value,
+  source("UI/ui-tab-conditions.R", local = TRUE)$value
 )
 
 # Set up Python environment
