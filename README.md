@@ -130,6 +130,7 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 
 - [x] Add Differential Abundance Analysis.
 - [x] Add support for Minimap2 + GSR DB (Real-time), Kraken2 + GTDB (Real-time) and Kraken2 + MIMt (Offline)
+- [ ] Add support for SQK-MAB114.24 (16S + ITS).
 
 ## Authors
 
