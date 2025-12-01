@@ -36,7 +36,7 @@ server <- function(input, output, session) {
     if (input$data_file_type == "upload") {
       insertTab(
         inputId = "main_navbar",
-        source("ui-tab-real-time-analysis.R", local = TRUE)$value,
+        source("UI/ui-tab-real-time-analysis.R", local = TRUE)$value,
         target = "cohort_tab",
         position = "before")}
         else {
