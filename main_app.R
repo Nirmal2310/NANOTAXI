@@ -1255,8 +1255,8 @@ server <- function(input, output, session) {
     total_plots <- ifelse(n_comp %% 2 == 0, n_comp, n_comp+1)
 
     if(total_plots==2) {
-      volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Significance)) +
-        geom_point(aes(color = Significance), alpha = 0.6, size = 5) +
+      volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Name)) +
+        geom_point(aes(color = Name), alpha = 0.6, size = 5) +
         facet_wrap(~Comparison, nrow = 1, ncol = 2, scales = "free") +
         scale_color_manual(values = color_group) +
         geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
@@ -1279,8 +1279,8 @@ server <- function(input, output, session) {
           strip.background = element_blank()
         )
     } else if(total_plots>2) {
-      volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Significance)) +
-        geom_point(aes(color = Significance), alpha = 0.6, size = 5) +
+      volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Name)) +
+        geom_point(aes(color = Name), alpha = 0.6, size = 5) +
         facet_wrap(~Comparison, nrow = total_plots/2, ncol = total_plots/2, scales = "free") +
         scale_color_manual(values = color_group) +
         geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
