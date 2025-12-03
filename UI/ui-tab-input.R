@@ -20,6 +20,7 @@ tabPanel(
                       selected = "Minimap2 + GSR DB"),
           numericInput("min", "Minimum Length", value = 1400),
           numericInput("max", "Maximum Length", value = 1800),
+          sliderInput("conf", "Kraken Confidence Score", min = 0.00, max = 1.00, value = 0.00),
           numericInput("iden", "Percent Identity", value = 85),
           numericInput("cov", "Percent Coverage", value = 85),
           actionButton("start_analysis", "Start Analysis")
@@ -38,6 +39,7 @@ tabPanel(
                       selected = "Species"),
           numericInput("min", "Minimum Length", value = 1400),
           numericInput("max", "Maximum Length", value = 1800),
+          sliderInput("conf", "Kraken Confidence Score", min = 0.00, max = 1.00, value = 0.00),
           numericInput("threads", "Number of Threads", value = 16),
           numericInput("iden", "Percent Identity", value = 75),
           checkboxInput("setup", "Setup"),

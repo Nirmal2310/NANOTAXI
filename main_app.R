@@ -25,9 +25,9 @@ ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height="10
 
 # Set up Python environment
 
-conda_path <- system('if [ $(which conda | grep "condabin") ]; then conda_path=$(which conda | sed "s/\\/condabin.*$//g"); else conda_path=$(which conda | sed "s/\\/bin.*$//g"); fi && echo $conda_path', intern = TRUE)
-
-Sys.setenv(RETICULATE_PYTHON = paste0(conda_path, "/envs/minknow_api/bin/python"))
+# conda_path <- system('if [ $(which conda | grep "condabin") ]; then conda_path=$(which conda | sed "s/\\/condabin.*$//g"); else conda_path=$(which conda | sed "s/\\/bin.*$//g"); fi && echo $conda_path', intern = TRUE)
+# 
+# Sys.setenv(RETICULATE_PYTHON = paste0(conda_path, "/envs/minknow_api/bin/python"))
 
 # Server
 
@@ -264,9 +264,10 @@ server <- function(input, output, session) {
 
         print("Analyzing Data....")
 
-        system(paste0("bash ", pipeline_dir, "/kraken_run.sh -p ", input$fastqdir, " -k ", input$kitname, " -t ",
-        input$threads, " -m ", input$min, " -M ",
-        input$max, " -r ", input$tax))
+        system(paste0("bash ", pipeline_dir, "/kraken_run.sh -p ", input$fastqdir,
+                      " -k ", input$kitname, " -t ",
+                      input$threads, " -m ", input$min, " -M ",
+                      input$max, " -r ", input$tax, " -c ", input$conf))
 
         result_dir <- paste0(input$fastqdir, "/Kraken2_Results/")
 
@@ -279,7 +280,7 @@ server <- function(input, output, session) {
 
         system(paste0("bash ", pipeline_dir, "/kraken_run.sh -p ", input$fastqdir, " -k ", input$kitname, " -t ",
         input$threads, " -m ", input$min, " -M ",
-        input$max, " -r ", input$tax))
+        input$max, " -r ", input$tax, " -c ", input$conf))
 
         result_dir <- paste0(input$fastqdir, "/Kraken2_Results/")
 
@@ -365,7 +366,9 @@ server <- function(input, output, session) {
 
     taxa <- input$tax
     
-    system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ", reads_path," -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa," 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
+    conf <- input$conf
+    
+    system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ", reads_path," -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa, " -c ", conf," 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 
