@@ -4,17 +4,18 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85"
+   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -t Species -c 0.0"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
-   echo -e 
+   echo -e "\t-r <str> Minimum Taxonomy Rank. [default: Species]"
+   echo -e "\t-c <str> Confidence Score. [default: 0.0]"
    exit 1 # Exit script after printing help
 }
 
-while getopts "d:k:b:m:M:t:" opt
+while getopts "d:k:b:m:M:t:c:" opt
 do
     case "$opt" in
     d )
@@ -35,6 +36,9 @@ do
     t )
     	rank="$OPTARG"
     	;;
+    c)
+        conf="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
@@ -42,6 +46,7 @@ done
 min=1400
 max=1800
 rank=S
+conf=0.0
 
 if [ -z "$data_path" ]
     then
@@ -74,7 +79,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate kraken2
 
-        kraken2 --db $KRAKEN_NCBI --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
+        kraken2 --db $KRAKEN_NCBI --confidence $conf --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
         kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
