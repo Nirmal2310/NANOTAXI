@@ -233,7 +233,8 @@ server <- function(input, output, session) {
         print("Analyzing Data....")
 
         system(paste0("bash ", pipeline_dir, "/blast_run.sh -p ", input$fastqdir, " -k ", input$kitname,
-        " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden))
+        " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
+        , " -c ", input$cov, " -q ", input$q_score))
 
         result_dir <- paste0(input$fastqdir, "/Blast_Results/")
 
@@ -245,12 +246,77 @@ server <- function(input, output, session) {
         print("Analyzing Data....")
 
         system(paste0("bash ", pipeline_dir, "/blast_run.sh -p ", input$fastqdir, " -k ", input$kitname,
-        " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden))
+                      " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
+                      , " -c ", input$cov, " -q ", input$q_score))
 
         result_dir <- paste0(input$fastqdir, "/Blast_Results/")
 
         result_dir_val(result_dir)
       
+      }
+    }
+    
+    else if(input$pipeline == "Kraken2 + GTDB") 
+    {
+      if(input$setup) 
+      {
+        print("Installation Already Completed.")
+        
+        print("Analyzing Data....")
+        
+        system(paste0("bash ", pipeline_dir, "/kraken_gtdb_run.sh -p ", input$fastqdir,
+                      " -k ", input$kitname, " -t ",
+                      input$threads, " -m ", input$min, " -M ",
+                      input$max, " -r ", input$tax, " -c ", input$conf
+                      , " -q ", input$q_score))
+        result_dir <- paste0(input$fastqdir, "/Kraken2_GTDB_Results/")
+        
+        result_dir_val(result_dir)
+      }
+      else
+      {
+        print("Analyzing Data....")
+        
+        system(paste0("bash ", pipeline_dir, "/kraken_gtdb_run.sh -p ", input$fastqdir,
+                      " -k ", input$kitname, " -t ",
+                      input$threads, " -m ", input$min, " -M ",
+                      input$max, " -r ", input$tax, " -c ", input$conf
+                      , " -q ", input$q_score))
+        result_dir <- paste0(input$fastqdir, "/Kraken2_GTDB_Results/")
+        
+        result_dir_val(result_dir)
+      }
+    }
+    
+    else if(input$pipeline == "Minimap2 + GSR DB")
+    {
+      if(input$setup)
+      {
+        print("Installation Already Completed.")
+        
+        print("Analyzing Data....")
+        
+        pipeline_path <- paste0(getwd(), "/Pipelines")
+        
+        system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
+                      " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
+                      , " -c ", input$cov, " -q ", input$q_score))
+        result_dir <- paste0(input$fastdir,"/Minimap2_Results/")
+        
+        result_dir_val(result_dir)
+      }
+      else
+      {
+        print("Analyzing Data....")
+        
+        pipeline_path <- paste0(getwd(), "/Pipelines")
+        
+        system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
+                      " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
+                      , " -c ", input$cov, " -q ", input$q_score))
+        result_dir <- paste0(input$fastdir,"/Minimap2_Results/")
+        
+        result_dir_val(result_dir)
       }
     }
     
@@ -267,7 +333,8 @@ server <- function(input, output, session) {
         system(paste0("bash ", pipeline_dir, "/kraken_run.sh -p ", input$fastqdir,
                       " -k ", input$kitname, " -t ",
                       input$threads, " -m ", input$min, " -M ",
-                      input$max, " -r ", input$tax, " -c ", input$conf))
+                      input$max, " -r ", input$tax, " -c ", input$conf
+                      , " -q ", input$q_score))
 
         result_dir <- paste0(input$fastqdir, "/Kraken2_Results/")
 
@@ -301,7 +368,7 @@ server <- function(input, output, session) {
 
         system(paste0("bash ", pipeline_dir, "/emu_run.sh -p ", input$fastqdir, " -k ", input$kitname, " -t ",
         input$threads, " -m ", input$min, " -M ",
-        input$max))
+        input$max, " -q ", input$q_score))
 
         result_dir <- paste0(input$fastqdir,"/EMU_Results/")  
 
@@ -368,7 +435,9 @@ server <- function(input, output, session) {
     
     conf <- input$conf
     
-    system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ", reads_path," -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa, " -c ", conf," 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
+    q_score <- input$q_score
+    
+    system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ", reads_path," -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa, " -c ", conf, " -q ", q_score, " 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 
@@ -446,7 +515,9 @@ server <- function(input, output, session) {
 
     coverage <- input$cov
     
-    system(paste0("bash ",pipeline_path,"/main_minimap2_run.sh -d ", reads_path, " -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max," -i ", identity, " -c ", coverage," 2>&1 | tee -a ", reads_path, "/realtime_minimap2_run.log"))
+    q_score <- input$q_score
+    
+    system(paste0("bash ",pipeline_path,"/main_minimap2_run.sh -d ", reads_path, " -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max," -i ", identity, " -c ", coverage, " -q ", q_score, " 2>&1 | tee -a ", reads_path, "/realtime_minimap2_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 

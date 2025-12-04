@@ -4,18 +4,29 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -t Species -c 0.0"
+   echo "Usage: real_time_analysis.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -t Species -c 0.0 -q 10"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
    echo -e "\t-r <str> Minimum Taxonomy Rank. [default: Species]"
-   echo -e "\t-c <str> Confidence Score. [default: 0.0]"
+   echo -e "\t-c <int> Confidence Score. [default: 0.0]"
+   echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    exit 1 # Exit script after printing help
 }
 
-while getopts "d:k:b:m:M:t:c:" opt
+min=1400
+max=1800
+rank=S
+conf=0.0
+q_score=10
+
+KRAKEN_GTDB=$(grep KRAKEN_GTDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GTDB="//;s/"//g')
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
+
+while getopts "d:k:b:m:M:t:c:q:" opt
 do
     case "$opt" in
     d )
@@ -39,14 +50,12 @@ do
     c)
         conf="$OPTARG"
         ;;
+    q )
+        q_score="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
-
-min=1400
-max=1800
-rank=S
-conf=0.0
 
 if [ -z "$data_path" ]
     then
@@ -54,16 +63,12 @@ if [ -z "$data_path" ]
     helpFunction
 fi
 
-KRAKEN_NCBI=$(grep KRAKEN_NCBI ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_NCBI="//;s/"//g')
-
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
 
 if [ ! -f $data_path/$barcode/processed_files.txt ]; then
     
     conda activate nanofilt
     
-    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16S.fasta
+    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q $q_score --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16S.fasta
 
     conda activate bbtools
 
@@ -79,7 +84,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate kraken2
 
-        kraken2 --db $KRAKEN_NCBI --confidence $conf --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
+        kraken2 --db $KRAKEN_GTDB --confidence $conf --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
         kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
@@ -104,7 +109,7 @@ else
 
         conda activate nanofilt
 
-        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16S.fasta
+        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q $q_score --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16S.fasta
 
         conda activate bbtools
 
@@ -120,7 +125,7 @@ else
 
             conda activate kraken2
 
-            kraken2 --db $KRAKEN_NCBI --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
+            kraken2 --db $KRAKEN_GTDB --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
             kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 

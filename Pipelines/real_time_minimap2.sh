@@ -4,7 +4,7 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_analysis_blast.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85"
+   echo "Usage: real_time_analysis_blast.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85 -q 10"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
@@ -12,10 +12,17 @@ helpFunction()
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
    echo -e "\t-i <int> Minimum Percent Identity. [default: 85]"
    echo -e "\t-c <int> Minimum Percent Coverage. [default: 85]"
+   echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    exit 1 # Exit script after printing help
 }
 
-while getopts "d:k:b:m:M:i:c:" opt
+min=1400
+max=1800
+identity=85
+coverage=85
+q_score=10
+
+while getopts "d:k:b:m:M:i:c:q:" opt
 do
     case "$opt" in
     d )
@@ -39,14 +46,12 @@ do
     c )
         coverage="$OPTARG"
         ;;
+    q )
+        q_score="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
-
-min=1400
-max=1800
-identity=85
-coverage=85
 
 script_path=$(dirname "$(readlink -f "$0")")
 
@@ -63,7 +68,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
     
     conda activate nanofilt
     
-    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16S.fasta
+    ls $data_path/$barcode/*fastq.gz | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q $q_score --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > ${data_path}/$barcode/${barcode}_16S.fasta
 
     conda activate bbtools
 
@@ -105,7 +110,7 @@ else
 
         conda activate nanofilt
 
-        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16S.fasta
+        ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt | xargs zcat | dorado trim --threads 1 --sequencing-kit $kit_name --emit-fastq | NanoFilt -q $q_score --length $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $data_path/$barcode/${barcode}_16S.fasta
 
         conda activate bbtools
 

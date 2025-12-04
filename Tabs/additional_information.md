@@ -207,9 +207,12 @@ The offline mode allows users to re-analyze completed experiments with greater f
 ### Available Pipelines:
 
 It supports multiple taxonomic classification pipelines, including:
-*   **Kraken2** with the MIMt Database
-*   **BLASTn** with the NCBI 16S Database
-*   **EMU** with the EMU 16S Database
+
+*   **Kraken2** with the MIMt Database.
+*   **Kraken2** with the GTDB database.
+*   **BLASTn** with the NCBI 16S Database.
+*   **EMU** with the EMU 16S Database.
+*   **Minimap2** with the GSR database.
 
 After processing, a comprehensive cohort-level analysis is performed, mirroring the analyses available in the real-time workflow.
 

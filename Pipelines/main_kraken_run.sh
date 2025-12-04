@@ -4,7 +4,7 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: main.sh -d /path/to/the/data -k kit-name -s /path/to/the/script -m 1400 -M 1800 -t Species -c 0.0"
+   echo "Usage: main.sh -d /path/to/the/data -k kit-name -s /path/to/the/script -m 1400 -M 1800 -t Species -c 0.0 -q 10"
    echo -e "\t-d <str> Path Containing the Raw Data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-s <str> Path Containing the Scripts."
@@ -12,6 +12,7 @@ helpFunction()
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
    echo -e "\t-t <str> Minimum Taxonomy Rank. [default: Species]"
    echo -e "\t-t <int> Confidence Score. [default: 0.0]"
+   echo -e "\t-t <int> Minimum Q-Score. [default: 10]"
    exit 1 # Exit script after printing help
 }
 
@@ -19,8 +20,9 @@ min=1400
 max=1800
 rank=Species
 conf=0.0
+q_score=10
 
-while getopts "d:k:s:m:M:t:c:" opt
+while getopts "d:k:s:m:M:t:c:q:" opt
 do
     case "$opt" in
     d )
@@ -43,6 +45,9 @@ do
         ;;
     c )
         conf="$OPTARG"
+        ;;
+    q )
+        q_score="$OPTARG"
         ;;
     ? ) helpFunction ;;
     esac
@@ -82,7 +87,7 @@ else
 
     do
 
-    echo "bash $script_path/real_time_kraken.sh -d $data_path -k $kit_name -b $barcode -m $min -M $max -t $r -c $conf"
+    echo "bash $script_path/real_time_kraken.sh -d $data_path -k $kit_name -b $barcode -m $min -M $max -t $r -c $conf -q $q_score"
 
     done < "$data_path/barcode_list" | parallel -j "$parallel_jobs" {}
 fi

@@ -4,12 +4,15 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: emu_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -q 10"
+   echo "Usage: blast_run.sh -p /path/to/the/directory -k kit-name -s /path/to/scripts -t 16 -m 1400 -M 1800 -i 85 -c 85 -q 10"
    echo -e "\t-p <path> Path to directory containing passed raw data."
    echo -e "\t-k <str> Kit-Name."
+   echo -e "\t-s <str> Path Containing the Scripts."
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
+   echo -e "\t-i <int> Minimum BLAST Identity(%). [default: 85]"
+   echo -e "\t-c <int> Minimum BLAST Coverage(%). [default: 85]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    exit 1 # Exit script after printing help
 }
@@ -19,13 +22,11 @@ helpFunction()
 threads=16
 min=1400
 max=1800
+identity=85
+coverage=85
 q_score=10
 
-EMU_DB=$(grep EMU_DB ~/.bashrc | tail -n 1 | sed 's/export EMU_DB="//;s/"//g')
-
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
-while getopts "p:k:t:m:M:q:" opt
+while getopts "p:k:s:t:m:M:i:c:q:" opt
 do
     case "$opt" in
     p )
@@ -33,6 +34,9 @@ do
     	;;
     k )
         kit_name="$OPTARG"
+        ;;
+    s )
+        script_path="$OPTARG"
         ;;
     t )
         threads="$OPTARG"
@@ -43,6 +47,12 @@ do
     M )
     	max="$OPTARG"
     	;;
+    i )
+    	identity="$OPTARG"
+    	;;
+    c )
+        coverage="$OPTARG"
+        ;;
     q )
         q_score="$OPTARG"
         ;;
@@ -56,7 +66,6 @@ if [ -z "$path" ]
     helpFunction
 fi
 
-
 if [ ! -f $path/barcode_list ]
 	then
 	for i in `ls -d $path/barcode*/`
@@ -66,6 +75,8 @@ if [ ! -f $path/barcode_list ]
     done | sed "s|$path||g;s/\///g" > $path/barcode_list
 fi
 
+GSR_DB=$(grep GSR_DB ~/.bashrc | tail -n 1 | sed 's/export GSR_DB="//;s/"//g')
+
 while read barcode
 
 do
@@ -74,26 +85,20 @@ do
 
     zcat $path/$barcode/*fastq.gz | dorado trim --threads $threads --sequencing-kit $kit_name --emit-fastq | NanoFilt -q $q_score -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
-    conda activate emu
+    conda activate minimap2
 
-    emu abundance --type map-ont --db $EMU_DB --output-dir $path/$barcode/ --output-basename $barcode --keep-counts --threads $threads $path/$barcode/${barcode}_16s.fasta
-
-    conda activate taxonkit
-
-    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$14}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/temp
-
-    awk 'BEGIN {for (i = 1; i <= 7; i++) printf "%s\t", "Unclassified"}' | paste -d "\t" <(echo "Unclassified") <(tail -n 1 $path/$barcode/${barcode}_rel-abundance.tsv | awk -F "\t" '{print $14}') - | cat $path/$barcode/temp - > $path/$barcode/${barcode}_final_emu_result.txt
-
-    rm -r $path/$barcode/temp
+    minimap2 -ax map-ont -t $threads --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $path/$barcode/${barcode}_16s.fasta | \
+	    samtools view -@ $threads -F 3844 -bS | samtools sort -@ $threads -o $path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $path/$barcode/${barcode}_16S.bam
+    
+    python $script_path/alignment_filter.py -b $path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $path/$barcode/${barcode}_final_minimap2_result.txt
 
 done < "$path/barcode_list"
 
-if [ ! -d $path/EMU_Results ]; then
+if [ ! -d $path/Minimap2_Results ]; then
 
-    mkdir $path/EMU_Results
+    mkdir $path/Minimap2_Results
 
 fi
 
-echo "Success"
-
-mv $path/barcode*/*_final_emu_result.txt $path/EMU_Results/
+mv $path/barcode*/*_final_minimap2_result.txt $path/Minimap2_Results/
