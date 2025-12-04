@@ -139,7 +139,7 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 
 ## Feedback/Help
 
-If you have any feedback/issues, please contact us at nanotaxi.help@gmail.com or report the issue via [GitHub](https://github.com/Nirmal2310/NANOTAXI/issues).
+If you have any feedback/issues, please report the issue via [GitHub](https://github.com/Nirmal2310/NANOTAXI/issues).
 
 ## Acknowledgements
 
