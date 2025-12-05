@@ -83,7 +83,7 @@ To set up Offline Analysis, tick the checkbox adjacent to the setup option in **
 
 The Test Dataset is taken from the Bioproject ID [PRJEB82315](https://www.ebi.ac.uk/ena/browser/view/PRJEB82315).
 
-We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyse the test dataset comprising 24 samples representing 24 barcodes and classified into three groups based on body fluids.
+We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyse the test dataset comprising 20 samples representing 20 barcodes and classified into three groups based on body fluids.
 
 <div  class="sample_info">
 
