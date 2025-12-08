@@ -25,9 +25,9 @@ ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height="10
 
 # Set up Python environment
 
-# conda_path <- system('if [ $(which conda | grep "condabin") ]; then conda_path=$(which conda | sed "s/\\/condabin.*$//g"); else conda_path=$(which conda | sed "s/\\/bin.*$//g"); fi && echo $conda_path', intern = TRUE)
+conda_path <- system('if [ $(which conda | grep "condabin") ]; then conda_path=$(which conda | sed "s/\\/condabin.*$//g"); else conda_path=$(which conda | sed "s/\\/bin.*$//g"); fi && echo $conda_path', intern = TRUE)
 # 
-# Sys.setenv(RETICULATE_PYTHON = paste0(conda_path, "/envs/minknow_api/bin/python"))
+Sys.setenv(RETICULATE_PYTHON = paste0(conda_path, "/envs/minknow_api/bin/python"))
 
 # Server
 
@@ -589,6 +589,8 @@ server <- function(input, output, session) {
     {
       sample_data_list[[i]] <- read.delim(paste0(path,"/",file_list[i],".txt"), header = FALSE)
 
+      sample_data_list[[i]] <- sample_data_list[[i]][,1:9]
+
       colnames(sample_data_list[[i]]) <- c("TAX_ID", "Counts", "Kingdom", "Phylum",
                                             "Class", "Order", "Family", "Genus",
                                             "Species")
@@ -726,6 +728,8 @@ server <- function(input, output, session) {
     for (i in 1:length(file_list))
     {
       sample_data_list[[i]] <- read.delim(file = paste0(result_dir, "/", file_list[i], ".txt"), header = FALSE)
+
+      sample_data_list[[i]] <- sample_data_list[[i]][,1:9]
 
       colnames(sample_data_list[[i]]) <- c("TAX_ID", "Counts", "Kingdom", "Phylum",
                                                                 "Class", "Order", "Family", "Genus", "Species")
