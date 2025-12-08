@@ -4,14 +4,15 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: kraken_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -r Species -c 0.0"
+   echo "Usage: kraken_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -r Species -c 0.0 -q 10"
    echo -e "\t-p <path> Path to directory containing passed raw data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
    echo -e "\t-r <str> Minimum Taxonomy Rank. [default: Species]"
-   echo -e "\t-c <str> Confidence Score. [default: 0.0]"
+   echo -e "\t-c <int> Confidence Score. [default: 0.0]"
+   echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    exit 1 # Exit script after printing help
 }
 
@@ -22,12 +23,13 @@ min=1400
 max=1800
 rank=Species
 conf=0.0
+q_score=10
 
 KRAKEN_DB=$(grep KRAKEN_DB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_DB="//;s/"//g')
 
 TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
-while getopts "p:k:t:m:M:r:c:" opt
+while getopts "p:k:t:m:M:r:c:q:" opt
 do
     case "$opt" in
     p )
@@ -50,6 +52,9 @@ do
     	;;
     c )
         conf="$OPTARG"
+        ;;
+    q )
+        q_score="$OPTARG"
         ;;
     ? ) helpFunction ;;
     esac
@@ -78,7 +83,7 @@ do
 
     conda activate nanofilt
 
-    zcat $path/$barcode/*fastq.gz | dorado trim --threads $threads --sequencing-kit $kit_name --emit-fastq | NanoFilt -q 10 -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
+    zcat $path/$barcode/*fastq.gz | dorado trim --threads $threads --sequencing-kit $kit_name --emit-fastq | NanoFilt -q $q_score -l $min --maxlength $max | sed -n '1~4s/^@/>/p;2~4p' > $path/$barcode/${barcode}_16s.fasta
 
     conda activate kraken2
 
