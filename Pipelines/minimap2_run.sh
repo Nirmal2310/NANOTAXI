@@ -4,7 +4,7 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: blast_run.sh -p /path/to/the/directory -k kit-name -s /path/to/scripts -t 16 -m 1400 -M 1800 -i 85 -c 85 -q 10"
+   echo "Usage: blast_run.sh -p /path/to/the/directory -k kit-name -s /path/to/scripts -t 16 -m 1400 -M 1800 -i 85 -c 85 -q 10 -n REFSEQ"
    echo -e "\t-p <path> Path to directory containing passed raw data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-s <str> Path Containing the Scripts."
@@ -14,6 +14,7 @@ helpFunction()
    echo -e "\t-i <int> Minimum BLAST Identity(%). [default: 85]"
    echo -e "\t-c <int> Minimum BLAST Coverage(%). [default: 85]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
+   echo -e "\t-n <str> Database Name. [default: REFSEQ]"
    exit 1 # Exit script after printing help
 }
 
@@ -25,8 +26,9 @@ max=1800
 identity=85
 coverage=85
 q_score=10
+db="REFSEQ"
 
-while getopts "p:k:s:t:m:M:i:c:q:" opt
+while getopts "p:k:s:t:m:M:i:c:q:n:" opt
 do
     case "$opt" in
     p )
@@ -56,6 +58,9 @@ do
     q )
         q_score="$OPTARG"
         ;;
+    n )
+        db="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
@@ -75,7 +80,31 @@ if [ ! -f $path/barcode_list ]
     done | sed "s|$path||g;s/\///g" > $path/barcode_list
 fi
 
-GSR_DB=$(grep GSR_DB ~/.bashrc | tail -n 1 | sed 's/export GSR_DB="//;s/"//g')
+if [ "$db" == "REFSEQ" ]; then
+
+    MINIMAP_DB=$(grep REFSEQ ~/.bashrc | tail -n 1 | sed 's/export REFSEQ="//;s/"//g;s/$/\/refseq_final_seqs.fasta/')
+
+    TAXA_DATA=$(grep REFSEQ ~/.bashrc | tail -n 1 | sed 's/export REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
+
+elif [ "$db" == "GTDB" ]; then
+    
+    MINIMAP_DB=$(grep GTDB ~/.bashrc | tail -n 1 | sed 's/export GTDB="//;s/"//g;s/$/\/GTBD_final_seqs.fasta/')
+
+    TAXA_DATA=$(grep GTDB ~/.bashrc | tail -n 1 | sed 's/export GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
+
+elif [ "$db" == "MIMT" ]; then
+
+    MINIMAP_DB=$(grep MIMT ~/.bashrc | tail -n 1 | sed 's/export MIMT="//;s/"//g;s/$/\/MIMT_final_seqs.fasta/')
+
+    TAXA_DATA=$(grep MIMT ~/.bashrc | tail -n 1 | sed 's/export MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
+
+elif [ "$db" == "GSR" ]; then
+
+    MINIMAP_DB=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_seqs.fasta/')
+
+    TAXA_DATA=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_taxa.txt/')
+
+fi
 
 while read barcode
 
@@ -87,11 +116,11 @@ do
 
     conda activate minimap2
 
-    minimap2 -ax map-ont -t $threads --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $path/$barcode/${barcode}_16s.fasta | \
+    minimap2 -ax map-ont -t $threads --eqx $MINIMAP_DB $path/$barcode/${barcode}_16s.fasta | \
 	    samtools view -@ $threads -F 3844 -bS | samtools sort -@ $threads -o $path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $path/$barcode/${barcode}_16S.bam
     
-    python $script_path/alignment_filter.py -b $path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $path/$barcode/${barcode}_final_minimap2_result.txt
+    python $script_path/alignment_filter.py -b $path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $3, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $path/$barcode/${barcode}_final_minimap2_result.txt
 
 done < "$path/barcode_list"
 

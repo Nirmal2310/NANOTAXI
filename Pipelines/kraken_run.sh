@@ -13,6 +13,7 @@ helpFunction()
    echo -e "\t-r <str> Minimum Taxonomy Rank. [default: Species]"
    echo -e "\t-c <int> Confidence Score. [default: 0.0]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
+   echo -e "\t-n <str> Database Name. [default: REFSEQ]"
    exit 1 # Exit script after printing help
 }
 
@@ -24,12 +25,9 @@ max=1800
 rank=Species
 conf=0.0
 q_score=10
+db="REFSEQ"
 
-KRAKEN_DB=$(grep KRAKEN_DB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_DB="//;s/"//g')
-
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
-while getopts "p:k:t:m:M:r:c:q:" opt
+while getopts "p:k:t:m:M:r:c:q:n:" opt
 do
     case "$opt" in
     p )
@@ -56,6 +54,9 @@ do
     q )
         q_score="$OPTARG"
         ;;
+    n )
+        db="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
@@ -65,6 +66,26 @@ if [ -z "$path" ]
     echo "Please provide the path to the directory containing raw data";
     helpFunction
 fi
+
+if [ "$db" == "REFSEQ" ]; then
+
+    KRAKEN_DB=$(grep KRAKEN_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_REFSEQ="//;s/"//g')
+
+elif [ "$db" == "GTDB" ]; then
+    
+    KRAKEN_DB=$(grep KRAKEN_GTDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GTDB="//;s/"//g')
+
+elif [ "$db" == "MIMT" ]; then
+
+    KRAKEN_DB=$(grep KRAKEN_MIMT ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_MIMT="//;s/"//g')
+
+elif [ "$db" == "GSR" ]; then
+
+    KRAKEN_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g')
+
+fi
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
 if [ ! -f $path/barcode_list ]
 	then

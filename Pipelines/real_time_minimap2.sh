@@ -4,7 +4,7 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_analysis_blast.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85 -q 10"
+   echo "Usage: real_time_analysis_blast.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85 -q 10 -n REFSEQ"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
@@ -13,6 +13,7 @@ helpFunction()
    echo -e "\t-i <int> Minimum Percent Identity. [default: 85]"
    echo -e "\t-c <int> Minimum Percent Coverage. [default: 85]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
+   echo -e "\t-n <str> Database Name. [default: REFSEQ]"
    exit 1 # Exit script after printing help
 }
 
@@ -21,8 +22,9 @@ max=1800
 identity=85
 coverage=85
 q_score=10
+db="REFSEQ"
 
-while getopts "d:k:b:m:M:i:c:q:" opt
+while getopts "d:k:b:m:M:i:c:q:n:" opt
 do
     case "$opt" in
     d )
@@ -49,6 +51,9 @@ do
     q )
         q_score="$OPTARG"
         ;;
+    n )
+        db="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
@@ -61,7 +66,31 @@ if [ -z "$data_path" ]
     helpFunction
 fi
 
-GSR_DB=$(grep GSR_DB ~/.bashrc | tail -n 1 | sed 's/export GSR_DB="//;s/"//g')
+if [ "$db" == "REFSEQ" ]; then
+
+    MINIMAP_DB=$(grep REFSEQ ~/.bashrc | tail -n 1 | sed 's/export REFSEQ="//;s/"//g;s/$/\/refseq_final_seqs.fasta/')
+
+    TAXA_DATA=$(grep REFSEQ ~/.bashrc | tail -n 1 | sed 's/export REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
+
+elif [ "$db" == "GTDB" ]; then
+    
+    MINIMAP_DB=$(grep GTDB ~/.bashrc | tail -n 1 | sed 's/export GTDB="//;s/"//g;s/$/\/GTBD_final_seqs.fasta/')
+
+    TAXA_DATA=$(grep GTDB ~/.bashrc | tail -n 1 | sed 's/export GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
+
+elif [ "$db" == "MIMT" ]; then
+
+    MINIMAP_DB=$(grep MIMT ~/.bashrc | tail -n 1 | sed 's/export MIMT="//;s/"//g;s/$/\/MIMT_final_seqs.fasta/')
+
+    TAXA_DATA=$(grep MIMT ~/.bashrc | tail -n 1 | sed 's/export MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
+
+elif [ "$db" == "GSR" ]; then
+
+    MINIMAP_DB=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_seqs.fasta/')
+
+    TAXA_DATA=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_taxa.txt/')
+
+fi
 
 
 if [ ! -f $data_path/$barcode/processed_files.txt ]; then
@@ -84,10 +113,10 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate minimap2
 
-        minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | \
+        minimap2 -ax map-ont -t 2 --eqx $MINIMAP_DB $data_path/$barcode/${barcode}_16S.fasta | \
 	    samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
 
-        python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
+        python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
         awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/${barcode}_final_minimap2_result.txt
 
         rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
@@ -126,10 +155,10 @@ else
 
             conda activate minimap2
 
-            minimap2 -ax map-ont -t 2 --eqx $GSR_DB/GSR-DB_full-16S_filt_seqs.fasta $data_path/$barcode/${barcode}_16S.fasta | \
+            minimap2 -ax map-ont -t 2 --eqx $MINIMAP_DB $data_path/$barcode/${barcode}_16S.fasta | \
 	        samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam
 
-            python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $GSR_DB/GSR-DB_full-16S_filt_taxa.txt -i $identity -c $coverage | \
+            python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
             awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/$barcode/${barcode}_final_minimap2_result.txt
             
             rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
