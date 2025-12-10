@@ -352,11 +352,6 @@ if [ ! -d GSR ]; then
         tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
 
         threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
-
-        source $path/bin/activate taxonkit
-
-        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g;s/_/ /g' GSR-DB_full-16S_filt_taxa.txt | awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$8}' | \
-        taxonkit name2taxid --threads $threads --data-dir $TAXONKIT_DB -i 2 | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$3}' > seqid_taxid.txt && rm -r GSR-DB_full-16S_filt_taxa.txt
         
         source $path/bin/activate seqkit
 
@@ -366,41 +361,45 @@ if [ ! -d GSR ]; then
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > temp && mv temp GSR-DB_full-16S_filt_seqs.fasta
 
-        grep ">" GSR-DB_full-16S_filt_seqs.fasta | sed 's/>//g' | split -l 1000 - ids_chunk_
+        grep -Ff gsr_filtered_ids GSR-DB_full-16S_filt_taxa.txt > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
 
-        chunk_number=$(ls ids_chunk_* | wc -l)
+        source $path/bin/activate nanotaxi-env
 
-        parallel_jobs=$(if [ $chunk_number -gt $threads ]; then echo $threads; else echo $chunk_number; fi)
-        
-        parallel -j $parallel_jobs "rg -f {} seqid_taxid.txt" ::: ids_chunk_* | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$1"|kraken:taxid|"$2}' > seq_id_replacement.txt && rm -r ids_chunk_*
+        Rscript $script_dir/gsr_kraken_taxa_build.R GSR-DB_full-16S_filt_taxa.txt 16
+
+        mkdir -p GSR GSR/taxonomy GSR/library
+
+        mv nodes.dmp GSR/taxonomy/ && mv names.dmp GSR/taxonomy/
+
+        sed -i -e 's/$/\t|/g' GSR/taxonomy/nodes.dmp
+
+        sed -i -e 's/$/\t|/g' GSR/taxonomy/names.dmp
+
+        source $path/bin/activate seqkit
 
         seqkit replace -p '^(\S+)' -r '{kv}$2' -k seq_id_replacement.txt GSR-DB_full-16S_filt_seqs.fasta > GSR_kraken2_ready.fasta
         
         source $path/bin/activate kraken2
 
-        kraken2-build --download-taxonomy --db GSR --use-ftp  --skip-maps
+        cp GSR_kraken2_ready.fasta GSR/library/seqs.fna
 
-        kraken2-build --add-to-library GSR_kraken2_ready.fasta --db GSR
+        kraken2-build --add-to-library GSR/library/seqs.fna --db GSR --no-masking
 
-        # grep ">" GSR_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > GTDB/seqid2taxid.map
+        kraken2-build --build --db GSR --threads $threads
 
-        # kraken2-build --build --db GTDB --threads $threads
+        kraken2-build --clean --db GSR
 
-        # kraken2-build --clean --db GTDB
-
-        # rm -r GTDB_16S_kraken2_ready.fasta* GTDB_16S_reps.fasta seq_id_replacement.txt seqid_taxid.txt gtdb_filtered_ids
+        rm -r GSR_kraken2_ready.fasta* GSR-DB_full-16S_filt_seqs.fasta* seq_id_replacement.txt gsr_filtered_ids GSR-DB_full-16S_filt_taxa.txt
         
-        # cd GTDB
+        cd GSR
 
-        # grep -qF "export KRAKEN_GTDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_GTDB=\"$PWD\"" >> ~/.bashrc
+        grep -qF "export KRAKEN_GSR=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_GSR=\"$PWD\"" >> ~/.bashrc
 
-        # source ~/.bashrc
+        source ~/.bashrc
 
-        # source $path/bin/activate base
+        source $path/bin/activate base
 
-        # cd $base_dir
-
-        # TODO!
+        cd $base_dir
 
 fi
 
