@@ -11,7 +11,7 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 - Richer Insights from various Downstream analyses and publication-ready plots
 - Offline Analysis using different pipelines available for Nanopore Sequencing
 
-## Combination of Classification tools and Databases utilised by NANOTAXI
+## Classification Tools and Database Compatibility in NANOTAXI
 
 | Tool | Mode | GTDB | REFSEQ | GSR | MIMT | EMU DB |
 |------|------|------|--------|-----|------|--------|
