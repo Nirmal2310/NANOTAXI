@@ -381,9 +381,7 @@ if [ ! -d GSR ]; then
         
         source $path/bin/activate kraken2
 
-        cp GSR_kraken2_ready.fasta GSR/library/seqs.fna
-
-        kraken2-build --add-to-library GSR/library/seqs.fna --db GSR --no-masking
+        kraken2-build --add-to-library GSR_kraken2_ready.fasta --db GSR --no-masking
 
         kraken2-build --build --db GSR --threads $threads
 
