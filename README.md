@@ -16,9 +16,9 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 | Tool | Mode | GTDB | REFSEQ | GSR | MIMT | EMU DB |
 |------|------|------|--------|-----|------|--------|
 | Kraken2 | Real-time | ✓ | ✓ | ✓ | ✓ | |
-| Kraken2 | Offline | ✓ | ✓ | ✓ | ✓ | |
 | Minimap2 | Real-time | ✓ | ✓ | ✓ | ✓ | |
 | Minimap2 | Offline | ✓ | ✓ | ✓ | ✓ | |
+| Kraken2 | Offline | ✓ | ✓ | ✓ | ✓ | |
 | BLAST | Offline | ✓ | ✓ | ✓ | ✓ | |
 | EMU | Offline | | | | | ✓ |
 
