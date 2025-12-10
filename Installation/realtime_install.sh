@@ -137,7 +137,7 @@ if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
         else
                 conda create --name minknow_api --file $script_dir/minknow_api.txt -y && rm -r _current_env.txt
 
-                conda init
+                conda init bash
 
                 conda activate minknow_api
 
@@ -155,7 +155,7 @@ else
 
         conda create --name minknow_api --file $script_dir/minknow_api.txt -y
 
-        conda init
+        conda init bash
 
         conda activate minknow_api
 
