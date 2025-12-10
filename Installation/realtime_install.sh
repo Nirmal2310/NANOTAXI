@@ -277,7 +277,7 @@ if [ ! -d GTDB ]; then
 
         kraken2-build --clean --db GTDB
 
-        rm -r GTDB_16S_kraken2_ready.fasta* GTDB_16S_reps.fasta seq_id_replacement.txt seqid_taxid.txt gtdb_filtered_ids
+        rm -r GTDB_16S_kraken2_ready.fasta* GTDB_16S_reps.fasta* seq_id_replacement.txt seqid_taxid.txt gtdb_filtered_ids
         
         cd GTDB
 
@@ -571,7 +571,7 @@ if [ ! -d MIMT ]; then
 
         wget -c https://people.biopolis.pt/bu/mimt/downloads/16S_files/MIMt-16S_M2c_25_10_taxid.fna.gz -O MIMt.fasta.gz && gunzip MIMt.fasta.gz
 
-        source $base/bin/activate taxonkit
+        source $path/bin/activate taxonkit
 
         threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
 
@@ -609,6 +609,8 @@ source ~/.bashrc
 cd $base_dir/DATA/MINIMAP2
 
 if [ ! -d REFSEQ ]; then
+
+        mkdir REFSEQ
 
         wget -c https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Archaea/archaea.16SrRNA.fna.gz https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/bacteria.16SrRNA.fna.gz
 
