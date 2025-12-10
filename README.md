@@ -17,10 +17,10 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 |------|------|------|--------|-----|------|--------|
 | Kraken2 | Real-time | ✓ | ✓ | ✓ | ✓ | |
 | Minimap2 | Real-time | ✓ | ✓ | ✓ | ✓ | |
+| EMU | Offline | | | | | ✓ |
 | Minimap2 | Offline | ✓ | ✓ | ✓ | ✓ | |
 | Kraken2 | Offline | ✓ | ✓ | ✓ | ✓ | |
 | BLAST | Offline | ✓ | ✓ | ✓ | ✓ | |
-| EMU | Offline | | | | | ✓ |
 
 #### Legend
 - ✓ : Tool supports this database
