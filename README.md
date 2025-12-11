@@ -24,7 +24,6 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 
 #### Legend
 - ✓: Tool supports this database
-- Blank: No compatibility
 - **EMU DB**: Proprietary database format for EMU.
 
 
