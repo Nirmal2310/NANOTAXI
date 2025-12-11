@@ -131,6 +131,17 @@ if [ ! -d TAXONKIT_DATA ]; then
 
         grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
 
+        wget https://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/nucl_gb.accession2taxid.gz
+
+        wget -c https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Archaea/archaea.16SrRNA.fna.gz https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/bacteria.16SrRNA.fna.gz
+
+        zcat bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz > refseq_16S.fasta && rm -r bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz
+
+        zcat nucl_gb.accession2taxid.gz | grep -w -f <(grep -oP '^>[^\s]+' refseq_16S.fasta | sed 's/^>//') | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{print $2,$3}' > refseq_taxid.txt
+
+        rm -r nucl_gb.accession2taxid.gz refseq_16S.fasta
+
         source ~/.bashrc
 
 fi
@@ -277,11 +288,6 @@ if [ ! -d GSR ]; then
         tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
 
         threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
-
-        source $path/bin/activate taxonkit
-
-        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g;s/_/ /g' GSR-DB_full-16S_filt_taxa.txt | awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$8}' | \
-        taxonkit name2taxid --threads $threads --data-dir $TAXONKIT_DB -i 2 | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$3}' > seqid_taxid.txt && rm -r GSR-DB_full-16S_filt_taxa.txt
         
         source $path/bin/activate seqkit
 
@@ -291,41 +297,43 @@ if [ ! -d GSR ]; then
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > temp && mv temp GSR-DB_full-16S_filt_seqs.fasta
 
-        grep ">" GSR-DB_full-16S_filt_seqs.fasta | sed 's/>//g' | split -l 1000 - ids_chunk_
+        grep -Ff gsr_filtered_ids GSR-DB_full-16S_filt_taxa.txt > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
 
-        chunk_number=$(ls ids_chunk_* | wc -l)
+        source $path/bin/activate nanotaxi-env
 
-        parallel_jobs=$(if [ $chunk_number -gt $threads ]; then echo $threads; else echo $chunk_number; fi)
-        
-        parallel -j $parallel_jobs "rg -f {} seqid_taxid.txt" ::: ids_chunk_* | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$1"|kraken:taxid|"$2}' > seq_id_replacement.txt && rm -r ids_chunk_*
+        Rscript $script_dir/gsr_kraken_taxa_build.R GSR-DB_full-16S_filt_taxa.txt 16
+
+        mkdir -p GSR GSR/taxonomy GSR/library
+
+        mv nodes.dmp GSR/taxonomy/ && mv names.dmp GSR/taxonomy/
+
+        sed -i -e 's/$/\t|/g' GSR/taxonomy/nodes.dmp
+
+        sed -i -e 's/$/\t|/g' GSR/taxonomy/names.dmp
+
+        source $path/bin/activate seqkit
 
         seqkit replace -p '^(\S+)' -r '{kv}$2' -k seq_id_replacement.txt GSR-DB_full-16S_filt_seqs.fasta > GSR_kraken2_ready.fasta
         
         source $path/bin/activate kraken2
 
-        kraken2-build --download-taxonomy --db GSR --use-ftp  --skip-maps
+        kraken2-build --add-to-library GSR_kraken2_ready.fasta --db GSR --no-masking
 
-        kraken2-build --add-to-library GSR_kraken2_ready.fasta --db GSR
+        kraken2-build --build --db GSR --threads $threads
 
-        # grep ">" GSR_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > GTDB/seqid2taxid.map
+        kraken2-build --clean --db GSR
 
-        # kraken2-build --build --db GTDB --threads $threads
-
-        # kraken2-build --clean --db GTDB
-
-        # rm -r GTDB_16S_kraken2_ready.fasta* GTDB_16S_reps.fasta seq_id_replacement.txt seqid_taxid.txt gtdb_filtered_ids
+        rm -r GSR_kraken2_ready.fasta* GSR-DB_full-16S_filt_seqs.fasta* seq_id_replacement.txt gsr_filtered_ids GSR-DB_full-16S_filt_taxa.txt
         
-        # cd GTDB
+        cd GSR
 
-        # grep -qF "export KRAKEN_GTDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_GTDB=\"$PWD\"" >> ~/.bashrc
+        grep -qF "export KRAKEN_GSR=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_GSR=\"$PWD\"" >> ~/.bashrc
 
-        # source ~/.bashrc
+        source ~/.bashrc
 
-        # source $path/bin/activate base
+        source $path/bin/activate base
 
-        # cd $base_dir
-
-        # TODO!
+        cd $base_dir
 
 fi
 
@@ -343,12 +351,9 @@ if [ ! -d REFSEQ ]; then
 
         zcat bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz > refseq_16S.fasta && rm -r bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz
 
-        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
+        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}'; fi)
 
-        source $path/bin/activate taxonkit
-
-        grep ">" refseq_16S.fasta | sed 's/>//g' | awk -F " " '{print $1"\t"$2,$3}' | taxonkit name2taxid --threads $threads --data-dir $TAXONKIT_DB -i 2 | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$3}' > seqid_taxid.txt
+        cp $TAXONKIT_DB/refseq_taxid.txt seqid_taxid.txt
 
         source $path/bin/activate seqkit
 
@@ -397,3 +402,55 @@ cd $base_dir/DATA/KRAKEN/REFSEQ
 grep -qF "export KRAKEN_REFSEQ=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_REFSEQ=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
+
+cd $base_dir/DATA/KRAKEN/
+
+if [ ! -d EMUDB ]; then
+
+        source $path/bin/activate minknow_api
+
+        osf -p 56uf7 fetch osfstorage/emu-prebuilt/emu.tar.gz
+
+        tar -xvf emu.tar.gz --strip 1
+
+        rm -r emu.tar.gz
+
+        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}'; fi)
+
+        sed -i 's/ .*$//g;s/:/_/g' species_taxid.fasta
+
+        grep ">" species_taxid.fasta | sed 's/>//g' | awk 'BEGIN{FS=OFS="\t"}{$2=$1; gsub(/_.*$/, "",$2); print $1, $1"|kraken:taxid|"$2}' > seq_id_replacement.txt
+
+        source $path/bin/activate seqkit
+
+        seqkit replace -p '^(\S+)' -r '{kv}$2' -k seq_id_replacement.txt species_taxid.fasta > emu_kraken2_ready.fasta
+
+        source $path/bin/activate kraken2
+
+        kraken2-build --download-taxonomy --db EMUDB --use-ftp  --skip-maps
+
+        kraken2-build --add-to-library emu_kraken2_ready.fasta --db EMUDB --no-masking
+
+        grep ">" emu_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > EMUDB/seqid2taxid.map
+
+     	kraken2-build --build --db EMUDB --threads $threads
+
+      	kraken2-build --clean --db EMUDB
+
+       	rm -r species_taxid.fasta emu_kraken2_ready.fasta seq_id_replacement.txt taxonomy.tsv
+
+        cd EMUDB
+
+        grep -qF "export KRAKEN_EMUDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_EMUDB=\"$PWD\"" >> ~/.bashrc
+
+        source ~/.bashrc
+
+fi
+
+cd $base_dir/DATA/KRAKEN/EMUDB
+
+grep -qF "export KRAKEN_EMUDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_EMUDB=\"$PWD\"" >> ~/.bashrc
+
+source ~/.bashrc
+
+cd $base_dir

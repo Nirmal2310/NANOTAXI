@@ -104,6 +104,12 @@ elif [ "$db" == "GSR" ]; then
 
     TAXA_DATA=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_taxa.txt/')
 
+elif [ "$db" == "EMUDB" ]; then
+
+    MINIMAP_DB=$(grep EMUDB ~/.bashrc | tail -n 1 | sed 's/export EMUDB="//;s/"//g;s/$/\/EMU.fasta/')
+
+    TAXA_DATA=$(grep EMUDB ~/.bashrc | tail -n 1 | sed 's/export EMUDB="//;s/"//g;s/$/\/EMU_taxa.txt/')
+
 fi
 
 while read barcode
@@ -124,10 +130,10 @@ do
 
 done < "$path/barcode_list"
 
-if [ ! -d $path/Minimap2_Results ]; then
+if [ ! -d $path/Minimap2_Results/$db ]; then
 
-    mkdir $path/Minimap2_Results
+    mkdir -p $path/Minimap2_Results/$db
 
 fi
 
-mv $path/barcode*/*_final_minimap2_result.txt $path/Minimap2_Results/
+mv $path/barcode*/*_final_minimap2_result.txt $path/Minimap2_Results/$db/

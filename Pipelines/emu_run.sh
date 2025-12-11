@@ -4,13 +4,14 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: emu_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -q 10"
+   echo "Usage: emu_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -q 10 -n EMUDB"
    echo -e "\t-p <path> Path to directory containing passed raw data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
+   echo -e "\t-n <str> Database Name. [default: EMUDB]"
    exit 1 # Exit script after printing help
 }
 
@@ -20,12 +21,9 @@ threads=16
 min=1400
 max=1800
 q_score=10
+db="EMUDB"
 
-EMU_DB=$(grep EMU_DB ~/.bashrc | tail -n 1 | sed 's/export EMU_DB="//;s/"//g')
-
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
-while getopts "p:k:t:m:M:q:" opt
+while getopts "p:k:t:m:M:q:n:" opt
 do
     case "$opt" in
     p )
@@ -46,6 +44,9 @@ do
     q )
         q_score="$OPTARG"
         ;;
+    n )
+        db="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
@@ -64,6 +65,30 @@ if [ ! -f $path/barcode_list ]
 	    [ "$(find $i -type f)" ] && echo $i
 
     done | sed "s|$path||g;s/\///g" > $path/barcode_list
+fi
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
+
+if [ "$db" == "REFSEQ" ]; then
+
+    EMU_DB=$(grep EMU_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export EMU_REFSEQ="//;s/"//g')
+
+elif [ "$db" == "GTDB" ]; then
+    
+    EMU_DB=$(grep EMU_GTDB ~/.bashrc | tail -n 1 | sed 's/export EMU_GTDB="//;s/"//g')
+
+elif [ "$db" == "MIMT" ]; then
+
+    EMU_DB=$(grep EMU_MIMT ~/.bashrc | tail -n 1 | sed 's/export EMU_MIMT="//;s/"//g')
+
+elif [ "$db" == "GSR" ]; then
+
+    EMU_DB=$(grep EMU_GSR ~/.bashrc | tail -n 1 | sed 's/export EMU_GSR="//;s/"//g')
+
+elif [ "$db" == "EMUDB" ]; then
+
+    EMU_DB=$(grep EMU_DB ~/.bashrc | tail -n 1 | sed 's/export EMU_DB="//;s/"//g')
+
 fi
 
 while read barcode
@@ -88,12 +113,12 @@ do
 
 done < "$path/barcode_list"
 
-if [ ! -d $path/EMU_Results ]; then
+if [ ! -d $path/EMU_Results/$db ]; then
 
-    mkdir $path/EMU_Results
+    mkdir -p $path/EMU_Results/$db
 
 fi
 
 echo "Success"
 
-mv $path/barcode*/*_final_emu_result.txt $path/EMU_Results/
+mv $path/barcode*/*_final_emu_result.txt $path/EMU_Results/$db/

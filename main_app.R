@@ -236,7 +236,7 @@ server <- function(input, output, session) {
         " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
         , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
 
-        result_dir <- paste0(input$fastqdir, "/Blast_Results/")
+        result_dir <- paste0(input$fastqdir, "/Blast_Results/", input$database,"/")
 
         result_dir_val(result_dir)
 
@@ -249,7 +249,7 @@ server <- function(input, output, session) {
                       " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
                       , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
 
-        result_dir <- paste0(input$fastqdir, "/Blast_Results/")
+        result_dir <- paste0(input$fastqdir, "/Blast_Results/", input$database,"/")
 
         result_dir_val(result_dir)
       
@@ -264,12 +264,12 @@ server <- function(input, output, session) {
         
         print("Analyzing Data....")
         
-        system(paste0("bash ", pipeline_dir, "/kraken_gtdb_run.sh -p ", input$fastqdir,
+        system(paste0("bash ", pipeline_dir, "/kraken_run.sh -p ", input$fastqdir,
                       " -k ", input$kitname, " -t ",
                       input$threads, " -m ", input$min, " -M ",
                       input$max, " -r ", input$tax, " -c ", input$conf
                       , " -q ", input$q_score, " -n ", input$database))
-        result_dir <- paste0(input$fastqdir, "/Kraken2_GTDB_Results/")
+        result_dir <- paste0(input$fastqdir, "/Kraken2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
       }
@@ -277,12 +277,12 @@ server <- function(input, output, session) {
       {
         print("Analyzing Data....")
         
-        system(paste0("bash ", pipeline_dir, "/kraken_gtdb_run.sh -p ", input$fastqdir,
+        system(paste0("bash ", pipeline_dir, "/kraken_run.sh -p ", input$fastqdir,
                       " -k ", input$kitname, " -t ",
                       input$threads, " -m ", input$min, " -M ",
                       input$max, " -r ", input$tax, " -c ", input$conf
                       , " -q ", input$q_score, " -n ", input$database))
-        result_dir <- paste0(input$fastqdir, "/Kraken2_GTDB_Results/")
+        result_dir <- paste0(input$fastqdir, "/Kraken2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
       }
@@ -301,7 +301,7 @@ server <- function(input, output, session) {
         system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
                       " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
                       , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
-        result_dir <- paste0(input$fastdir,"/Minimap2_Results/")
+        result_dir <- paste0(input$fastdir,"/Minimap2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
       }
@@ -314,13 +314,13 @@ server <- function(input, output, session) {
         system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
                       " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
                       , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
-        result_dir <- paste0(input$fastdir,"/Minimap2_Results/")
+        result_dir <- paste0(input$fastdir,"/Minimap2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
       }
     }
 
-    else if(input$pipeline == "EMU + Standard DB")
+    else if(input$pipeline == "EMU")
     {
       if(input$setup)
       {
@@ -332,9 +332,9 @@ server <- function(input, output, session) {
 
         system(paste0("bash ", pipeline_dir, "/emu_run.sh -p ", input$fastqdir, " -k ", input$kitname, " -t ",
         input$threads, " -m ", input$min, " -M ",
-        input$max, " -q ", input$q_score))
+        input$max, " -q ", input$q_score, " -n ", input$database))
 
-        result_dir <- paste0(input$fastqdir,"/EMU_Results/")  
+        result_dir <- paste0(input$fastqdir,"/EMU_Results/", input$database,"/")  
 
         result_dir_val(result_dir)
 
@@ -345,9 +345,9 @@ server <- function(input, output, session) {
 
         system(paste0("bash ", pipeline_dir, "/emu_run.sh -p ", input$fastqdir, " -k ", input$kitname, " -t ",
         input$threads, " -m ", input$min, " -M ",
-        input$max, " -q ", input$q_score))
+        input$max, " -q ", input$q_score, " -n ", input$database))
       
-        result_dir <- paste0(input$fastqdir,"/EMU_Results/")
+        result_dir <- paste0(input$fastqdir,"/EMU_Results/", input$database,"/")
 
         result_dir_val(result_dir)
 
@@ -446,8 +446,8 @@ server <- function(input, output, session) {
 
     for (i in 1:length(classified_samples))
     {
-        classification_data_list[[i]] <- read.delim(file = paste0(reads_path, "/", classified_samples[i], "/", classified_samples[i],
-        "_final_kraken2_result.txt"), header = FALSE, sep = "\t")
+        classification_data_list[[i]] <- read.delim(file = paste0(reads_path, "/", classified_samples[i], "/", 
+        input$database, "/", classified_samples[i], "_final_kraken2_result.txt"), header = FALSE, sep = "\t")
         
         colnames(classification_data_list[[i]]) <- c("TAX_ID", "Counts", "Kingdom", "Phylum",
                                             "Class", "Order", "Family", "Genus", "Species")
@@ -526,8 +526,8 @@ server <- function(input, output, session) {
 
     for (i in 1:length(classified_samples))
     {
-        classification_data_list[[i]] <- read.delim(file = paste0(reads_path, "/", classified_samples[i], "/", classified_samples[i],
-        "_final_minimap2_result.txt"), header = FALSE, sep = "\t")
+        classification_data_list[[i]] <- read.delim(file = paste0(reads_path, "/", classified_samples[i], "/", 
+        input$$database, "/", classified_samples[i], "_final_minimap2_result.txt"), header = FALSE, sep = "\t")
         
         colnames(classification_data_list[[i]]) <- c("Counts", "Kingdom", "Phylum",
                                             "Class", "Order", "Family", "Genus", "Species")

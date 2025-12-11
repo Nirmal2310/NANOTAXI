@@ -83,6 +83,10 @@ elif [ "$db" == "GSR" ]; then
 
     KRAKEN_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g')
 
+elif [ "$db" == "EMUDB" ]; then
+
+    KRAKEN_DB=$(grep KRAKEN_EMUDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_EMUDB="//;s/"//g')
+
 fi
 
 TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
@@ -120,10 +124,10 @@ do
 
 done < "$path/barcode_list"
 
-if [ ! -d $path/Kraken2_Results ]; then
+if [ ! -d $path/Kraken2_Results/$db ]; then
     
-    mkdir $path/Kraken2_Results
+    mkdir -p $path/Kraken2_Results/$db
 
 fi
 
-mv $path/barcode*/*_final_kraken2_result.txt $path/Kraken2_Results/
+mv $path/barcode*/*_final_kraken2_result.txt $path/Kraken2_Results/$db/

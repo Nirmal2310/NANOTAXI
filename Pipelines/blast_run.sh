@@ -93,6 +93,14 @@ elif [ "$db" == "GSR" ]; then
 
 fi
 
+elif [ "$db" == "EMUDB" ]; then
+
+    BLAST_DB=$(grep BLAST_EMU ~/.bashrc | tail -n 1 | sed 's/export BLAST_EMU="//;s/"//g;s/$/\/EMU_BLAST/')
+
+    TAXA_DATA=$(grep BLAST_EMU ~/.bashrc | tail -n 1 | sed 's/export BLAST_EMU="//;s/"//g;s/$/\/EMU_taxa.txt/')
+
+fi
+
 TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
 
@@ -126,10 +134,10 @@ do
 
 done < "$path/barcode_list"
 
-if [ ! -d $path/Blast_Results ]; then
+if [ ! -d $path/Blast_Results/$db ]; then
 
-    mkdir $path/Blast_Results
+    mkdir $path/Blast_Results/$db
 
 fi
 
-mv $path/barcode*/*_final_blast_result.txt $path/Blast_Results/
+mv $path/barcode*/*_final_blast_result.txt $path/Blast_Results/$db/

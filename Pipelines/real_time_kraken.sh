@@ -82,6 +82,16 @@ elif [ "$db" == "GSR" ]; then
 
     KRAKEN_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g')
 
+elif [ "$db" == "EMUDB" ]; then
+
+    KRAKEN_DB=$(grep KRAKEN_EMUDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_EMUDB="//;s/"//g')    
+
+fi
+
+if [ ! -d $data_path/$barcode/$db ]; then
+
+    mkdir -p $data_path/$barcode/$db
+
 fi
 
 
@@ -111,7 +121,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate taxonkit
 
-        sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $data_path/$barcode/${barcode}_final_kraken2_result.txt
+        sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
 
         rm -r $data_path/$barcode/${barcode}_kraken_biom.txt $data_path/$barcode/${barcode}_hist_temp.txt
         
@@ -152,7 +162,7 @@ else
 
             conda activate taxonkit
 
-            sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' >> $data_path/$barcode/${barcode}_final_kraken2_result.txt
+            sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' >> $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
 
             rm -r $data_path/$barcode/${barcode}_kraken_biom.txt $data_path/$barcode/${barcode}_hist_temp.txt
 

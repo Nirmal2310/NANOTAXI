@@ -145,6 +145,8 @@ if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
         
                 pip install pysam
 
+                pip install osfclient
+
                 conda activate base
                 
                 conda list -n minknow_api --explicit > $script_dir/minknow_api.txt
@@ -162,6 +164,8 @@ else
         pip install minknow-api==6.0.4
 
         pip install pysam
+
+        pip install osfclient
 
         conda activate base
 
@@ -207,6 +211,17 @@ if [ ! -d TAXONKIT_DATA ]; then
         grep -qF "export TAXONKIT_DB=\"$PWD\"" ~/.bashrc || echo "export TAXONKIT_DB=\"$PWD\"" >> ~/.bashrc
 
         source ~/.bashrc
+
+        wget https://ftp.ncbi.nih.gov/pub/taxonomy/accession2taxid/nucl_gb.accession2taxid.gz
+
+        wget -c https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Archaea/archaea.16SrRNA.fna.gz https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/bacteria.16SrRNA.fna.gz
+
+        zcat bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz > refseq_16S.fasta && rm -r bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz
+
+        zcat nucl_gb.accession2taxid.gz | grep -w -f <(grep -oP '^>[^\s]+' refseq_16S.fasta | sed 's/^>//') | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{print $2,$3}' > refseq_taxid.txt
+
+        rm -r nucl_gb.accession2taxid.gz refseq_16S.fasta
 
 fi
 
@@ -415,12 +430,9 @@ if [ ! -d REFSEQ ]; then
 
         zcat bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz > refseq_16S.fasta && rm -r bacteria.16SrRNA.fna.gz archaea.16SrRNA.fna.gz
 
-        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
+        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}'; fi)
 
-        source $path/bin/activate taxonkit
-
-        grep ">" refseq_16S.fasta | sed 's/>//g' | awk -F " " '{print $1"\t"$2,$3}' | taxonkit name2taxid --threads $threads --data-dir $TAXONKIT_DB -i 2 | \
-        awk -F "\t" '!seen[$1]++' | awk 'BEGIN{FS="\t";OFS="\t"}{print $1,$3}' > seqid_taxid.txt
+        cp $TAXONKIT_DB/refseq_taxid.txt seqid_taxid.txt
 
         source $path/bin/activate seqkit
 
@@ -470,6 +482,56 @@ grep -qF "export KRAKEN_REFSEQ=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_REFSEQ
 
 source ~/.bashrc
 
+cd $base_dir/DATA/KRAKEN/
+
+if [ ! -d EMUDB ]; then
+
+        source $path/bin/activate minknow_api
+
+        osf -p 56uf7 fetch osfstorage/emu-prebuilt/emu.tar.gz
+
+        tar -xvf emu.tar.gz --strip 1
+
+        rm -r emu.tar.gz
+
+        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}'; fi)
+
+        sed -i 's/ .*$//g;s/:/_/g' species_taxid.fasta
+
+        grep ">" species_taxid.fasta | sed 's/>//g' | awk 'BEGIN{FS=OFS="\t"}{$2=$1; gsub(/_.*$/, "",$2); print $1, $1"|kraken:taxid|"$2}' > seq_id_replacement.txt
+
+        source $path/bin/activate seqkit
+
+        seqkit replace -p '^(\S+)' -r '{kv}$2' -k seq_id_replacement.txt species_taxid.fasta > emu_kraken2_ready.fasta
+
+        source $path/bin/activate kraken2
+
+        kraken2-build --download-taxonomy --db EMUDB --use-ftp  --skip-maps
+
+        kraken2-build --add-to-library emu_kraken2_ready.fasta --db EMUDB --no-masking
+
+        grep ">" emu_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > EMUDB/seqid2taxid.map
+
+     	kraken2-build --build --db EMUDB --threads $threads
+
+      	kraken2-build --clean --db EMUDB
+
+       	rm -r species_taxid.fasta emu_kraken2_ready.fasta seq_id_replacement.txt taxonomy.tsv
+
+        cd EMUDB
+
+        grep -qF "export KRAKEN_EMUDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_EMUDB=\"$PWD\"" >> ~/.bashrc
+
+        source ~/.bashrc
+
+fi
+
+cd $base_dir/DATA/KRAKEN/EMUDB
+
+grep -qF "export KRAKEN_EMUDB=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_EMUDB=\"$PWD\"" >> ~/.bashrc
+
+source ~/.bashrc
+
 cd $base_dir/DATA
 
 if [ ! -d MINIMAP2 ]; then
@@ -486,8 +548,9 @@ if [ ! -d GSR_DB ]; then
 
         tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
 
-        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g;s/_/ /g' GSR-DB_full-16S_filt_taxa.txt | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print "REF_ID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"; else print $0}' > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
+        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' GSR-DB_full-16S_filt_taxa.txt | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' | \
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
 
         source $path/bin/activate seqkit
 
@@ -530,7 +593,7 @@ if [ ! -d GTDB ]; then
         zcat bac120_ssu_reps.fna.gz ar53_ssu_reps.fna.gz > GTDB_16S_reps.fasta && rm -r bac120_ssu_reps.fna.gz ar53_ssu_reps.fna.gz
 
         grep ">" GTDB_16S_reps.fasta | sed 's/>//g' | sed 's/ /\t/;s/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | sed 's/ \[locus.*$//g' | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print "REF_ID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"; else print $0}' > GTDB_taxa.txt
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > GTDB_taxa.txt
 
         source $path/bin/activate seqkit
 
@@ -568,12 +631,10 @@ if [ ! -d MIMT ]; then
 
         wget -c https://people.biopolis.pt/bu/mimt/downloads/16S_files/MIMt-16S_M2c_25_10_taxid.fna.gz -O MIMt.fasta.gz && gunzip MIMt.fasta.gz
 
-        source $path/bin/activate taxonkit
+        wget -c https://people.biopolis.pt/bu/mimt/downloads/16S_files/MIMt-16S_M2c_25_10.tax.gz -O MIMT_taxa.txt.gz && gunzip MIMT_taxa.txt.gz
 
-        threads=$(if [ $(nproc) -gt 16 ]; then echo 16; else echo $(nproc) | awk '{print $1/2}' ; fi)
-
-        grep ">" MIMt.fasta | sed 's/>//g' | taxonkit reformat2 --data-dir $TAXONKIT_DB --threads 16 -I 2 | sed 's/;/\t/g' | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print "REF_ID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"; else print $1,$3,$4,$5,$6,$7,$8,$9}' > MIMT_taxa.txt
+        sed 's/;/\t/g;s/[K,P,C,O,F,G,S]__//g' MIMT_taxa.txt | awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' | \
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > temp && mv temp MIMT_taxa.txt
 
         source $path/bin/activate seqkit
 
@@ -617,9 +678,11 @@ if [ ! -d REFSEQ ]; then
 
         source $path/bin/activate taxonkit
 
-        grep ">" refseq_16S.fasta | sed 's/>//g' | awk -F " " '{print $1"\t"$2,$3}' | taxonkit name2taxid --threads $threads --data-dir $TAXONKIT_DB -i 2 | \
-        awk -F "\t" '!seen[$1]++' | taxonkit reformat2 --data-dir $TAXONKIT_DB --threads $threads -I 3 | sed 's/;/\t/g' | \
-        awk 'BEGIN{FS=OFS="\t"}{if(NR==1) print "REF_ID", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species"; else print $1,$4,$5,$6,$7,$8,$9,$10}' > RefSeq_taxa.txt
+        cp $TAXONKIT_DB/refseq_taxid.txt seqid_taxid.txt
+
+        taxonkit lineage --data-dir $TAXONKIT_DB --threads $threads -i 2 seqid_taxid.txt | sed 's/;/\t/g' | \
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - | \
+        awk 'BEGIN{FS=OFS="\t"}{if(NR==1) print $0; else print $1,$4,$5,$6,$7,$8,$9,$10,$11}' > RefSeq_taxa.txt
 
         source $path/bin/activate seqkit
 
@@ -629,7 +692,7 @@ if [ ! -d REFSEQ ]; then
 
         seqkit faidx -X refseq_filtered_ids refseq_16S.fasta > refseq_final_seqs.fasta
 
-        rm -r refseq_filtered_ids refseq_16S.fasta*
+        rm -r refseq_filtered_ids refseq_16S.fasta* seqid_taxid.txt
 
         mv refseq_final_seqs.fasta RefSeq_taxa.txt REFSEQ/
 
@@ -648,3 +711,44 @@ cd $base_dir/DATA/MINIMAP2/REFSEQ
 grep -qF "export REFSEQ=\"$PWD\"" ~/.bashrc || echo "export REFSEQ=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
+
+cd $base_dir/DATA/MINIMAP2
+
+if [ ! -d EMUDB ]; then
+
+        source $path/bin/activate minknow_api
+
+        mkdir EMUDB
+
+        osf -p 56uf7 fetch osfstorage/emu-prebuilt/emu.tar.gz
+
+        tar -xvf emu.tar.gz -C EMUDB --strip 1
+
+        rm -r emu.tar.gz
+
+        cd EMUDB
+
+        sed -i 's/ .*$//g' species_taxid.fasta && mv species_taxid.fasta EMU.fasta
+
+        join <(grep ">" EMU.fasta | sed 's/>//;s/ .*$//g' | awk 'BEGIN{FS=OFS="\t"}{$2=$1; gsub(/:.*$/,"",$2); print $2,$1}' | sort -k1 -n -r) \
+        <(awk 'BEGIN{FS=OFS="\t"}{if(NR>1) print $1,$9,$7,$6,$5,$4,$3,$2}' taxonomy.tsv | sort -k1 -n -r) | \
+        awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$3,$4,$5,$6,$7,$8,$9" "$10}' | \
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > EMU_taxa.txt
+
+        rm -r taxonomy.tsv
+
+        grep -qF "export EMUDB=\"$PWD\"" ~/.bashrc || echo "export EMUDB=\"$PWD\"" >> ~/.bashrc
+
+        source ~/.bashrc
+
+        cd $base_dir
+
+fi
+
+cd $base_dir/DATA/MINIMAP2/EMUDB
+
+grep -qF "export EMUDB=\"$PWD\"" ~/.bashrc || echo "export EMUDB=\"$PWD\"" >> ~/.bashrc
+
+source ~/.bashrc
+
+cd $base_dir
