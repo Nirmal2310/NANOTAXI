@@ -122,7 +122,7 @@ do
 
     conda activate minimap2
 
-    minimap2 -ax map-ont -t $threads --eqx $MINIMAP_DB $path/$barcode/${barcode}_16s.fasta | \
+    minimap2 -ax map-ont -t $threads -I 16G --eqx $MINIMAP_DB $path/$barcode/${barcode}_16s.fasta | \
         samtools view -@ $threads -F 3844 -bS | samtools sort -@ $threads -o $path/$barcode/${barcode}_16S.bam; samtools index -@ $threads $path/$barcode/${barcode}_16S.bam
     
     python $script_path/alignment_filter.py -b $path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \

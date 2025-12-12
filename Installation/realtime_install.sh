@@ -548,7 +548,7 @@ if [ ! -d GSR ]; then
 
         tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
 
-        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' GSR-DB_full-16S_filt_taxa.txt | \
+        awk -F "\t" '{if(NR>1) print $0}' GSR-DB_full-16S_filt_taxa.txt | sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g'  | \
         awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' | \
         cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > temp && mv temp GSR-DB_full-16S_filt_taxa.txt
 

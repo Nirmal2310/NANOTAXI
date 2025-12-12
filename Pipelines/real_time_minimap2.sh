@@ -125,7 +125,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         conda activate minimap2
 
-        minimap2 -ax map-ont -t 2 --eqx $MINIMAP_DB $data_path/$barcode/${barcode}_16S.fasta | \
+        minimap2 -ax map-ont -t 2 -I 16G --eqx $MINIMAP_DB $data_path/$barcode/${barcode}_16S.fasta | \
 	    samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
 
         python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
