@@ -139,7 +139,7 @@ if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
 
                 conda init bash
 
-                conda activate minknow_api
+                source $path/bin/activate minknow_api
 
                 pip install minknow-api==6.0.4
         
@@ -147,7 +147,7 @@ if { conda env list |  grep -w "minknow_api"; } > /dev/null 2>&1; then
 
                 pip install osfclient
 
-                conda activate base
+                source $path/bin/activate base
                 
                 conda list -n minknow_api --explicit > $script_dir/minknow_api.txt
                 
@@ -159,7 +159,7 @@ else
 
         conda init bash
 
-        conda activate minknow_api
+        source $path/bin/activate minknow_api
 
         pip install minknow-api==6.0.4
 
@@ -167,7 +167,7 @@ else
 
         pip install osfclient
 
-        conda activate base
+        source $path/bin/activate base
 
         conda list -n minknow_api --explicit > $script_dir/minknow_api.txt
 fi

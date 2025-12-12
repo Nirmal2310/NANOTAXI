@@ -527,7 +527,7 @@ server <- function(input, output, session) {
     for (i in 1:length(classified_samples))
     {
         classification_data_list[[i]] <- read.delim(file = paste0(reads_path, "/", classified_samples[i], "/", 
-        input$$database, "/", classified_samples[i], "_final_minimap2_result.txt"), header = FALSE, sep = "\t")
+        input$database, "/", classified_samples[i], "_final_minimap2_result.txt"), header = FALSE, sep = "\t")
         
         colnames(classification_data_list[[i]]) <- c("Counts", "Kingdom", "Phylum",
                                             "Class", "Order", "Family", "Genus", "Species")
