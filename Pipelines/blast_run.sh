@@ -91,8 +91,6 @@ elif [ "$db" == "GSR" ]; then
 
     TAXA_DATA=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR_taxa.txt/')
 
-fi
-
 elif [ "$db" == "EMUDB" ]; then
 
     BLAST_DB=$(grep BLAST_EMU ~/.bashrc | tail -n 1 | sed 's/export BLAST_EMU="//;s/"//g;s/$/\/EMU_BLAST/')
