@@ -540,9 +540,9 @@ fi
 
 cd $base_dir/DATA/MINIMAP2
 
-if [ ! -d GSR_DB ]; then
+if [ ! -d GSR ]; then
 
-        mkdir GSR_DB
+        mkdir GSR
 
         wget -c https://manichanh.vhir.org/gsrdb/GSR-DB_full-16S.tar.gz
 
@@ -560,13 +560,13 @@ if [ ! -d GSR_DB ]; then
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > temp && mv temp GSR-DB_full-16S_filt_seqs.fasta
 
-        mv GSR-DB_full-16S_filt_taxa.txt GSR-DB_full-16S_filt_seqs.fasta GSR_DB/
+        mv GSR-DB_full-16S_filt_taxa.txt GSR-DB_full-16S_filt_seqs.fasta GSR/
 
         rm -r GSR-DB_full-16S_filt_seqs.fasta.fai gsr_filtered_ids
 
-        cd GSR_DB
+        cd GSR
 
-        grep -qF "export GSR_DB=\"$PWD\"" ~/.bashrc || echo "export GSR_DB=\"$PWD\"" >> ~/.bashrc
+        grep -qF "export MINIMAP2_GSR=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_GSR=\"$PWD\"" >> ~/.bashrc
 
         source ~/.bashrc
 
@@ -574,9 +574,9 @@ if [ ! -d GSR_DB ]; then
 
 fi
 
-cd $base_dir/DATA/MINIMAP2/GSR_DB
+cd $base_dir/DATA/MINIMAP2/GSR
 
-grep -qF "export GSR_DB=\"$PWD\"" ~/.bashrc || echo "export GSR_DB=\"$PWD\"" >> ~/.bashrc
+grep -qF "export MINIMAP2_GSR=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_GSR=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 
@@ -601,15 +601,15 @@ if [ ! -d GTDB ]; then
 
         awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
 
-        seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > GTBD_final_seqs.fasta
+        seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > GTDB_final_seqs.fasta
 
         rm -r gtdb_filtered_ids GTDB_16S_reps.fasta*
 
-        mv GTBD_final_seqs.fasta GTDB_taxa.txt GTDB/
+        mv GTDB_final_seqs.fasta GTDB_taxa.txt GTDB/
 
         cd GTDB
 
-        grep -qF "export GTDB=\"$PWD\"" ~/.bashrc || echo "export GTDB=\"$PWD\"" >> ~/.bashrc
+        grep -qF "export MINIMAP2_GTDB=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_GTDB=\"$PWD\"" >> ~/.bashrc
 
         source ~/.bashrc
 
@@ -619,7 +619,7 @@ fi
 
 cd $base_dir/DATA/MINIMAP2/GTDB
 
-grep -qF "export GTDB=\"$PWD\"" ~/.bashrc || echo "export GTDB=\"$PWD\"" >> ~/.bashrc
+grep -qF "export MINIMAP2_GTDB=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_GTDB=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 
@@ -650,7 +650,7 @@ if [ ! -d MIMT ]; then
 
         cd MIMT
 
-        grep -qF "export MIMT=\"$PWD\"" ~/.bashrc || echo "export MIMT=\"$PWD\"" >> ~/.bashrc
+        grep -qF "export MINIMAP2_MIMT=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_MIMT=\"$PWD\"" >> ~/.bashrc
 
         source ~/.bashrc
 
@@ -660,7 +660,7 @@ fi
 
 cd $base_dir/DATA/MINIMAP2/MIMT
 
-grep -qF "export MIMT=\"$PWD\"" ~/.bashrc || echo "export MIMT=\"$PWD\"" >> ~/.bashrc
+grep -qF "export MINIMAP2_MIMT=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_MIMT=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 
@@ -680,9 +680,9 @@ if [ ! -d REFSEQ ]; then
 
         cp $TAXONKIT_DB/refseq_taxid.txt seqid_taxid.txt
 
-        taxonkit lineage --data-dir $TAXONKIT_DB --threads $threads -i 2 seqid_taxid.txt | sed 's/;/\t/g' | \
-        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - | \
-        awk 'BEGIN{FS=OFS="\t"}{if(NR==1) print $0; else print $1,$4,$5,$6,$7,$8,$9,$10,$11}' > RefSeq_taxa.txt
+        taxonkit reformat2 --data-dir $TAXONKIT_DB --threads $threads -f "{domain};{phylum};{class};{order};{family};{genus};{species}" -I 2 seqid_taxid.txt | \
+        awk 'BEGIN{FS=OFS="\t"}{print $1,$3}' | sort | uniq | sed 's/;/\t/g' | \
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tfamily\tGenus\tSpecies") - > RefSeq_taxa.txt
 
         source $path/bin/activate seqkit
 
@@ -698,7 +698,7 @@ if [ ! -d REFSEQ ]; then
 
         cd REFSEQ
 
-        grep -qF "export REFSEQ=\"$PWD\"" ~/.bashrc || echo "export REFSEQ=\"$PWD\"" >> ~/.bashrc
+        grep -qF "export MINIMAP2_REFSEQ=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_REFSEQ=\"$PWD\"" >> ~/.bashrc
 
         source ~/.bashrc
 
@@ -708,7 +708,7 @@ fi
 
 cd $base_dir/DATA/MINIMAP2/REFSEQ
 
-grep -qF "export REFSEQ=\"$PWD\"" ~/.bashrc || echo "export REFSEQ=\"$PWD\"" >> ~/.bashrc
+grep -qF "export MINIMAP2_REFSEQ=\"$PWD\"" ~/.bashrc || echo "export REFSEQ=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 
@@ -737,7 +737,7 @@ if [ ! -d EMUDB ]; then
 
         rm -r taxonomy.tsv
 
-        grep -qF "export EMUDB=\"$PWD\"" ~/.bashrc || echo "export EMUDB=\"$PWD\"" >> ~/.bashrc
+        grep -qF "export MINIMAP2_EMUDB=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_EMUDB=\"$PWD\"" >> ~/.bashrc
 
         source ~/.bashrc
 
@@ -747,7 +747,7 @@ fi
 
 cd $base_dir/DATA/MINIMAP2/EMUDB
 
-grep -qF "export EMUDB=\"$PWD\"" ~/.bashrc || echo "export EMUDB=\"$PWD\"" >> ~/.bashrc
+grep -qF "export MINIMAP2_EMUDB=\"$PWD\"" ~/.bashrc || echo "export MINIMAP2_EMUDB=\"$PWD\"" >> ~/.bashrc
 
 source ~/.bashrc
 

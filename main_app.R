@@ -301,7 +301,7 @@ server <- function(input, output, session) {
         system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
                       " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
                       , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
-        result_dir <- paste0(input$fastdir,"/Minimap2_Results/", input$database,"/")
+        result_dir <- paste0(input$fastqdir,"/Minimap2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
       }
@@ -314,7 +314,7 @@ server <- function(input, output, session) {
         system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
                       " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
                       , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
-        result_dir <- paste0(input$fastdir,"/Minimap2_Results/", input$database,"/")
+        result_dir <- paste0(input$fastqdir,"/Minimap2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
       }

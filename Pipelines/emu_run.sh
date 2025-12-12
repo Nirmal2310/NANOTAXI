@@ -105,9 +105,11 @@ do
 
     conda activate taxonkit
 
-    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$14}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/temp
+    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$10}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' | \
+    sort | join - <(sort $EMU_DB/taxonomy.tsv) | grep -v "tax_id" | awk 'BEGIN{FS=" ";OFS="\t"}{print $1,$2,$5,$6,$7,$8,$9,$10,$3" "$4}' > $path/$barcode/temp
 
-    awk 'BEGIN {for (i = 1; i <= 7; i++) printf "%s\t", "Unclassified"}' | paste -d "\t" <(echo "Unclassified") <(tail -n 1 $path/$barcode/${barcode}_rel-abundance.tsv | awk -F "\t" '{print $14}') - | cat $path/$barcode/temp - > $path/$barcode/${barcode}_final_emu_result.txt
+    awk 'BEGIN {for (i = 1; i <= 7; i++) printf "%s\t", "Unclassified"}' | paste -d "\t" <(echo "Unclassified") <(tail -n 1 $path/$barcode/${barcode}_rel-abundance.tsv | \
+    awk -F "\t" '{print $14}') - | cat $path/$barcode/temp - | sort -k1 -n -r | uniq > $path/$barcode/${barcode}_final_emu_result.txt
 
     rm -r $path/$barcode/temp
 

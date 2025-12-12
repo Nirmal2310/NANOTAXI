@@ -68,33 +68,33 @@ fi
 
 if [ "$db" == "REFSEQ" ]; then
 
-    MINIMAP_DB=$(grep REFSEQ ~/.bashrc | tail -n 1 | sed 's/export REFSEQ="//;s/"//g;s/$/\/refseq_final_seqs.fasta/')
+    MINIMAP_DB=$(grep MINIMAP2_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_REFSEQ="//;s/"//g;s/$/\/refseq_final_seqs.fasta/')
 
-    TAXA_DATA=$(grep REFSEQ ~/.bashrc | tail -n 1 | sed 's/export REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
+    TAXA_DATA=$(grep MINIMAP2_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
 
 elif [ "$db" == "GTDB" ]; then
     
-    MINIMAP_DB=$(grep GTDB ~/.bashrc | tail -n 1 | sed 's/export GTDB="//;s/"//g;s/$/\/GTBD_final_seqs.fasta/')
+    MINIMAP_DB=$(grep MINIMAP2_GTDB ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_GTDB="//;s/"//g;s/$/\/GTDB_final_seqs.fasta/')
 
-    TAXA_DATA=$(grep GTDB ~/.bashrc | tail -n 1 | sed 's/export GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
+    TAXA_DATA=$(grep MINIMAP2_GTDB ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
 
 elif [ "$db" == "MIMT" ]; then
 
-    MINIMAP_DB=$(grep MIMT ~/.bashrc | tail -n 1 | sed 's/export MIMT="//;s/"//g;s/$/\/MIMT_final_seqs.fasta/')
+    MINIMAP_DB=$(grep MINIMAP2_MIMT ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_MIMT="//;s/"//g;s/$/\/MIMT_final_seqs.fasta/')
 
-    TAXA_DATA=$(grep MIMT ~/.bashrc | tail -n 1 | sed 's/export MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
+    TAXA_DATA=$(grep MINIMAP2_MIMT ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
 
 elif [ "$db" == "GSR" ]; then
 
-    MINIMAP_DB=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_seqs.fasta/')
+    MINIMAP_DB=$(grep MINIMAP2_GSR ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_seqs.fasta/')
 
-    TAXA_DATA=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_taxa.txt/')
+    TAXA_DATA=$(grep MINIMAP2_GSR ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_GSR="//;s/"//g;s/$/\/GSR-DB_full-16S_filt_taxa.txt/')
 
 elif [ "$db" == "EMUDB" ]; then
 
-    MINIMAP_DB=$(grep EMUDB ~/.bashrc | tail -n 1 | sed 's/export EMUDB="//;s/"//g;s/$/\/EMU.fasta/')
+    MINIMAP_DB=$(grep MINIMAP2_EMUDB ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_EMUDB="//;s/"//g;s/$/\/EMU.fasta/')
 
-    TAXA_DATA=$(grep EMUDB ~/.bashrc | tail -n 1 | sed 's/export EMUDB="//;s/"//g;s/$/\/EMU_taxa.txt/')
+    TAXA_DATA=$(grep MINIMAP2_EMUDB ~/.bashrc | tail -n 1 | sed 's/export MINIMAP2_EMUDB="//;s/"//g;s/$/\/EMU_taxa.txt/')
 
 fi
 
@@ -129,7 +129,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 	    samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
 
         python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
 
         rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
         
@@ -171,7 +171,7 @@ else
 	        samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam
 
             python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
-            awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
+            awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
             
             rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
 

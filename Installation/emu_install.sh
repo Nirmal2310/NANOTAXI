@@ -170,6 +170,8 @@ if [ ! -d EMU_DATA ]; then
         rm -r emu.tar.gz
 
         cd EMU_DATA
+
+        awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$8,$9}' taxonomy.tsv > temp && mv temp taxonomy.tsv
         
         source $path/bin/activate base
 
@@ -247,8 +249,8 @@ if [ ! -d GTDB ]; then
         zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $1"\t"$81}' > seq2tax.map.tsv
 
         zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $81"\t"$20}' | sed 's/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | \
-        cat <(echo -e "tax_id\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom") - | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print $0; else print $1,$8,$7,$6,$5,$4,$3,$2}' > taxonomy.tsv && rm -r bac120_metadata.tsv.gz ar53_metadata.tsv.gz
+        awk 'BEGIN{FS=OFS="\t"}{print $1,$8,$7,$6,$5,$4,$3,$2}' - | sort -k1 -n -r | uniq | \
+        cat <(echo -e "tax_id\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom") - > taxonomy.tsv && rm -r bac120_metadata.tsv.gz ar53_metadata.tsv.gz
 
         source $path/bin/activate seqkit
 
@@ -258,6 +260,8 @@ if [ ! -d GTDB ]; then
 
         seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > temp && mv temp GTDB_16S_reps.fasta
 
+        source $path/bin/activate emu
+        
         emu build-database GTDB --sequences GTDB_16S_reps.fasta --seq2tax seq2tax.map.tsv --taxonomy-list taxonomy.tsv
 
         rm -r GTDB_16S_reps.fasta* gtdb_filtered_ids seq2tax.map.tsv taxonomy.tsv
@@ -282,7 +286,7 @@ if [ ! -d MIMT ]; then
 
         wget -c https://people.biopolis.pt/bu/mimt/downloads/16S_files/MIMt-16S_M2c_25_10_taxid.fna.gz -O MIMt.fasta.gz && gunzip MIMt.fasta.gz
 
-        wget -c https://people.biopolis.pt/bu/mimt/downloads/16S_files/MIMt-16S_M2c_25_10.tax.gz -O MIMt_tax.txt.gz && gunzip MIMT_taxa.txt.gz
+        wget -c https://people.biopolis.pt/bu/mimt/downloads/16S_files/MIMt-16S_M2c_25_10.tax.gz -O MIMT_taxa.txt.gz && gunzip MIMT_taxa.txt.gz
 
         grep ">" MIMt.fasta | sed 's/>//g' | awk -F "\t" '{if($2!=" ") print $0}' > seq2tax.map.tsv
 
@@ -333,9 +337,10 @@ if [ ! -d REFSEQ ]; then
         
         source $path/bin/activate taxonkit
 
-        taxonkit lineage --data-dir $TAXONKIT_DB --threads $threads -i 2 seq2tax.map.tsv | sed 's/;/\t/g' | \
+        taxonkit reformat2 --data-dir $TAXONKIT_DB -f "{domain};{phylum};{class};{order};{family};{genus};{species}" -I 2 seq2tax.map.tsv | \
+        awk 'BEGIN{FS=OFS="\t"}{print $2,$3}' | sort | uniq | sed 's/;/\t/g' | \
         cat <(echo -e "tax_id\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom") - | \
-        awk 'BEGIN{FS=OFS="\t"}{if(NR==1) print $0; else print $2,$11,$10,$9,$8,$7,$6,$5,$4}' > taxonomy.tsv
+        awk 'BEGIN{FS=OFS="\t"}{if(NR==1) print $0; else print $1,$8,$7,$6,$5,$4,$3,$2}' > taxonomy.tsv
 
         source $path/bin/activate seqkit
 

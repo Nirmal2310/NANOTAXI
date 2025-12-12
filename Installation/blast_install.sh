@@ -160,9 +160,9 @@ if [ ! -d REFSEQ ]; then
 
         cp $TAXONKIT_DB/refseq_taxid.txt seqid_taxid.txt
 
-        taxonkit lineage --data-dir $TAXONKIT_DB --threads $threads -i 2 seqid_taxid.txt | sed 's/;/\t/g' | \
-        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - | \
-        awk 'BEGIN{FS=OFS="\t"}{if(NR==1) print $0; else print $1,$4,$5,$6,$7,$8,$9,$10,$11}' > RefSeq_taxa.txt
+        taxonkit reformat2 --data-dir $TAXONKIT_DB --threads $threads -f "{domain};{phylum};{class};{order};{family};{genus};{species}" -I 2 seqid_taxid.txt | \
+        awk 'BEGIN{FS=OFS="\t"}{print $1,$3}' | sort | uniq | sed 's/;/\t/g' | \
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tfamily\tGenus\tSpecies") - > RefSeq_taxa.txt
 
         source $path/bin/activate seqkit
 
