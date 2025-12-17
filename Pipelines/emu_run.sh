@@ -67,8 +67,6 @@ if [ ! -f $path/barcode_list ]
     done | sed "s|$path||g;s/\///g" > $path/barcode_list
 fi
 
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
 if [ "$db" == "REFSEQ" ]; then
 
     EMU_DB=$(grep EMU_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export EMU_REFSEQ="//;s/"//g')
@@ -103,15 +101,9 @@ do
 
     emu abundance --type map-ont --db $EMU_DB --output-dir $path/$barcode/ --output-basename $barcode --keep-counts --threads $threads $path/$barcode/${barcode}_16s.fasta
 
-    conda activate taxonkit
+    line_count=$(wc -l $path/$barcode/${barcode}_rel-abundance.tsv | awk '{print $1}')
 
-    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$10}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' | \
-    sort | join - <(sort $EMU_DB/taxonomy.tsv) | grep -v "tax_id" | awk 'BEGIN{FS=" ";OFS="\t"}{print $1,$2,$5,$6,$7,$8,$9,$10,$3" "$4}' > $path/$barcode/temp
-
-    awk 'BEGIN {for (i = 1; i <= 7; i++) printf "%s\t", "Unclassified"}' | paste -d "\t" <(echo "Unclassified") <(tail -n 1 $path/$barcode/${barcode}_rel-abundance.tsv | \
-    awk -F "\t" '{print $14}') - | cat $path/$barcode/temp - | sort -k1 -n -r | uniq > $path/$barcode/${barcode}_final_emu_result.txt
-
-    rm -r $path/$barcode/temp
+    awk -v l=$line_count 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$10,$9,$8,$7,$6,$5,$4,$3; else if(NR>1 && NR==l) print "Unclassified",$10,"Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified"}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' > $path/$barcode/${barcode}_final_emu_result.txt
 
 done < "$path/barcode_list"
 

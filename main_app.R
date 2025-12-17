@@ -741,11 +741,19 @@ server <- function(input, output, session) {
 
     mean_cutoff <- abundance_cutoff/100
 
-    rel_abundance_filtered_matrix <- rel_abundance_matrix[rowSums(rel_abundance_matrix>0)>=pre_cutoff & rowMeans(rel_abundance_matrix)>=mean_cutoff,]
+    rel_abundance_filtered_matrix <- rel_abundance_matrix[rowSums(rel_abundance_matrix>0)>=pre_cutoff & rowMeans(rel_abundance_matrix)>=mean_cutoff, , drop=FALSE]
 
-    rel_abundance_filtered_matrix[rel_abundance_filtered_matrix] <- 1e-10
+    if(nrow(rel_abundance_filtered_matrix)>1) {
+      
+      rel_abundance_filtered_matrix <- rel_abundance_filtered_matrix + 1e-10
 
-    rel_abundance_renormalized_matrix <- apply(rel_abundance_filtered_matrix, 2, function(x) x/sum(x))
+      rel_abundance_renormalized_matrix <- apply(rel_abundance_filtered_matrix, 2, function(x) x/sum(x))
+    
+    } else {
+
+      rel_abundance_renormalized_matrix <- rel_abundance_filtered_matrix
+
+    }
     
     return(list(
       'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
