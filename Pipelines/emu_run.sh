@@ -103,7 +103,7 @@ do
 
     line_count=$(wc -l $path/$barcode/${barcode}_rel-abundance.tsv | awk '{print $1}')
 
-    awk -v l=$line_count 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$10,$9,$8,$7,$6,$5,$4,$3; else if(NR>1 && NR==l) print "Unclassified",$10,"Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified"}' $path/$barcode/${barcode}_rel-abundance.tsv | sed '$ d' > $path/$barcode/${barcode}_final_emu_result.txt
+    awk -v l=$line_count 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$10,$9,$8,$7,$6,$5,$4,$3; else if(NR>1 && NR==l) print "Unclassified",$10,"Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified"}' $path/$barcode/${barcode}_rel-abundance.tsv > $path/$barcode/${barcode}_final_emu_result.txt
 
 done < "$path/barcode_list"
 
