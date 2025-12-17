@@ -82,9 +82,11 @@ elif [ "$db" == "GSR" ]; then
 
     KRAKEN_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g')
 
+    TAXONKIT_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g;s/$/\/taxonomy\//g')
+
 elif [ "$db" == "EMUDB" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_EMUDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_EMUDB="//;s/"//g')    
+    KRAKEN_DB=$(grep KRAKEN_EMUDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_EMUDB="//;s/"//g')
 
 fi
 
@@ -117,11 +119,12 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 
         kraken2 --db $KRAKEN_DB --confidence $conf --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
-        kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
+        kraken-biom --max P --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
         conda activate taxonkit
 
-        sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
+        sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' | \
+        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
 
         rm -r $data_path/$barcode/${barcode}_kraken_biom.txt $data_path/$barcode/${barcode}_hist_temp.txt
         
@@ -158,11 +161,12 @@ else
 
             kraken2 --db $KRAKEN_DB --output $data_path/$barcode/${barcode}_kraken2_output.txt --report $data_path/$barcode/${barcode}_kraken2_report.txt $data_path/$barcode/${barcode}_16S.fasta
 
-            kraken-biom --max D --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
+            kraken-biom --max P --min $rank -o $data_path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/${barcode}_kraken2_report.txt
 
             conda activate taxonkit
 
-            sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' >> $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
+            sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' | \
+            sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' >> $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
 
             rm -r $data_path/$barcode/${barcode}_kraken_biom.txt $data_path/$barcode/${barcode}_hist_temp.txt
 

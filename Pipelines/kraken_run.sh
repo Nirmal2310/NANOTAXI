@@ -67,6 +67,8 @@ if [ -z "$path" ]
     helpFunction
 fi
 
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
+
 if [ "$db" == "REFSEQ" ]; then
 
     KRAKEN_DB=$(grep KRAKEN_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_REFSEQ="//;s/"//g')
@@ -83,13 +85,13 @@ elif [ "$db" == "GSR" ]; then
 
     KRAKEN_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g')
 
+    TAXONKIT_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g;s/$/\/taxonomy\//g')
+
 elif [ "$db" == "EMUDB" ]; then
 
     KRAKEN_DB=$(grep KRAKEN_EMUDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_EMUDB="//;s/"//g')
 
 fi
-
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
 if [ ! -f $path/barcode_list ]
 	then
@@ -114,11 +116,12 @@ do
 
     kraken2 --db $KRAKEN_DB --threads $threads --confidence $conf $path/$barcode/${barcode}_16s.fasta --output $path/$barcode/${barcode}_kraken2_output.txt --report $path/$barcode/${barcode}_kraken2_report.txt
 
-    kraken-biom --max $r --min $r -o $path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $path/$barcode/${barcode}_kraken2_report.txt
+    kraken-biom --max P --min $r -o $path/$barcode/${barcode}_kraken_biom.txt --fmt tsv $path/$barcode/${barcode}_kraken2_report.txt
 
     conda activate taxonkit
 
-    sed '1,2d' $path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' > $path/$barcode/${barcode}_final_kraken2_result.txt
+    sed '1,2d' $path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' | \
+    sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $path/$barcode/${barcode}_final_kraken2_result.txt
 
     rm -r $path/$barcode/${barcode}_kraken_biom.txt
 

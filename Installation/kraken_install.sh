@@ -258,8 +258,8 @@ if [ ! -d MIMT ]; then
      	grep ">" MIMt_kraken2_ready.fasta | sed 's/>//g' | awk '{split($1,a,"|"); print $1"\t"a[3]}' > MIMT/seqid2taxid.map
 
      	kraken2-build --build --db MIMT --threads $threads
-
-      	kraken2-build --clean --db MIMT
+        
+        kraken2-build --clean --db MIMT
 
        	rm -r MIMt.fasta* seq_id_replacement.txt MIMt_kraken2_ready.fasta*
 
@@ -321,11 +321,11 @@ if [ ! -d GSR ]; then
 
         kraken2-build --build --db GSR --threads $threads
 
-        kraken2-build --clean --db GSR
-
         rm -r GSR_kraken2_ready.fasta* GSR-DB_full-16S_filt_seqs.fasta* seq_id_replacement.txt gsr_filtered_ids GSR-DB_full-16S_filt_taxa.txt
         
         cd GSR
+
+        rm -r library/
 
         grep -qF "export KRAKEN_GSR=\"$PWD\"" ~/.bashrc || echo "export KRAKEN_GSR=\"$PWD\"" >> ~/.bashrc
 
@@ -383,7 +383,7 @@ if [ ! -d REFSEQ ]; then
 
      	kraken2-build --build --db REFSEQ --threads $threads
 
-      	kraken2-build --clean --db REFSEQ
+        kraken2-build --clean --db REFSEQ
 
        	rm -r refseq_16S.fasta* seq_id_replacement.txt refseq_kraken2_ready.fasta* seqid_taxid.txt refseq_filtered_ids
 
@@ -435,7 +435,7 @@ if [ ! -d EMUDB ]; then
 
      	kraken2-build --build --db EMUDB --threads $threads
 
-      	kraken2-build --clean --db EMUDB
+        kraken2-build --clean --db EMUDB
 
        	rm -r species_taxid.fasta emu_kraken2_ready.fasta seq_id_replacement.txt taxonomy.tsv
 
