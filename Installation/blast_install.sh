@@ -291,7 +291,7 @@ if [ ! -d GSR ]; then
 
         tar -xvf GSR-DB_full-16S.tar.gz && rm -r GSR-DB_full-16S.tar.gz GSR-DB_full-16S_filt_taxa.qza GSR-DB_full-16S_filt_seqs.qza
 
-        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' GSR-DB_full-16S_filt_taxa.txt | \
+        awk '{if(NR>1) print $0}' GSR-DB_full-16S_filt_taxa.txt | sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | \
         awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' | \
         cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > GSR_taxa.txt
 
@@ -307,7 +307,7 @@ if [ ! -d GSR ]; then
 
         makeblastdb -in GSR_final_seqs.fasta -parse_seqids -blastdb_version 5 -title GSR_BLAST -dbtype nucl -out GSR_BLAST
 
-        rm -r gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta* GSR_final_seqs.fasta*
+        rm -r gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta* GSR_final_seqs.fasta* GSR-DB_full-16S_filt_taxa.txt
 
         grep -qF "export BLAST_GSR=\"$PWD\"" ~/.bashrc || echo "export BLAST_GSR=\"$PWD\"" >> ~/.bashrc
 
