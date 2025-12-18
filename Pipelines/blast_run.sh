@@ -134,7 +134,7 @@ done < "$path/barcode_list"
 
 if [ ! -d $path/Blast_Results/$db ]; then
 
-    mkdir $path/Blast_Results/$db
+    mkdir -p $path/Blast_Results/$db
 
 fi
 
