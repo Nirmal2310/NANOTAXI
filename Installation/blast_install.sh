@@ -168,7 +168,7 @@ if [ ! -d REFSEQ ]; then
 
         seqkit faidx refseq_16S.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
 
         seqkit faidx -X refseq_filtered_ids refseq_16S.fasta > refseq_final_seqs.fasta
 
@@ -207,14 +207,14 @@ if [ ! -d MIMT ]; then
 
         sed -i 's/rrna_//' MIMT_taxa.txt
 
-        sed 's/;/\t/g;s/[K,P,C,O,F,G,S]__//g' MIMT_taxa.txt | awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' | \
+        sed 's/;/\t/g;s/[K,P,C,O,F,G,S]__//g' MIMT_taxa.txt | awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) for (i=2;i<=NF;i++) gsub(/_/, " ", $i) split($8, a, " "); $8=a[1]" "a[2]} 1' | \
         cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > temp && mv temp MIMT_taxa.txt
 
         source $path/bin/activate seqkit
 
         seqkit faidx MIMt.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' MIMt.fasta.fai > mimt_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' MIMt.fasta.fai > mimt_filtered_ids
 
         seqkit faidx -X mimt_filtered_ids MIMt.fasta > MIMT_final_seqs.fasta
 
@@ -250,14 +250,19 @@ if [ ! -d GTDB ]; then
 
         zcat bac120_ssu_reps.fna.gz ar53_ssu_reps.fna.gz > GTDB_16S_reps.fasta && rm -r bac120_ssu_reps.fna.gz ar53_ssu_reps.fna.gz
 
-        grep ">" GTDB_16S_reps.fasta | sed 's/>//g' | sed 's/ /\t/;s/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | sed 's/ \[locus.*$//g' | \
-        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > GTDB_taxa.txt
+        wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/bac120_metadata.tsv.gz
+
+        wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/ar53_metadata.tsv.gz
+
+        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | grep -v "ncbi" | awk -F "\t" '{print $1"\t"$82}' | sed 's/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | \
+        awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$8}' - | sort -k1 -n -r | uniq | \
+        cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > GTDB_taxa.txt && rm -r bac120_metadata.tsv.gz ar53_metadata.tsv.gz
 
         source $path/bin/activate seqkit
 
         seqkit faidx GTDB_16S_reps.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
 
         seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > GTBD_final_seqs.fasta
 
@@ -299,7 +304,7 @@ if [ ! -d GSR ]; then
 
         seqkit faidx GSR-DB_full-16S_filt_seqs.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > GSR_final_seqs.fasta
 

@@ -199,7 +199,7 @@ if [ ! -d GSR ]; then
 
         seqkit faidx GSR-DB_full-16S_filt_seqs.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > GSR_final_seqs.fasta
 
@@ -246,9 +246,9 @@ if [ ! -d GTDB ]; then
 
         wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/ar53_metadata.tsv.gz
 
-        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $1"\t"$81}' > seq2tax.map.tsv
+        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | grep -v "ncbi" awk -F "\t" '{print $1"\t"$81}' > seq2tax.map.tsv
 
-        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $81"\t"$20}' | sed 's/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | \
+        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | grep -v "ncbi" | awk -F "\t" '{print $81"\t"$82}' | sed 's/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | \
         awk 'BEGIN{FS=OFS="\t"}{print $1,$8,$7,$6,$5,$4,$3,$2}' - | sort -k1 -n -r | uniq | \
         cat <(echo -e "tax_id\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom") - > taxonomy.tsv && rm -r bac120_metadata.tsv.gz ar53_metadata.tsv.gz
 
@@ -256,7 +256,7 @@ if [ ! -d GTDB ]; then
 
         seqkit faidx GTDB_16S_reps.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
 
         seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > temp && mv temp GTDB_16S_reps.fasta
 
@@ -291,7 +291,7 @@ if [ ! -d MIMT ]; then
         grep ">" MIMt.fasta | sed 's/>//g' | awk -F "\t" '{if($2!=" ") print $0}' > seq2tax.map.tsv
 
         paste -d "\t" <(awk -F "\t" '{print $2}' seq2tax.map.tsv) <(awk -F "\t" '{print $1}' seq2tax.map.tsv | grep -Ff - MIMT_taxa.txt | awk -F "\t" '{print $2}') | \
-        sort -u | sed 's/;/\t/g;s/[K,P,C,O,F,G,S]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' | \
+        sort -u | sed 's/;/\t/g;s/[K,P,C,O,F,G,S]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i) split($8, a, " "); $8=a[1]" "a[2]} 1' | \
         cat <(echo -e "tax_id\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom") - | \
         awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print $0; else print $1,$8,$7,$6,$5,$4,$3,$2}' > taxonomy.tsv
 
@@ -299,7 +299,7 @@ if [ ! -d MIMT ]; then
 
         seqkit faidx MIMt.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' MIMt.fasta.fai | grep -Ff - <(awk -F "\t" '{print $1}' seq2tax.map.tsv) > mimt_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' MIMt.fasta.fai | grep -Ff - <(awk -F "\t" '{print $1}' seq2tax.map.tsv) > mimt_filtered_ids
 
         seqkit faidx -X mimt_filtered_ids MIMt.fasta > MIMT_final_seqs.fasta
 
@@ -346,7 +346,7 @@ if [ ! -d REFSEQ ]; then
 
         seqkit faidx refseq_16S.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
 
         seqkit faidx -X refseq_filtered_ids refseq_16S.fasta > refseq_final_seqs.fasta
 
