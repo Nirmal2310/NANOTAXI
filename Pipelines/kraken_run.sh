@@ -121,7 +121,7 @@ do
     conda activate taxonkit
 
     sed '1,2d' $path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' | \
-    sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $path/$barcode/${barcode}_final_kraken2_result.txt
+    sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $path/$barcode/${barcode}_final_kraken2_result.txt
 
     rm -r $path/$barcode/${barcode}_kraken_biom.txt
 

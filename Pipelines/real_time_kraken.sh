@@ -124,7 +124,7 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
         conda activate taxonkit
 
         sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' | \
-        sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
+        sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
 
         rm -r $data_path/$barcode/${barcode}_kraken_biom.txt $data_path/$barcode/${barcode}_hist_temp.txt
         
@@ -166,7 +166,7 @@ else
             conda activate taxonkit
 
             sed '1,2d' $data_path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' | \
-            sed 's/ //g;s/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' >> $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
+            sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' >> $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
 
             rm -r $data_path/$barcode/${barcode}_kraken_biom.txt $data_path/$barcode/${barcode}_hist_temp.txt
 
