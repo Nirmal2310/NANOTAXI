@@ -4,16 +4,17 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: main.sh -d /path/to/the/data -k kit-name -s /path/to/the/script -m 1400 -M 1800 -t Species -c 0.0 -q 10 -n REFSEQ"
+   echo "Usage: main.sh -d /path/to/the/data -k kit-name -s /path/to/the/script -m 1400 -M 1800 -t Species -c 0.0 -q 10 -n REFSEQ -e metadata.csv"
    echo -e "\t-d <str> Path Containing the Raw Data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-s <str> Path Containing the Scripts."
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
    echo -e "\t-t <str> Minimum Taxonomy Rank. [default: Species]"
-   echo -e "\t-t <int> Confidence Score. [default: 0.0]"
-   echo -e "\t-t <int> Minimum Q-Score. [default: 10]"
-   echo -e "\t-t <str> Database Name. [default: REFSEQ]"
+   echo -e "\t-c <int> Confidence Score. [default: 0.0]"
+   echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
+   echo -e "\t-n <str> Database Name. [default: REFSEQ]"
+   echo -e "\t-e <str> Metadata File."
    exit 1 # Exit script after printing help
 }
 
@@ -24,7 +25,7 @@ conf=0.0
 q_score=10
 db="REFSEQ"
 
-while getopts "d:k:s:m:M:t:c:q:n:" opt
+while getopts "d:k:s:m:M:t:c:q:n:e:" opt
 do
     case "$opt" in
     d )
@@ -54,6 +55,9 @@ do
     n )
         db="$OPTARG"
         ;;
+    e )
+        metadata="$OPTARG"
+        ;;
     ? ) helpFunction ;;
     esac
 done
@@ -71,7 +75,7 @@ for i in `ls -d $data_path/barcode*/`
 do 
 	[ "$(find $i -type f)" ] && echo $i
 
-done | sed "s|$data_path||g;s/\///g" > $data_path/barcode_list
+done | sed "s|$data_path||g;s/\///g" | grep -f <(awk -F "," '{if(NR>1) print $1}' $metadata) - > $data_path/barcode_list
 
 if [ "$(cat $data_path/barcode_list | wc -l)" -eq 0 ]; then
 

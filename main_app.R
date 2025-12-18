@@ -234,7 +234,7 @@ server <- function(input, output, session) {
 
         system(paste0("bash ", pipeline_dir, "/blast_run.sh -p ", input$fastqdir, " -k ", input$kitname,
         " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
-        , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
+        , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database, " -e ", input$inputfile))
 
         result_dir <- paste0(input$fastqdir, "/Blast_Results/", input$database,"/")
 
@@ -246,8 +246,8 @@ server <- function(input, output, session) {
         print("Analyzing Data....")
 
         system(paste0("bash ", pipeline_dir, "/blast_run.sh -p ", input$fastqdir, " -k ", input$kitname,
-                      " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
-                      , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
+        " -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
+        , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database, " -e ", input$inputfile))
 
         result_dir <- paste0(input$fastqdir, "/Blast_Results/", input$database,"/")
 
@@ -268,7 +268,8 @@ server <- function(input, output, session) {
                       " -k ", input$kitname, " -t ",
                       input$threads, " -m ", input$min, " -M ",
                       input$max, " -r ", input$tax, " -c ", input$conf
-                      , " -q ", input$q_score, " -n ", input$database))
+                      , " -q ", input$q_score, " -n ", input$database
+                      , " -e ", input$inputfile))
         result_dir <- paste0(input$fastqdir, "/Kraken2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
@@ -281,7 +282,8 @@ server <- function(input, output, session) {
                       " -k ", input$kitname, " -t ",
                       input$threads, " -m ", input$min, " -M ",
                       input$max, " -r ", input$tax, " -c ", input$conf
-                      , " -q ", input$q_score, " -n ", input$database))
+                      , " -q ", input$q_score, " -n ", input$database
+                      , " -e ", input$inputfile))
         result_dir <- paste0(input$fastqdir, "/Kraken2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
@@ -300,7 +302,7 @@ server <- function(input, output, session) {
         
         system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
                       " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
-                      , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
+                      , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database, " -e ", input$inputfile))
         result_dir <- paste0(input$fastqdir,"/Minimap2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
@@ -313,7 +315,7 @@ server <- function(input, output, session) {
         
         system(paste0("bash ", pipeline_dir, "/minimap2_run.sh -p ", input$fastqdir, " -k ", input$kitname,
                       " -s ", pipeline_path," -t ", input$threads, " -m ", input$min, " -M ", input$max, " -i ", input$iden
-                      , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database))
+                      , " -c ", input$cov, " -q ", input$q_score, " -n ", input$database, " -e ", input$inputfile))
         result_dir <- paste0(input$fastqdir,"/Minimap2_Results/", input$database,"/")
         
         result_dir_val(result_dir)
@@ -332,7 +334,7 @@ server <- function(input, output, session) {
 
         system(paste0("bash ", pipeline_dir, "/emu_run.sh -p ", input$fastqdir, " -k ", input$kitname, " -t ",
         input$threads, " -m ", input$min, " -M ",
-        input$max, " -q ", input$q_score, " -n ", input$database))
+        input$max, " -q ", input$q_score, " -n ", input$database, " -e ", input$inputfile))
 
         result_dir <- paste0(input$fastqdir,"/EMU_Results/", input$database,"/")  
 
@@ -345,7 +347,7 @@ server <- function(input, output, session) {
 
         system(paste0("bash ", pipeline_dir, "/emu_run.sh -p ", input$fastqdir, " -k ", input$kitname, " -t ",
         input$threads, " -m ", input$min, " -M ",
-        input$max, " -q ", input$q_score, " -n ", input$database))
+        input$max, " -q ", input$q_score, " -n ", input$database, " -e ", input$inputfile))
       
         result_dir <- paste0(input$fastqdir,"/EMU_Results/", input$database,"/")
 
@@ -401,7 +403,9 @@ server <- function(input, output, session) {
     
     q_score <- input$q_score
     
-    system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ", reads_path," -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa, " -c ", conf, " -q ", q_score, " -n ", input$database," 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
+    system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ", reads_path," -k ", kit_name
+                  , " -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa, " -c ", conf
+                  , " -q ", q_score, " -n ", input$database," -e ", input$inputfile, " 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 
@@ -481,7 +485,9 @@ server <- function(input, output, session) {
     
     q_score <- input$q_score
     
-    system(paste0("bash ",pipeline_path,"/main_minimap2_run.sh -d ", reads_path, " -k ", kit_name, " -s ", pipeline_path, " -m ", min, " -M ", max," -i ", identity, " -c ", coverage, " -q ", q_score, " -n ", input$database, " 2>&1 | tee -a ", reads_path, "/realtime_minimap2_run.log"))
+    system(paste0("bash ",pipeline_path,"/main_minimap2_run.sh -d ", reads_path, " -k ", kit_name, " -s "
+                  , pipeline_path, " -m ", min, " -M ", max," -i ", identity, " -c ", coverage, " -q "
+                  , q_score, " -n ", input$database, " -e ", input$inputfile, " 2>&1 | tee -a ", reads_path, "/realtime_minimap2_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 
