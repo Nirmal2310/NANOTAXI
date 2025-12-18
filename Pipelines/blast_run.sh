@@ -128,7 +128,7 @@ do
     conda activate minimap2
     
     python $script_dir/add_taxon_info.py -c <(awk 'BEGIN{FS="\t";OFS="\t"}{print $2}' $path/${barcode}/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}') -t $TAXA_DATA | \
-    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $3, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $path/${barcode}/${barcode}_final_blast_result.txt
+    awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $path/${barcode}/${barcode}_final_blast_result.txt
 
 done < "$path/barcode_list"
 
