@@ -171,7 +171,7 @@ if [ ! -d EMU_DATA ]; then
 
         cd EMU_DATA
 
-        awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$8,$9}' taxonomy.tsv > temp && mv temp taxonomy.tsv
+        awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$9}' taxonomy.tsv > temp && mv temp taxonomy.tsv
         
         source $path/bin/activate base
 
