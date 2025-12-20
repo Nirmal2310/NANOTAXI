@@ -183,7 +183,7 @@ server <- function(input, output, session) {
 
     req(is_running(), initial_delay_done(), status_checked(), state() == "Sequencing")
 
-    if(input$pipeline == "KRAKEN2")
+    if(input$realtime_pipeline == "KRAKEN2")
     {
       future({
         run_realtime_kraken_scripts()
@@ -191,7 +191,7 @@ server <- function(input, output, session) {
           invalidateLater(120000, session)
         }
     }
-    else if(input$pipeline == "Minimap2")
+    else if(input$realtime_pipeline == "Minimap2")
     {
       future({
         run_realtime_minimap2_scripts()
@@ -405,7 +405,7 @@ server <- function(input, output, session) {
     
     system(paste0("bash ",pipeline_path,"/main_kraken_run.sh -d ", reads_path," -k ", kit_name
                   , " -s ", pipeline_path, " -m ", min, " -M ", max, " -t ", taxa, " -c ", conf
-                  , " -q ", q_score, " -n ", input$database," -e ", input$inputfile, " 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
+                  , " -q ", q_score, " -n ", input$realtime_database," -e ", input$inputfile, " 2>&1 | tee -a ", reads_path, "/realtime_kraken_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 
@@ -487,7 +487,7 @@ server <- function(input, output, session) {
     
     system(paste0("bash ",pipeline_path,"/main_minimap2_run.sh -d ", reads_path, " -k ", kit_name, " -s "
                   , pipeline_path, " -m ", min, " -M ", max," -i ", identity, " -c ", coverage, " -q "
-                  , q_score, " -n ", input$database, " -e ", input$inputfile, " 2>&1 | tee -a ", reads_path, "/realtime_minimap2_run.log"))
+                  , q_score, " -n ", input$realtime_database, " -e ", input$inputfile, " 2>&1 | tee -a ", reads_path, "/realtime_minimap2_run.log"))
 
     length_list <- gsub("/.*$", "", list.files(reads_path, pattern = "average_length.txt", recursive = TRUE))
 
