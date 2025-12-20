@@ -83,7 +83,7 @@ if [ "$(cat $data_path/barcode_list | wc -l)" -eq 0 ]; then
 
 else
 
-    conda activate parallel
+    conda activate seqkit
 
 
     n=$(cat "$data_path/barcode_list" | wc -l)

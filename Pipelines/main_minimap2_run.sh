@@ -81,7 +81,7 @@ if [ "$(cat $data_path/barcode_list | wc -l)" -eq 0 ]; then
 
 else
 
-    conda activate parallel
+    conda activate seqkit
 
     n=$(cat "$data_path/barcode_list" | wc -l)
 
@@ -91,7 +91,7 @@ else
 
     do
 
-    	echo "bash $script_path/real_time_analysis_minimap2.sh -d $data_path -k $kit_name -b $barcode -m $min -M $max -i $identity -c $coverage -q $q_score -n $db"
+    	echo "bash $script_path/real_time_minimap2.sh -d $data_path -k $kit_name -b $barcode -m $min -M $max -i $identity -c $coverage -q $q_score -n $db"
 
     done < "$data_path/barcode_list" | parallel -j "$parallel_jobs" {}
 fi

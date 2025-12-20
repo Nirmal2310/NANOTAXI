@@ -129,9 +129,9 @@ if [ ! -f $data_path/$barcode/processed_files.txt ]; then
 	    samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam; samtools index -@ 1 $data_path/$barcode/${barcode}_16S.bam
 
         python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
 
-        rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
+        rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam*
         
         ls $data_path/$barcode/*fastq.gz > $data_path/$barcode/processed_files.txt
     
@@ -171,9 +171,9 @@ else
 	        samtools view -@ 1 -F 3844 -bS | samtools sort -@ 1 -o $data_path/$barcode/${barcode}_16S.bam
 
             python $script_path/alignment_filter.py -b $data_path/$barcode/${barcode}_16S.bam -t $TAXA_DATA -i $identity -c $coverage | \
-            awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
+            awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/$barcode/$db/${barcode}_final_minimap2_result.txt
             
-            rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam
+            rm -r $data_path/$barcode/${barcode}_hist_temp.txt $data_path/$barcode/${barcode}_16S.bam*
 
             ls $data_path/$barcode/*fastq.gz | grep -vf $data_path/$barcode/processed_files.txt >> $data_path/$barcode/processed_files.txt
         
