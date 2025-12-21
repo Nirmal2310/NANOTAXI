@@ -183,7 +183,7 @@ server <- function(input, output, session) {
 
     req(is_running(), initial_delay_done(), status_checked(), state() == "Sequencing")
 
-    if(input$realtime_pipeline == "KRAKEN2")
+    if(input$realtime_pipeline == "Kraken2")
     {
       future({
         run_realtime_kraken_scripts()
@@ -322,7 +322,7 @@ server <- function(input, output, session) {
       }
     }
 
-    else if(input$pipeline == "EMU")
+    else if(input$pipeline == "Emu")
     {
       if(input$setup)
       {
