@@ -4,21 +4,20 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: blast_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -i 85 -c 85 -q 10 -n REFSEQ -e metadata.csv"
+   echo "Usage: blast_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -i 85 -c 85 -q 10 -n REFSEQ"
    echo -e "\t-p <path> Path to directory containing passed raw data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
-   echo -e "\t-i <int> Minimum BLAST Identity(%). [default: 85]"
-   echo -e "\t-c <int> Minimum BLAST Coverage(%). [default: 85]"
+   echo -e "\t-i <int> Minimum Identity(%). [default: 85]"
+   echo -e "\t-c <int> Minimum Coverage(%). [default: 85]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    echo -e "\t-n <str> Database Name. [default: REFSEQ]"
-   echo -e "\t-e <str> Metadata File."
    exit 1 # Exit script after printing help
 }
 
-# Default values for BLASTN
+# Default values for BLAST
 
 threads=16
 min=1400
@@ -28,7 +27,7 @@ coverage=85
 q_score=10
 db="REFSEQ"
 
-while getopts "p:k:t:m:M:i:c:q:n:e:" opt
+while getopts "p:k:t:m:M:i:c:q:n:" opt
 do
     case "$opt" in
     p )
@@ -57,9 +56,6 @@ do
         ;;
     n )
         db="$OPTARG"
-        ;;
-    e )
-        metadata="$OPTARG"
         ;;
     ? ) helpFunction ;;
     esac
@@ -93,7 +89,7 @@ elif [ "$db" == "GSR" ]; then
 
     BLAST_DB=$(grep BLAST_GSR ~/.bashrc | tail -n 1 | sed 's/export BLAST_GSR="//;s/"//g;s/$/\/GSR_BLAST/')
 
-    TAXA_DATA=$(grep GSR ~/.bashrc | tail -n 1 | sed 's/export GSR="//;s/"//g;s/$/\/GSR_taxa.txt/')
+    TAXA_DATA=$(grep BLAST_GSR ~/.bashrc | tail -n 1 | sed 's/export BLAST_GSR="//;s/"//g;s/$/\/GSR_taxa.txt/')
 
 elif [ "$db" == "EMUDB" ]; then
 
@@ -103,8 +99,6 @@ elif [ "$db" == "EMUDB" ]; then
 
 fi
 
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
 
 if [ ! -f $path/barcode_list ]
 	then
@@ -112,7 +106,7 @@ if [ ! -f $path/barcode_list ]
     do 
 	    [ "$(find $i -type f)" ] && echo $i
 
-    done | sed "s|$path||g;s/\///g" | grep -f <(awk -F "," '{if(NR>1) print $1}' $metadata) - > $path/barcode_list
+    done | sed "s|$path||g;s/\///g" > $path/barcode_list
 fi
 
 script_dir=$(dirname "$(readlink -f "$0")")
@@ -127,7 +121,8 @@ do
 
     conda activate blast
 
-    blastn -db $BLAST_DB -query $path/$barcode/${barcode}_16s.fasta -out $path/${barcode}/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 -perc_identity $identity -qcov_hsp_perc $coverage -outfmt "6"
+    blastn -db $BLAST_DB -query $path/$barcode/${barcode}_16s.fasta -out $path/${barcode}/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 \
+    -perc_identity $identity -qcov_hsp_perc $coverage -outfmt "6" -task blastn 
 
     conda activate minimap2
     

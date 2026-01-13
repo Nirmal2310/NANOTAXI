@@ -4,7 +4,7 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: emu_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -q 10 -n EMUDB -e metadata.csv"
+   echo "Usage: emu_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -q 10 -n EMUDB"
    echo -e "\t-p <path> Path to directory containing passed raw data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
@@ -12,11 +12,10 @@ helpFunction()
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    echo -e "\t-n <str> Database Name. [default: EMUDB]"
-   echo -e "\t-e <str> Metadata File."
    exit 1 # Exit script after printing help
 }
 
-# Default values for BLASTN
+# Default values for EMU
 
 threads=16
 min=1400
@@ -24,7 +23,7 @@ max=1800
 q_score=10
 db="EMUDB"
 
-while getopts "p:k:t:m:M:q:n:e:" opt
+while getopts "p:k:t:m:M:q:n:" opt
 do
     case "$opt" in
     p )
@@ -48,9 +47,6 @@ do
     n )
         db="$OPTARG"
         ;;
-    e )
-        metadata="$OPTARG"
-        ;;
     ? ) helpFunction ;;
     esac
 done
@@ -68,8 +64,10 @@ if [ ! -f $path/barcode_list ]
     do 
 	    [ "$(find $i -type f)" ] && echo $i
 
-    done | sed "s|$path||g;s/\///g" | grep -f <(awk -F "," '{if(NR>1) print $1}' $metadata) - > $path/barcode_list
+    done | sed "s|$path||g;s/\///g" > $path/barcode_list
 fi
+
+TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
 
 if [ "$db" == "REFSEQ" ]; then
 
@@ -105,9 +103,11 @@ do
 
     emu abundance --type map-ont --db $EMU_DB --output-dir $path/$barcode/ --output-basename $barcode --keep-counts --threads $threads $path/$barcode/${barcode}_16s.fasta
 
+    conda activate taxonkit
+
     line_count=$(wc -l $path/$barcode/${barcode}_rel-abundance.tsv | awk '{print $1}')
 
-    awk -v l=$line_count 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1,$10,$9,$8,$7,$6,$5,$4,$3; else if(NR>1 && NR==l) print "Unclassified",$10,"Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified"}' $path/$barcode/${barcode}_rel-abundance.tsv > $path/$barcode/${barcode}_final_emu_result.txt
+    awk -v l=$line_count 'BEGIN{FS="\t";OFS="\t"}{if(NR>1 && NR<l) print $1,$10,$9,$8,$7,$6,$5,$4,$3; else if(NR>1 && NR==l) print "Unclassified",$10,"Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified"}' $path/$barcode/${barcode}_rel-abundance.tsv > $path/$barcode/${barcode}_final_emu_result.txt
 
 done < "$path/barcode_list"
 

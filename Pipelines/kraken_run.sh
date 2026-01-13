@@ -4,7 +4,7 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: kraken_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -r Species -c 0.0 -q 10 -e metadata.csv"
+   echo "Usage: kraken_run.sh -p /path/to/the/directory -k kit-name -t 16 -m 1400 -M 1800 -r Species -c 0.0 -q 10"
    echo -e "\t-p <path> Path to directory containing passed raw data."
    echo -e "\t-k <str> Kit-Name."
    echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
@@ -14,11 +14,10 @@ helpFunction()
    echo -e "\t-c <int> Confidence Score. [default: 0.0]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    echo -e "\t-n <str> Database Name. [default: REFSEQ]"
-   echo -e "\t-e <str> Metadata File."
    exit 1 # Exit script after printing help
 }
 
-# Default values for BLASTN
+# Default values for Kraken2
 
 threads=16
 min=1400
@@ -28,7 +27,7 @@ conf=0.0
 q_score=10
 db="REFSEQ"
 
-while getopts "p:k:t:m:M:r:c:q:n:e:" opt
+while getopts "p:k:t:m:M:r:c:q:n:" opt
 do
     case "$opt" in
     p )
@@ -57,9 +56,6 @@ do
         ;;
     n )
         db="$OPTARG"
-        ;;
-    e )
-        metadata="$OPTARG"
         ;;
     ? ) helpFunction ;;
     esac
@@ -103,7 +99,7 @@ if [ ! -f $path/barcode_list ]
     do 
 	    [ "$(find $i -type f)" ] && echo $i
 
-    done | sed "s|$path||g;s/\///g" | grep -f <(awk -F "," '{if(NR>1) print $1}' $metadata) - > $path/barcode_list
+    done | sed "s|$path||g;s/\///g" > $path/barcode_list
 fi
 
 r=$(echo $rank | cut -c1-1)
@@ -124,7 +120,7 @@ do
 
     conda activate taxonkit
 
-    sed '1,2d' $path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | sed 's/;/\t/g' | \
+    sed '1,2d' $path/$barcode/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | \
     sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $path/$barcode/${barcode}_final_kraken2_result.txt
 
     rm -r $path/$barcode/${barcode}_kraken_biom.txt

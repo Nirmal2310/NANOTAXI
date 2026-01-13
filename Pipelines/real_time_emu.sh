@@ -4,32 +4,26 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_kraken.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -t Species -c 0.0 -q 10 -n REFSEQ -p 4 -s 500"
+   echo "Usage: real_time_emu.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -q 10 -n REFSEQ -t 4 -s 500"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
-   echo -e "\t-r <str> Minimum Taxonomy Rank. [default: Species]"
-   echo -e "\t-c <int> Confidence Score. [default: 0.0]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    echo -e "\t-n <str> Database Name. [default: REFSEQ]"
-   echo -e "\t-p <int> Number of Threads."
+   echo -e "\t-t <int> Number of Threads."
    echo -e "\t-s <int> Number of reads to process per barcode. [default: 500]"
    exit 1 # Exit script after printing help
 }
 
 min=1400
 max=1800
-rank=S
-conf=0.0
 q_score=10
 db="REFSEQ"
 batch_size=500
 
-tmp_file=$(mktemp)
-
-while getopts "d:k:b:m:M:t:c:q:n:p:s:" opt
+while getopts "d:k:b:m:M:q:n:t:s:" opt
 do
     case "$opt" in
     d )
@@ -39,27 +33,21 @@ do
         kit_name="$OPTARG"
         ;;
     b )
-        barcode="$OPTARG"
-        ;;
+	    barcode="$OPTARG"
+	    ;;
     m )
     	min="$OPTARG"
     	;;
     M )
     	max="$OPTARG"
     	;;
-    t )
-    	rank="$OPTARG"
-    	;;
-    c)
-        conf="$OPTARG"
-        ;;
     q )
         q_score="$OPTARG"
         ;;
     n )
         db="$OPTARG"
         ;;
-    p )
+    t )
         threads="$OPTARG"
         ;;
     s )
@@ -77,29 +65,25 @@ if [ -z "$data_path" ]
     helpFunction
 fi
 
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
 if [ "$db" == "REFSEQ" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_REFSEQ="//;s/"//g')
+    EMU_DB=$(grep EMU_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export EMU_REFSEQ="//;s/"//g')
 
 elif [ "$db" == "GTDB" ]; then
     
-    KRAKEN_DB=$(grep KRAKEN_GTDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GTDB="//;s/"//g')
+    EMU_DB=$(grep EMU_GTDB ~/.bashrc | tail -n 1 | sed 's/export EMU_GTDB="//;s/"//g')
 
 elif [ "$db" == "MIMT" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_MIMT ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_MIMT="//;s/"//g')
+    EMU_DB=$(grep EMU_MIMT ~/.bashrc | tail -n 1 | sed 's/export EMU_MIMT="//;s/"//g')
 
 elif [ "$db" == "GSR" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g')
-
-    TAXONKIT_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g;s/$/\/taxonomy\//g')
+    EMU_DB=$(grep EMU_GSR ~/.bashrc | tail -n 1 | sed 's/export EMU_GSR="//;s/"//g')
 
 elif [ "$db" == "EMUDB" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_EMUDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_EMUDB="//;s/"//g')
+    EMU_DB=$(grep EMU_DB ~/.bashrc | tail -n 1 | sed 's/export EMU_DB="//;s/"//g')
 
 fi
 
@@ -108,6 +92,8 @@ if [ ! -d $data_path/$barcode/$db ]; then
     mkdir -p $data_path/$barcode/$db
 
 fi
+
+tmp_file=$(mktemp)
 
 
 if [ ! -f $data_path/$barcode/$db/processed_reads.txt ]; then
@@ -157,21 +143,22 @@ if [ ! -f $data_path/$barcode/$db/processed_reads.txt ]; then
 
     if [ "$(grep ">" $data_path/$barcode/$db/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
-        conda activate kraken2
+        conda activate emu
 
-        kraken2 --db $KRAKEN_DB --confidence $conf --threads $threads --output $data_path/$barcode/$db/${barcode}_kraken2_output.txt --report $data_path/$barcode/$db/${barcode}_kraken2_report.txt $data_path/$barcode/$db/${barcode}_16S.fasta
-
-        kraken-biom --max P --min $rank -o $data_path/$barcode/$db/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/$db/${barcode}_kraken2_report.txt
+        emu abundance --type map-ont --db $EMU_DB --output-dir $data_path/$barcode/$db/ --output-basename $barcode --keep-counts --threads $threads ${data_path}/$barcode/$db/${barcode}_16S.fasta
 
         conda activate taxonkit
 
-        sed '1,2d' $data_path/$barcode/$db/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | \
-        sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
+        line_count=$(wc -l ${data_path}/$barcode/$db/${barcode}_rel-abundance.tsv | awk '{print $1}')
 
-        rm -r $data_path/$barcode/$db/${barcode}_kraken_biom.txt $data_path/$barcode/$db/${barcode}_hist_temp.txt
-        
+        awk -v l=$line_count 'BEGIN{FS="\t";OFS="\t"}{if(NR>1 && NR<l) print $1,$10,$9,$8,$7,$6,$5,$4,$3; else if(NR>1 && NR==l) print "Unclassified",$10,"Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified"}' $data_path/$barcode/$db/${barcode}_rel-abundance.tsv > $data_path/$barcode/$db/${barcode}_final_emu_result.txt
+
+        rm -r $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_rel-abundance.tsv
+    
     else
+        
         echo "No Reads to Classify."
+    
     fi
 
 else
@@ -204,21 +191,22 @@ else
 
         if [ "$(grep ">" $data_path/$barcode/$db/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
-            conda activate kraken2
+            conda activate emu
 
-            kraken2 --db $KRAKEN_DB --confidence $conf --threads $threads --output $data_path/$barcode/$db/${barcode}_kraken2_output.txt --report $data_path/$barcode/$db/${barcode}_kraken2_report.txt $data_path/$barcode/$db/${barcode}_16S.fasta
-
-            kraken-biom --max P --min $rank -o $data_path/$barcode/$db/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/$db/${barcode}_kraken2_report.txt
+            emu abundance --type map-ont --db $EMU_DB --output-dir $data_path/$barcode/$db/ --output-basename $barcode --keep-counts --threads $threads ${data_path}/$barcode/$db/${barcode}_16S.fasta
 
             conda activate taxonkit
 
-            sed '1,2d' $data_path/$barcode/$db/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --threads $threads --taxid-field 1 - | \
-            sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' >> $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
+            line_count=$(wc -l ${data_path}/$barcode/$db/${barcode}_rel-abundance.tsv | awk '{print $1}')
 
-            rm -r $data_path/$barcode/$db/${barcode}_kraken_biom.txt $data_path/$barcode/$db/${barcode}_hist_temp.txt
+            awk -v l=$line_count 'BEGIN{FS="\t";OFS="\t"}{if(NR>1 && NR<l) print $1,$10,$9,$8,$7,$6,$5,$4,$3; else if(NR>1 && NR==l) print "Unclassified",$10,"Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified","Unclassified"}' $data_path/$barcode/$db/${barcode}_rel-abundance.tsv >> $data_path/$barcode/$db/${barcode}_final_emu_result.txt
 
+            rm -r $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_rel-abundance.tsv
+        
         else
+            
             echo "No Reads to Classify."
+        
         fi
     fi
 fi

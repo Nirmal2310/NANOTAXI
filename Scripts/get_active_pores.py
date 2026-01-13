@@ -28,3 +28,5 @@ channels_stat = channels_df['Type'].value_counts().reset_index()
 channels_stat.columns = ['Type', 'Count']
 
 pore_counts = channels_stat.loc[channels_stat['Type'].isin(['strand', 'adapter', 'pore']), 'Count'].sum()
+
+pore_counts = pore_counts*4

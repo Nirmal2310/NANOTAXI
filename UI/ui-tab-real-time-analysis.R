@@ -54,7 +54,7 @@ tabPanel(
                           ),
                           column(id="realtime_two", 6,
                           column(id="realtime_reads", 3,
-                          div(tags$b("READS"), style="padding-bottom: 4px; text-align: center; color: #00607D;"),
+                          div(tags$b("PROCESSED"), style="padding-bottom: 4px; text-align: center; color: #00607D;"),
                           verbatimTextOutput("passed_reads", placeholder = T),
                           tags$head(
                             tags$style(
@@ -99,23 +99,41 @@ tabPanel(
                                     tabPanel(title = div("TAXON TABLE", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
                                     div(downloadButton(outputId = "download_taxa_table",
                                     label = "Download Table (TSV)"), style = "padding-top: 10px;"),
-                                    DT::dataTableOutput("taxa_table", height = "100%", width = "50%")),
+                                    DT::DTOutput("taxa_table", height = "100%", width = "100%")),
                                     tabPanel(title = div("READ LENGTH", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
                                     div(downloadButton(outputId = "download_readlength_plot",
                                     label = "Download Plot (PNG)"), style = "padding-top: 10px;"),
-                                    plotOutput("plot_read_length", height = "100%", width = "100%")
+                                    plotlyOutput("plot_read_length", height = "100%", width = "100%")
                                     ),
                                     tabPanel(title = div("Q-SCORE", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
                                     div(downloadButton(outputId = "download_qscore_plot",
                                     label = "Download Plot (PNG)"), style = "padding-top: 10px;"),
-                                    plotOutput("plot_q_score_plot", height = "100%", width = "75%")
+                                    plotlyOutput("plot_q_score_plot", height = "100%", width = "100%")
                                     ),
                                     tabPanel(title = div("CLASSIFICATION", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
                                     fluidRow(column(width = 2,
-                                    sliderInput("top_n", "Top N", min = 1, max = 25, value = 10)),
+                                    sliderInput("top_n", "Top N", min = 1, max = 25, value = 10),
+                                    div(bslib::input_switch("switch", "Relative Abundance"), style="font-size: 15px; font-weight: bold; color: #00607D")),
                                     column(width=10,
                                     div(downloadButton(outputId = "download_classification_plot",
-                                    label = "Download Plot (PNG)"), style = "float: right; padding-right: 15px; padding-top: 10px;"),
-                                    plotOutput("plot_classification_plot", height = "100%")))
-                                    ))))
+                                    label = "Download Classification Plot (PDF)"), style = "padding-top: 10px;"),
+                                    plotlyOutput("plot_classification_plot", height = "100%", width = "100%")))
+                                    ),
+                                    tabPanel(title = div("RAREFACTION", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
+                                    fluidRow(column(width = 2,
+                                    div(numericInput("taxon_counts_cutoff", "Absolute Counts Cutoff", value = 10), style="color: #00607D;")),
+                                    column(width=10,
+                                    div(downloadButton(outputId = "download_rarefaction_curve",
+                                    label = "Download Rarefaction Curve (PDF)"), style = "padding-top: 10px;"),
+                                    plotlyOutput("plot_rarefaction_plot", height = "100%", width = "100%")))
+                                    ),
+                                    tabPanel(title = div("DIVERSITY", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
+                                    fluidRow(column(width = 2,
+                                    div(numericInput("taxon_counts_cutoff", "Counts Cutoff", value = 10), style="color: #00607D;")),
+                                    column(width=10,
+                                    div(downloadButton(outputId = "download_diversity_curve",
+                                    label = "Download Divesity Curve (PDF)"), style = "padding-top: 10px;"),
+                                    plotOutput("plot_diversity_plot", height = "100%")))
+                                    )
+                                  )))
     )

@@ -4,32 +4,30 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_kraken.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -t Species -c 0.0 -q 10 -n REFSEQ -p 4 -s 500"
+   echo "Usage: real_time_blast.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85 -q 10 -n REFSEQ -t 4 -s 500"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
    echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
    echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
-   echo -e "\t-r <str> Minimum Taxonomy Rank. [default: Species]"
-   echo -e "\t-c <int> Confidence Score. [default: 0.0]"
+   echo -e "\t-i <int> Minimum Percent Identity. [default: 85]"
+   echo -e "\t-c <int> Minimum Percent Coverage. [default: 85]"
    echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
    echo -e "\t-n <str> Database Name. [default: REFSEQ]"
-   echo -e "\t-p <int> Number of Threads."
+   echo -e "\t-t <int> Number of Threads."
    echo -e "\t-s <int> Number of reads to process per barcode. [default: 500]"
    exit 1 # Exit script after printing help
 }
 
 min=1400
 max=1800
-rank=S
-conf=0.0
+identity=85
+coverage=85
 q_score=10
 db="REFSEQ"
 batch_size=500
 
-tmp_file=$(mktemp)
-
-while getopts "d:k:b:m:M:t:c:q:n:p:s:" opt
+while getopts "d:k:b:m:M:i:c:q:n:t:s:" opt
 do
     case "$opt" in
     d )
@@ -39,19 +37,19 @@ do
         kit_name="$OPTARG"
         ;;
     b )
-        barcode="$OPTARG"
-        ;;
+	    barcode="$OPTARG"
+	    ;;
     m )
     	min="$OPTARG"
     	;;
     M )
     	max="$OPTARG"
     	;;
-    t )
-    	rank="$OPTARG"
+    i )
+    	identity="$OPTARG"
     	;;
-    c)
-        conf="$OPTARG"
+    c )
+        coverage="$OPTARG"
         ;;
     q )
         q_score="$OPTARG"
@@ -59,17 +57,20 @@ do
     n )
         db="$OPTARG"
         ;;
-    p )
+    t )
         threads="$OPTARG"
         ;;
     s )
         batch_size="$OPTARG"
         ;;
-    ? ) 
-        helpFunction 
+    ? ) helpFunction 
         ;;
     esac
 done
+
+script_path=$(dirname "$(readlink -f "$0")")
+
+tmp_file=$(mktemp)
 
 if [ -z "$data_path" ]
     then
@@ -77,29 +78,35 @@ if [ -z "$data_path" ]
     helpFunction
 fi
 
-TAXONKIT_DB=$(grep TAXONKIT_DB ~/.bashrc | tail -n 1 | sed 's/export TAXONKIT_DB="//;s/"//g')
-
 if [ "$db" == "REFSEQ" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_REFSEQ="//;s/"//g')
+    BLAST_DB=$(grep BLAST_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export BLAST_REFSEQ="//;s/"//g;s/$/\/REFSEQ_BLAST/')
+
+    TAXA_DATA=$(grep BLAST_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export BLAST_REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
 
 elif [ "$db" == "GTDB" ]; then
     
-    KRAKEN_DB=$(grep KRAKEN_GTDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GTDB="//;s/"//g')
+    BLAST_DB=$(grep BLAST_GTDB ~/.bashrc | tail -n 1 | sed 's/export BLAST_GTDB="//;s/"//g;s/$/\/GTBD_BLAST/')
+
+    TAXA_DATA=$(grep BLAST_GTDB ~/.bashrc | tail -n 1 | sed 's/export BLAST_GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
 
 elif [ "$db" == "MIMT" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_MIMT ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_MIMT="//;s/"//g')
+    BLAST_DB=$(grep BLAST_MIMT ~/.bashrc | tail -n 1 | sed 's/export BLAST_MIMT="//;s/"//g;s/$/\/MIMT_BLAST/')
+
+    TAXA_DATA=$(grep BLAST_MIMT ~/.bashrc | tail -n 1 | sed 's/export BLAST_MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
 
 elif [ "$db" == "GSR" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g')
+    BLAST_DB=$(grep BLAST_GSR ~/.bashrc | tail -n 1 | sed 's/export BLAST_GSR="//;s/"//g;s/$/\/GSR_BLAST/')
 
-    TAXONKIT_DB=$(grep KRAKEN_GSR ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_GSR="//;s/"//g;s/$/\/taxonomy\//g')
+    TAXA_DATA=$(grep BLAST_GSR ~/.bashrc | tail -n 1 | sed 's/export BLAST_GSR="//;s/"//g;s/$/\/GSR_taxa.txt/')
 
 elif [ "$db" == "EMUDB" ]; then
 
-    KRAKEN_DB=$(grep KRAKEN_EMUDB ~/.bashrc | tail -n 1 | sed 's/export KRAKEN_EMUDB="//;s/"//g')
+    BLAST_DB=$(grep BLAST_EMU ~/.bashrc | tail -n 1 | sed 's/export BLAST_EMU="//;s/"//g;s/$/\/EMU_BLAST/')
+
+    TAXA_DATA=$(grep BLAST_EMU ~/.bashrc | tail -n 1 | sed 's/export BLAST_EMU="//;s/"//g;s/$/\/EMU_taxa.txt/')
 
 fi
 
@@ -157,21 +164,22 @@ if [ ! -f $data_path/$barcode/$db/processed_reads.txt ]; then
 
     if [ "$(grep ">" $data_path/$barcode/$db/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
-        conda activate kraken2
+        conda activate blast
 
-        kraken2 --db $KRAKEN_DB --confidence $conf --threads $threads --output $data_path/$barcode/$db/${barcode}_kraken2_output.txt --report $data_path/$barcode/$db/${barcode}_kraken2_report.txt $data_path/$barcode/$db/${barcode}_16S.fasta
+        blastn -db $BLAST_DB -query $data_path/$barcode/$db/${barcode}_16S.fasta -out $data_path/$barcode/$db/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 \
+        -perc_identity $identity -qcov_hsp_perc $coverage -outfmt "6" -task megablast -word_size 16
 
-        kraken-biom --max P --min $rank -o $data_path/$barcode/$db/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/$db/${barcode}_kraken2_report.txt
+        conda activate minimap2
 
-        conda activate taxonkit
+        python $script_path/add_taxon_info.py -c <(awk 'BEGIN{FS="\t";OFS="\t"}{print $2}' $data_path/${barcode}/$db/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}') -t $TAXA_DATA | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/${barcode}/$db/${barcode}_final_blast_result.txt
 
-        sed '1,2d' $data_path/$barcode/$db/${barcode}_kraken_biom.txt | taxonkit reformat --threads $threads --data-dir $TAXONKIT_DB --taxid-field 1 - | \
-        sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' > $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
-
-        rm -r $data_path/$barcode/$db/${barcode}_kraken_biom.txt $data_path/$barcode/$db/${barcode}_hist_temp.txt
-        
+        rm -r $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_blast.txt
+    
     else
+        
         echo "No Reads to Classify."
+    
     fi
 
 else
@@ -204,21 +212,22 @@ else
 
         if [ "$(grep ">" $data_path/$barcode/$db/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
-            conda activate kraken2
+            conda activate blast
 
-            kraken2 --db $KRAKEN_DB --confidence $conf --threads $threads --output $data_path/$barcode/$db/${barcode}_kraken2_output.txt --report $data_path/$barcode/$db/${barcode}_kraken2_report.txt $data_path/$barcode/$db/${barcode}_16S.fasta
+            blastn -db $BLAST_DB -query $data_path/$barcode/$db/${barcode}_16S.fasta -out $data_path/$barcode/$db/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 \
+            -perc_identity $identity -qcov_hsp_perc $coverage -outfmt "6" -task megablast -word_size 16
 
-            kraken-biom --max P --min $rank -o $data_path/$barcode/$db/${barcode}_kraken_biom.txt --fmt tsv $data_path/$barcode/$db/${barcode}_kraken2_report.txt
+            conda activate minimap2
 
-            conda activate taxonkit
+            python $script_path/add_taxon_info.py -c <(awk 'BEGIN{FS="\t";OFS="\t"}{print $2}' $data_path/${barcode}/$db/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}') -t $TAXA_DATA | \
+            awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/${barcode}/$db/${barcode}_final_blast_result.txt
 
-            sed '1,2d' $data_path/$barcode/$db/${barcode}_kraken_biom.txt | taxonkit reformat --data-dir $TAXONKIT_DB --threads $threads --taxid-field 1 - | \
-            sed 's/;/\t/g;s/[k,p,c,o,f,g,s]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' >> $data_path/$barcode/$db/${barcode}_final_kraken2_result.txt
-
-            rm -r $data_path/$barcode/$db/${barcode}_kraken_biom.txt $data_path/$barcode/$db/${barcode}_hist_temp.txt
-
+            rm -r $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_blast.txt
+        
         else
+            
             echo "No Reads to Classify."
+        
         fi
     fi
 fi

@@ -55,21 +55,21 @@ else
 
 fi
 
-if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
+if { conda env list | grep "chopper";} > /dev/null 2>&1; then
 
-        conda list -n nanofilt --explicit > _current_env.txt
+        conda list -n chopper --explicit > _current_env.txt
 
-        if diff -q $script_dir/nanofilt.txt _current_env.txt > /dev/null; then
+        if diff -q $script_dir/chopper.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
-		conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
+                conda create --name chopper --file $script_dir/chopper.txt -y && rm -r _current_env.txt
+		conda list -n chopper --explicit > $script_dir/chopper.txt
         fi
 
 else
         
-        conda create -n nanofilt --file $script_dir/nanofilt.txt
-	conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
+        conda create -n chopper --file $script_dir/chopper.txt
+	conda list -n chopper --explicit > $script_dir/chopper.txt
         
 fi
 

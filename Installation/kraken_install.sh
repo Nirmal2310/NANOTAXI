@@ -61,21 +61,21 @@ if [ ! -d DATA ]; then
 	mkdir DATA
 fi
 
-if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
+if { conda env list | grep "chopper";} > /dev/null 2>&1; then
 
-        conda list -n nanofilt --explicit > _current_env.txt
+        conda list -n chopper --explicit > _current_env.txt
 
-        if diff -q $script_dir/nanofilt.txt _current_env.txt > /dev/null; then
+        if diff -q $script_dir/chopper.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
-		conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
+                conda create --name chopper --file $script_dir/chopper.txt -y && rm -r _current_env.txt
+		conda list -n chopper --explicit > $script_dir/chopper.txt
         fi
 
 else
 
-        conda create --name nanofilt --file $script_dir/nanofilt.txt
-	conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
+        conda create --name chopper --file $script_dir/chopper.txt
+	conda list -n chopper --explicit > $script_dir/chopper.txt
 
 fi
 
@@ -185,7 +185,7 @@ if [ ! -d GTDB ]; then
 
         seqkit faidx GTDB_16S_reps.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
 
         seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > temp && mv temp GTDB_16S_reps.fasta
 
@@ -293,7 +293,7 @@ if [ ! -d GSR ]; then
 
         seqkit faidx GSR-DB_full-16S_filt_seqs.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > temp && mv temp GSR-DB_full-16S_filt_seqs.fasta
 
@@ -359,7 +359,7 @@ if [ ! -d REFSEQ ]; then
 
         seqkit faidx refseq_16S.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
 
         seqkit faidx -X refseq_filtered_ids refseq_16S.fasta > temp && mv temp refseq_16S.fasta
 

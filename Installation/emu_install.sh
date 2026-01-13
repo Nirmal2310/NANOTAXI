@@ -71,22 +71,22 @@ else
 
 fi
 
-if { conda env list | grep "nanofilt";} > /dev/null 2>&1; then
+if { conda env list | grep "chopper";} > /dev/null 2>&1; then
 
-	conda list -n nanofilt --explicit > _current_env.txt
+	conda list -n chopper --explicit > _current_env.txt
 
-        if diff -q $script_dir/nanofilt.txt _current_env.txt > /dev/null; then
+        if diff -q $script_dir/chopper.txt _current_env.txt > /dev/null; then
                 echo "Environment exists and up to date." && rm -r _current_env.txt
         else
-                conda create --name nanofilt --file $script_dir/nanofilt.txt -y && rm -r _current_env.txt
-		conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
+                conda create --name chopper --file $script_dir/chopper.txt -y && rm -r _current_env.txt
+		conda list -n chopper --explicit > $script_dir/chopper.txt
   		
         fi
 
 else
         
-        conda create -n nanofilt --file $script_dir/nanofilt.txt
-        conda list -n nanofilt --explicit > $script_dir/nanofilt.txt
+        conda create -n chopper --file $script_dir/chopper.txt
+        conda list -n chopper --explicit > $script_dir/chopper.txt
 fi
 
 if { conda env list | grep "taxonkit";} > /dev/null 2>&1; then
@@ -171,7 +171,7 @@ if [ ! -d EMU_DATA ]; then
 
         cd EMU_DATA
 
-        awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$9}' taxonomy.tsv > temp && mv temp taxonomy.tsv
+        awk 'BEGIN{FS=OFS="\t"}{print $1,$2,$3,$4,$5,$6,$7,$8,$9}' taxonomy.tsv > temp && mv temp taxonomy.tsv
         
         source $path/bin/activate base
 
@@ -199,7 +199,7 @@ if [ ! -d GSR ]; then
 
         seqkit faidx GSR-DB_full-16S_filt_seqs.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > GSR_final_seqs.fasta
 
@@ -246,9 +246,9 @@ if [ ! -d GTDB ]; then
 
         wget -c https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/ar53_metadata.tsv.gz
 
-        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | grep -v "ncbi" awk -F "\t" '{print $1"\t"$81}' > seq2tax.map.tsv
+        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $1"\t"$81}' > seq2tax.map.tsv
 
-        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | grep -v "ncbi" | awk -F "\t" '{print $81"\t"$82}' | sed 's/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | \
+        zcat bac120_metadata.tsv.gz ar53_metadata.tsv.gz | awk -F "\t" '{if(NR>1) print $81"\t"$20}' | sed 's/;/\t/g;s/[d,p,c,o,f,g,s]__//g' | \
         awk 'BEGIN{FS=OFS="\t"}{print $1,$8,$7,$6,$5,$4,$3,$2}' - | sort -k1 -n -r | uniq | \
         cat <(echo -e "tax_id\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom") - > taxonomy.tsv && rm -r bac120_metadata.tsv.gz ar53_metadata.tsv.gz
 
@@ -256,7 +256,7 @@ if [ ! -d GTDB ]; then
 
         seqkit faidx GTDB_16S_reps.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
 
         seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > temp && mv temp GTDB_16S_reps.fasta
 
@@ -291,7 +291,7 @@ if [ ! -d MIMT ]; then
         grep ">" MIMt.fasta | sed 's/>//g' | awk -F "\t" '{if($2!=" ") print $0}' > seq2tax.map.tsv
 
         paste -d "\t" <(awk -F "\t" '{print $2}' seq2tax.map.tsv) <(awk -F "\t" '{print $1}' seq2tax.map.tsv | grep -Ff - MIMT_taxa.txt | awk -F "\t" '{print $2}') | \
-        sort -u | sed 's/;/\t/g;s/[K,P,C,O,F,G,S]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{for (i=2;i<=NF;i++) gsub(/_/, " ", $i) split($8, a, " "); $8=a[1]" "a[2]} 1' | \
+        sort -u | sed 's/;/\t/g;s/[K,P,C,O,F,G,S]__//g' | awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) for (i=2;i<=NF;i++) gsub(/_/, " ", $i)} 1' | \
         cat <(echo -e "tax_id\tspecies\tgenus\tfamily\torder\tclass\tphylum\tsuperkingdom") - | \
         awk 'BEGIN{FS="\t";OFS="\t"}{if(NR==1) print $0; else print $1,$8,$7,$6,$5,$4,$3,$2}' > taxonomy.tsv
 
@@ -299,7 +299,7 @@ if [ ! -d MIMT ]; then
 
         seqkit faidx MIMt.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' MIMt.fasta.fai | grep -Ff - <(awk -F "\t" '{print $1}' seq2tax.map.tsv) > mimt_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' MIMt.fasta.fai | grep -Ff - <(awk -F "\t" '{print $1}' seq2tax.map.tsv) > mimt_filtered_ids
 
         seqkit faidx -X mimt_filtered_ids MIMt.fasta > MIMT_final_seqs.fasta
 
@@ -346,7 +346,7 @@ if [ ! -d REFSEQ ]; then
 
         seqkit faidx refseq_16S.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
 
         seqkit faidx -X refseq_filtered_ids refseq_16S.fasta > refseq_final_seqs.fasta
 
