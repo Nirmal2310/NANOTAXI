@@ -102,12 +102,12 @@ tabPanel(
                                     DT::DTOutput("taxa_table", height = "100%", width = "100%")),
                                     tabPanel(title = div("READ LENGTH", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
                                     div(downloadButton(outputId = "download_readlength_plot",
-                                    label = "Download Plot (PNG)"), style = "padding-top: 10px;"),
+                                    label = "Download Plot (PDF)"), style = "padding-top: 10px;"),
                                     plotlyOutput("plot_read_length", height = "100%", width = "100%")
                                     ),
                                     tabPanel(title = div("Q-SCORE", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),
                                     div(downloadButton(outputId = "download_qscore_plot",
-                                    label = "Download Plot (PNG)"), style = "padding-top: 10px;"),
+                                    label = "Download Plot (PDF)"), style = "padding-top: 10px;"),
                                     plotlyOutput("plot_q_score_plot", height = "100%", width = "100%")
                                     ),
                                     tabPanel(title = div("CLASSIFICATION", style="font-size: 15px; font-weight: bold; color: #00607D; font-family: serif"),

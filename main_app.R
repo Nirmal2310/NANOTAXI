@@ -115,6 +115,12 @@ server <- function(input, output, session) {
 
   realtime_daa_metadata <- reactiveVal()
 
+  realtime_daa_prev_cutoff <- reactiveVal()
+
+  realtime_daa_counts_cutoff <- reactiveVal()
+
+  realtime_taxa_group <- reactiveVal()
+
   abundance_val <- reactiveVal()
     
   plot_taxa_stacked <- reactiveVal()
@@ -373,11 +379,13 @@ server <- function(input, output, session) {
     cohort_trigger(1)
   })
 
-  observe({
+  observeEvent(cohort_trigger(), {
 
-    req(is_running(), cohort_delay_done(), status_checked(), state()=="Sequencing", length(classified_list())>0, length(classified_samples_list())>0, input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
-    
     req(cohort_trigger() > 0)
+
+    req(is_running(), cohort_delay_done(), status_checked(), state()=="Sequencing")
+      
+    req(length(classified_list())>0, length(classified_samples_list())>0, input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
     classified_data_list <- classified_list()
 
@@ -401,7 +409,7 @@ server <- function(input, output, session) {
   
   })
 
-  observeEvent(cohort_realtime_analysis$result()$counts_data, {
+  observeEvent(cohort_realtime_analysis$result(), {
 
     tryCatch({
 
@@ -437,40 +445,42 @@ server <- function(input, output, session) {
 
   observeEvent({
     reactive_counts_matrix()
+    input$taxa
     input$prevalence_cutoff
     input$counts_cutoff
-    input$taxa
-    }, {
+    }, 
+    {
 
-    req(route()=="Realtime")
-
-    req(cohort_trigger() > 0)
-  
-    req(is_running(), cohort_delay_done(), status_checked(), state()=="Sequencing", nrow(reactive_counts_matrix())>0, input$taxa, input_data_reactive(), input$realtime_control, input$prevalence_cutoff, input$counts_cutoff)
-
-    counts_matrix <- reactive_counts_matrix()
-
-    lineage <- input$taxa
-
-    sample_metadata <- input_data_reactive()$data
-
-    control_group <- input$realtime_control
-
-    prevalence_cutoff <- input$prevalence_cutoff
-
-    counts_cutoff <- input$counts_cutoff
-
-    if (daa_ancombc_run$status() != "running") {
-
-      isolate({
-        
-        daa_ancombc_run$invoke(counts_matrix, lineage, sample_metadata, control_group, prevalence_cutoff, counts_cutoff)
+      req(nrow(reactive_counts_matrix()) > 0)
       
-      })
+      req(route()=="Realtime", is_running(), cohort_delay_done(), input$realtime_control, status_checked(), state()=="Sequencing", input_data_reactive())
+
+      req(input$taxa, input$prevalence_cutoff, input$counts_cutoff)
+
+      counts_matrix <- reactive_counts_matrix()
+
+      lineage <- input$taxa
+
+      sample_metadata <- input_data_reactive()$data
+
+      control_group <- input$realtime_control
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      counts_cutoff <- input$counts_cutoff
+
+      if (daa_ancombc_run$status() != "running") {
+
+        isolate({
+          
+          daa_ancombc_run$invoke(counts_matrix, lineage, sample_metadata, control_group, prevalence_cutoff, counts_cutoff)
+        
+        })
+
+      }
 
     }
-
-  })
+  )
 
   observeEvent(daa_ancombc_run$result(), {
 
@@ -478,17 +488,29 @@ server <- function(input, output, session) {
 
       req(daa_ancombc_run$result())
 
-      result <- daa_ancombc_run$result()
+      req(nrow(daa_ancombc_run$result()$res_dunn)>0)
 
-      req(!is.null(result$res_dunn), nrow(result$res_dunn)>0)
+      result <- daa_ancombc_run$result()
 
       res_dunn <- result$res_dunn
 
       metadata <- result$metadata
 
+      lineage <- result$lineage
+
+      prev_cutoff <- result$prevalence_cutoff
+
+      counts_cutoff <- result$counts_cutoff
+
       realtime_daa_data(res_dunn)
 
       realtime_daa_metadata(metadata)
+
+      realtime_daa_counts_cutoff(counts_cutoff)
+
+      realtime_daa_prev_cutoff(prev_cutoff)
+
+      realtime_taxa_group(lineage)
     
     }, error = function(e) {
 
@@ -1334,9 +1356,9 @@ server <- function(input, output, session) {
     
     diversity_facet <- as_ggplot(grid.grabExpr(grid.arrange(shannon_plot,
                                         simpson_plot, legend, ncol=3, widths=c(2.2, 2.2, 1.0)))) +
-      labs(caption = paste0("Alpha Diversity metrices calculated on rarified data with the 
-                                        cutoff library size of ", scales::comma(rarefaction_cutoff), " reads.<br>The P-value
-                                        is calculated using Kruskal-Walis Test with Benjamini-Hochberg Correction.")) +
+      labs(caption = paste0("Alpha Diversity metrices calculated on rarified ", lineage, " data with the 
+                              cutoff library size of ", scales::comma(rarefaction_cutoff), " reads.<br>The P-value 
+                              is calculated using Kruskal-Walis Test with Benjamini-Hochberg Correction.")) +
                                           theme(plot.caption = element_markdown(
                                             color = "#0F6E73", size = 15,
                                             margin = margin(20,0,5,0), face = "bold",
@@ -1379,8 +1401,8 @@ server <- function(input, output, session) {
       geom_vline(xintercept = 0, color = "black", linetype = "dashed") +
       geom_hline(yintercept = 0, color = "black", linetype = "dashed") +
       ggtitle("Principal Coordination Analysis (PCoA) ordination plot using Aitchison Distance") +
-      labs(caption = paste0("The TSS Normalized Data was filtered to keep the taxon with ", prevalence_cutoff, 
-                            "% prevalence and mean relative abundace >= ", abundance_cutoff,"%.<br>CLR transformation
+      labs(caption = paste0("The TSS Normalized Data was filtered to keep the ", lineage, " with ", prevalence_cutoff, 
+                            "% prevalence and mean relative abundance >= ", abundance_cutoff,"%.<br>CLR transformation
                             was applied on the filtered data and Euclidean Distance was calculated and plotted.")) +
       theme(
         axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
@@ -1421,7 +1443,7 @@ server <- function(input, output, session) {
       scale_fill_manual(values = pal_aaas("default")(length(levels(nmds_df$Group)))) +
       theme_linedraw() +
       ggtitle("Non-metric MultiDimensional Scaling (NMDS) ordination plot with Bray-Curtis Distance") +
-      labs(caption = paste0("The TSS Normalized Data was filtered to keep taxon with ", prevalence_cutoff,
+      labs(caption = paste0("The TSS Normalized Data was filtered to keep ", lineage, " with ", prevalence_cutoff,
                             "% prevalence and mean relative abundance >= ", abundance_cutoff,"%.<br>Bray-Curtis
                             Distance was calculated on the filtered data and plotted.")) +
       theme(
@@ -1473,9 +1495,9 @@ server <- function(input, output, session) {
       scale_fill_manual(values = pal_aaas("default")(length(levels(sample_metadata$Group)))) +
       theme_linedraw() +
       ggtitle("Principal Component Analysis (PCA) Bi-Plot using CLR Transformed Data") +
-      labs(caption = paste0("The TSS Normalized Data was filtered to keep taxon with ", prevalence_cutoff,
+      labs(caption = paste0("The TSS Normalized Data was filtered to keep ", lineage, " taxon with ", prevalence_cutoff,
                             "% prevalence and mean relative abundance >= ", abundance_cutoff,"%.<br>CLR transformation
-                            was applied on the filtered data and biplot was plotted, showing loadings of top ",top_taxa,
+                            was applied on the filtered data and biplot was plotted, showing loadings of top ", top_taxa,
                             " taxon.")) +
       theme(
         axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
@@ -1687,23 +1709,16 @@ server <- function(input, output, session) {
 
         return(list(
           'res_dunn' = res_dunn,
-          'metadata' = metadata
+          'metadata' = metadata,
+          'prevalence_cutoff' = prevalence_cutoff,
+          'counts_cutoff' = counts_cutoff,
+          'lineage' = lineage
         ))
+      
       } else {
         
-        empty_res_dunn <- data.frame(
-          taxon = character(0),
-          passed_ss = logical(0),
-          diff = logical(0),
-          lfc = numeric(0),
-          q = numeric(0),
-          stringsAsFactors = FALSE
-        )
-
-        return(list(
-          'res_dunn' = empty_res_dunn,
-          'metadata' = metadata
-        ))
+        return(NULL)
+      
       }
 
     }, seed = TRUE)
@@ -1804,7 +1819,8 @@ server <- function(input, output, session) {
           geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
           labs(
             x = "Log2 Fold Change",
-            y = "-Log10(Adjusted P-value)"
+            y = "-Log10(Adjusted P-value)",
+            caption = paste0("ANCOM-BC2 is applied on ", lineage, " counts matrix with the prevalence cutoff of ", prevalence_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
           ) +
           theme_classic() +
           geom_label_repel(aes(label = ifelse(Name %in% c("Upregulated", "Downregulated"), !!sym(lineage), "")), size = 5, color = "#2b71c2", box.padding = 0.5) +
@@ -1817,7 +1833,12 @@ server <- function(input, output, session) {
             legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
             axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
             strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-            strip.background = element_blank()
+            strip.background = element_blank(),
+            plot.caption = element_markdown(
+              color = "#0F6E73", size = 15,
+              margin = margin(20, 0, 10, 0), face = "bold",
+              hjust = 0.5
+            )
           )
       } else if(total_plots>2) {
         volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Name)) +
@@ -1828,7 +1849,8 @@ server <- function(input, output, session) {
           geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
           labs(
             x = "Log2 Fold Change",
-            y = "-Log10(Adjusted P-value)"
+            y = "-Log10(Adjusted P-value)",
+            caption = paste0("ANCOM-BC2 is applied on ", lineage, " counts matrix with the prevalence cutoff of ", prevalence_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
           ) +
           theme_classic() +
           geom_label_repel(aes(label = ifelse(Name %in% c("Upregulated", "Downregulated"), !!sym(lineage), "")), size = 5, color = "#2b71c2", box.padding = 0.5) +
@@ -1841,7 +1863,12 @@ server <- function(input, output, session) {
             legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
             axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
             strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-            strip.background = element_blank()
+            strip.background = element_blank(),
+            plot.caption = element_markdown(
+              color = "#0F6E73", size = 15,
+              margin = margin(20, 0, 10, 0), face = "bold",
+              hjust = 0.5
+            )
           )
       } 
     }
@@ -2992,13 +3019,17 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(realtime_daa_data(), realtime_daa_metadata(), input$taxa, input$realtime_control)
+      req(realtime_daa_data(), realtime_daa_metadata(), realtime_taxa_group(), realtime_daa_counts_cutoff(), realtime_daa_prev_cutoff(), input$realtime_control)
 
       res_dunn <- realtime_daa_data()
 
       metadata <- realtime_daa_metadata()
 
-      lineage <- input$taxa
+      lineage <- realtime_taxa_group()
+
+      prevalence_cutoff <- realtime_daa_prev_cutoff()
+
+      counts_cutoff <- realtime_daa_counts_cutoff()
 
       control <- input$realtime_control
 
@@ -3052,7 +3083,8 @@ server <- function(input, output, session) {
           geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
           labs(
             x = "Log2 Fold Change",
-            y = "-Log10(Adjusted P-value)"
+            y = "-Log10(Adjusted P-value)",
+            caption = paste0("ANCOM-BC2 is applied on ", lineage, " counts matrix with the prevalence cutoff of ", prevalence_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
           ) +
           theme_classic() +
           geom_label_repel(aes(label = ifelse(Name %in% c("Upregulated", "Downregulated"), !!sym(lineage), "")), size = 5, color = "#2b71c2", box.padding = 0.5) +
@@ -3065,7 +3097,12 @@ server <- function(input, output, session) {
             legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
             axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
             strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-            strip.background = element_blank()
+            strip.background = element_blank(),
+            plot.caption = element_markdown(
+              color = "#0F6E73", size = 15,
+              margin = margin(20, 0, 10, 0), face = "bold",
+              hjust = 0.5
+            )
           )
       } else if(total_plots>2) {
         volcano_plot <- ggplot(final_data, aes(x = LFC, y = -log10(P_adj), color = Name)) +
@@ -3076,7 +3113,8 @@ server <- function(input, output, session) {
           geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
           labs(
             x = "Log2 Fold Change",
-            y = "-Log10(Adjusted P-value)"
+            y = "-Log10(Adjusted P-value)",
+            caption = paste0("ANCOM-BC2 is applied on ", lineage, " counts matrix with the prevalnce cutoff of ", prevalence_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
           ) +
           theme_classic() +
           geom_label_repel(aes(label = ifelse(Name %in% c("Upregulated", "Downregulated"), !!sym(lineage), "")), size = 5, color = "#2b71c2", box.padding = 0.5) +
@@ -3089,7 +3127,12 @@ server <- function(input, output, session) {
             legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
             axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
             strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-            strip.background = element_blank()
+            strip.background = element_blank(),
+            plot.caption = element_markdown(
+              color = "#0F6E73", size = 15,
+              margin = margin(20, 0, 10, 0), face = "bold",
+              hjust = 0.5
+            )
           ) 
       }
 
