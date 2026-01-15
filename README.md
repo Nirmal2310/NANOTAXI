@@ -28,7 +28,7 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 
 ## Installation
 
-To run the app locally, please install R version >= 4.4.2 and RStudio. Also, please ensure that the MinKNOW app version >= 24.06.10.
+To run the app locally, please install R version >= 4.4.2. Also, please ensure that the MinKNOW app version >= 24.06.10.
 
 You can install R and all the required R packages using a single command. If not present, this command will install the conda and create a new environment named nanotaxi-env.
 
