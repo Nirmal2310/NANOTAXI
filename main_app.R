@@ -70,6 +70,8 @@ server <- function(input, output, session) {
 
   cohort_analysis_list <- reactiveVal()
 
+  cohort_sample_list <- reactiveVal()
+
   hist_list <- reactiveVal()
 
   qual_list <- reactiveVal()
@@ -370,7 +372,7 @@ server <- function(input, output, session) {
 
   observeEvent(trigger(), {
     
-    req(trigger() >= 5, cohort_delay_done() == FALSE)
+    req(trigger() >= 6, cohort_delay_done() == FALSE)
 
     print(paste0("Cohort Delay Done at ", Sys.time(), " after ", trigger(), " triggers."))
     
@@ -379,85 +381,32 @@ server <- function(input, output, session) {
     cohort_trigger(1)
   })
 
-  observeEvent(cohort_trigger(), {
+  observe({
 
-    req(cohort_trigger() > 0)
-
-    req(is_running(), cohort_delay_done(), status_checked(), state()=="Sequencing")
+    req(is_running(), cohort_delay_done(), status_checked(), state()=="Sequencing", classified_list(), classified_samples_list())
       
-    req(length(classified_list())>0, length(classified_samples_list())>0, input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+    cohort_analysis_list(classified_list())
 
-    classified_data_list <- classified_list()
+    cohort_sample_list(classified_samples_list())
 
-    sample_data <- classified_samples_list()$Barcode
+    invalidateLater(120000, session)
+  
+  })
 
-    lineage <- input$taxa
-
-    prevalence_cutoff <- input$prevalence_cutoff
-
-    abundance_cutoff <- input$abundance_cutoff
+  daa_reactive_conditions <- reactive({
     
-    if (cohort_realtime_analysis$status() != "running") {
+    list(cohort_analysis_list(), cohort_sample_list(), input$taxa,
+          input$prevalence_cutoff, input$abundance_cutoff, input$counts_cutoff)
 
-      isolate({
-        
-        cohort_realtime_analysis$invoke(classified_data_list, sample_data, lineage, prevalence_cutoff, abundance_cutoff)
-      
-      })
-
-    }
-  
   })
 
-  observeEvent(cohort_realtime_analysis$result(), {
-
-    tryCatch({
-
-      req(cohort_realtime_analysis$result(), input$refresh_rate)
-
-      result <- cohort_realtime_analysis$result()
-
-      reactive_rel_abundance_matrix(result$rel_abundance_renormalized_matrix)
-
-      reactive_counts_data(result$counts_data)
-
-      reactive_counts_matrix(result$counts_matrix)
-
-      refresh_time <- as.integer(input$refresh_rate)*1000
-
-      delay(refresh_time, {
-        cohort_trigger(cohort_trigger() + 1)
-      })
-
-    }, error = function(e) {
-        
-      showNotification(paste("Realtime Cohort Run Error: ", e$message), type = "error")
-
-      refresh_time <- as.integer(input$refresh_rate)*1000
-
-      delay(refresh_time, {
-        cohort_trigger(cohort_trigger() + 1)
-      })
-
-    })
-  
-  })
-
-  observeEvent({
-    reactive_counts_matrix()
-    input$taxa
-    input$prevalence_cutoff
-    input$counts_cutoff
-    }, 
-    {
-
-      req(nrow(reactive_counts_matrix()) > 0)
+  observeEvent(ignoreInit = TRUE, daa_reactive_conditions(), {
       
       req(route()=="Realtime", is_running(), cohort_delay_done(), input$realtime_control, status_checked(), state()=="Sequencing", input_data_reactive())
 
-      req(input$taxa, input$prevalence_cutoff, input$counts_cutoff)
+      req(input$taxa, input$prevalence_cutoff, input$counts_cutoff, cohort_analysis_list(), cohort_sample_list(), input$abundance_cutoff)
 
-      counts_matrix <- reactive_counts_matrix()
+      sample_list <- cohort_sample_list()$Barcode
 
       lineage <- input$taxa
 
@@ -468,6 +417,10 @@ server <- function(input, output, session) {
       prevalence_cutoff <- input$prevalence_cutoff
 
       counts_cutoff <- input$counts_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      counts_matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_matrix
 
       if (daa_ancombc_run$status() != "running") {
 
@@ -964,9 +917,7 @@ server <- function(input, output, session) {
     'counts_data' = counts_data))
   }
   
-  cohort_realtime_analysis <- ExtendedTask$new(function(classification_list, sample_list, lineage, prevalence_cutoff, abundance_cutoff) {
-
-    future_promise({
+  cohort_realtime_analysis <- function(classification_list, sample_list, lineage, prevalence_cutoff, abundance_cutoff) {
       
       data <- classification_list
 
@@ -1028,8 +979,7 @@ server <- function(input, output, session) {
         'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
         'counts_data' = counts_data,
         'counts_matrix' = counts_matrix))
-    }, seed = TRUE)
-  })
+  }
 
   cohort_offline_analysis <- function(result_dir, lineage, prevalence_cutoff, abundance_cutoff) {
     
@@ -1253,26 +1203,9 @@ server <- function(input, output, session) {
   
   }
 
-  diversity_boxplot_function <- function(counts_data, lineage, sample_metadata)
+  diversity_boxplot_function <- function(counts_data_wide, lineage, sample_metadata, rarefaction_cutoff)
   {
     
-    counts_data_long <- counts_data %>% pivot_longer(cols = -!!sym(lineage), names_to = "Sample", values_to = "Counts")
-
-    rarefaction_cutoff <- counts_data_long %>% group_by(Sample) %>% 
-      summarise(Total = sum(Counts), Singletons = sum(Counts==1), GC = 100*(1-(Singletons/Total))) %>% 
-      filter(GC>=95) %>% summarise(Min = min(Total)) %>% pull(Min)
-
-    counts_data_wide <- counts_data_long %>% pivot_wider(names_from = !!sym(lineage), values_from = Counts, values_fill = 0) %>% 
-      as.data.frame()
-
-    counts_data_wide <- counts_data_wide %>% dplyr::select(Sample, everything())
-
-    rownames(counts_data_wide) <- counts_data_wide$Sample
-
-    counts_data_wide <- counts_data_wide[,-1]
-
-    counts_data_wide <- round(counts_data_wide, digits = 0)
-
     alpha_diversity_data <- vegan::rrarefy(counts_data_wide, rarefaction_cutoff) %>% 
       as.data.frame() %>% rownames_to_column("Sample_Id") %>% 
       pivot_longer(cols = -Sample_Id, names_to = lineage, values_to = "Counts") %>% 
@@ -1292,7 +1225,7 @@ server <- function(input, output, session) {
     alpha_div_p <- compare_means(Value~Group, data = alpha_diversity_data, method = "wilcox",
                                 p.adjust.method = "BH", group.by = "Diversity")
 
-    get_legend<-function(myggplot){
+    get_legend <- function(myggplot){
       tmp <- ggplot_gtable(ggplot_build(myggplot))
       leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
       legend <- tmp$grobs[[leg]]
@@ -1695,7 +1628,7 @@ server <- function(input, output, session) {
           p_adj_method = "BH", pseudo_sens = TRUE,
           prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
           group = "Group", struc_zero = TRUE, neg_lb = FALSE,
-          alpha = 0.05, n_cl = 2, verbose = TRUE,
+          alpha = 0.05, n_cl = 2, verbose = FALSE,
           global = FALSE, pairwise = FALSE, 
           dunnet = TRUE, trend = FALSE,
           iter_control = list(tol = 1e-5, max_iter = 20, 
@@ -1757,7 +1690,7 @@ server <- function(input, output, session) {
           p_adj_method = "BH", pseudo_sens = TRUE,
           prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
           group = "Group", struc_zero = TRUE, neg_lb = FALSE,
-          alpha = 0.05, n_cl = 2, verbose = TRUE,
+          alpha = 0.05, n_cl = 2, verbose = FALSE,
           global = FALSE, pairwise = FALSE, 
           dunnet = TRUE, trend = FALSE,
           iter_control = list(tol = 1e-5, max_iter = 20, 
@@ -1870,13 +1803,16 @@ server <- function(input, output, session) {
               hjust = 0.5
             )
           )
-      } 
-    }
+      }
+      return(list(
+        'volcano_plot' = volcano_plot,
+        'daa_result' = final_data
+      ))
+    } else {
+      
+      return(NULL)
     
-    return(list(
-      'volcano_plot' = volcano_plot,
-      'daa_result' = final_data
-    ))
+    }
 
 
   }
@@ -1985,9 +1921,18 @@ server <- function(input, output, session) {
 
     if(route()=="Realtime")
     {
-      req(nrow(reactive_counts_data())>0)
+      
+      req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
-      abundance_data <- reactive_counts_data()
+      sample_list <- cohort_sample_list()$Barcode
+
+      lineage <- input$taxa
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      abundance_data <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       abundance_val(abundance_data)
 
@@ -2294,6 +2239,12 @@ server <- function(input, output, session) {
 
       barcode_df <- df %>% filter(Sample_Id == input$barcode_select)
 
+      origin_dataframe <- data.frame(Sample_Id = c(input$barcode_select, input$barcode_select), Classified_reads = c(0, 0), Diversity = c("Shannon", "Simpson"), Value = c(0, 0))
+
+      barcode_df <- rbind(origin_dataframe, barcode_df)
+
+      barcode_df <- unique(barcode_df)
+
       if(nrow(barcode_df)>=4) {
         
         shannon_df <- barcode_df %>% filter(Diversity == "Shannon")
@@ -2345,7 +2296,9 @@ server <- function(input, output, session) {
                                 scale_y_continuous(expand = expansion(mult = 0), limits = c(0, simpson_max_value)) +
                                 ggtitle("Simpson")
 
-        diversity_facet <- as_ggplot(grid.grabExpr(grid.arrange(shannon_diversity_plot, simpson_diversity_plot, ncol=2)))
+        # diversity_facet <- as_ggplot(grid.grabExpr(grid.arrange(shannon_diversity_plot, simpson_diversity_plot, ncol=2)))
+
+        diversity_facet <- plot_grid(shannon_diversity_plot, simpson_diversity_plot, ncol = 2, align = 'v', axis = 'lrtb')
 
         plot_diversity_curve(diversity_facet)
 
@@ -2521,13 +2474,19 @@ server <- function(input, output, session) {
     if(route()=="Realtime")
     {
       
-      req(nrow(reactive_rel_abundance_matrix()) > 0, input$top_taxa, input$taxa, input_data_reactive())
+      req(cohort_analysis_list(), input$taxa, input$top_taxa, cohort_sample_list(), input$prevalence_cutoff, input$abundance_cutoff)
+
+      sample_list <- cohort_sample_list()$Barcode
 
       top_n <- input$top_taxa
 
       lineage <- input$taxa
-      
-      stacked_df <- reactive_rel_abundance_matrix()
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      stacked_df <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       if(is.null(input$toi) || length(input$toi) == 0) {
         stacked_barplot <- stacked_barplot_function(stacked_df, lineage, top_n)
@@ -2593,15 +2552,39 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(nrow(reactive_counts_data()) > 0, input$taxa, input_data_reactive())
+
+      req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
+
+      sample_list <- cohort_sample_list()$Barcode
 
       lineage <- input$taxa
-      
-      sample_metadata <- input_data_reactive()$data
-      
-      alpha_diversity_data <- reactive_counts_data()
 
-      diversity_facet <- diversity_boxplot_function(alpha_diversity_data, lineage, sample_metadata)
+      sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+      
+      counts_data <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
+
+      counts_data_long <- counts_data %>% pivot_longer(cols = -!!sym(lineage), names_to = "Sample", values_to = "Counts")
+
+      rarefaction_cutoff <- counts_data_long %>% group_by(Sample) %>% 
+        summarise(Total = sum(Counts), Singletons = sum(Counts==1), GC = 100*(1-(Singletons/Total))) %>% 
+        filter(GC>=95) %>% summarise(Min = min(Total)) %>% pull(Min)
+
+      counts_data_wide <- counts_data_long %>% pivot_wider(names_from = !!sym(lineage), values_from = Counts, values_fill = 0) %>% 
+        as.data.frame()
+
+      counts_data_wide <- counts_data_wide %>% dplyr::select(Sample, everything())
+
+      rownames(counts_data_wide) <- counts_data_wide$Sample
+
+      counts_data_wide <- counts_data_wide[,-1]
+
+      counts_data_wide <- round(counts_data_wide, digits = 0)
+
+      diversity_facet <- diversity_boxplot_function(counts_data_wide, lineage, sample_metadata, rarefaction_cutoff)
 
       plot_diversity_box(diversity_facet)
 
@@ -2617,9 +2600,26 @@ server <- function(input, output, session) {
 
       sample_metadata <- input_data_reactive()$data
       
-      alpha_diversity_data <- reactive_counts_data()
+      counts_data <- reactive_counts_data()
 
-      diversity_facet <- diversity_boxplot_function(alpha_diversity_data, lineage, sample_metadata)
+      counts_data_long <- counts_data %>% pivot_longer(cols = -!!sym(lineage), names_to = "Sample", values_to = "Counts")
+
+      rarefaction_cutoff <- counts_data_long %>% group_by(Sample) %>% 
+        summarise(Total = sum(Counts), Singletons = sum(Counts==1), GC = 100*(1-(Singletons/Total))) %>% 
+        filter(GC>=95) %>% summarise(Min = min(Total)) %>% pull(Min)
+
+      counts_data_wide <- counts_data_long %>% pivot_wider(names_from = !!sym(lineage), values_from = Counts, values_fill = 0) %>% 
+        as.data.frame()
+
+      counts_data_wide <- counts_data_wide %>% dplyr::select(Sample, everything())
+
+      rownames(counts_data_wide) <- counts_data_wide$Sample
+
+      counts_data_wide <- counts_data_wide[,-1]
+
+      counts_data_wide <- round(counts_data_wide, digits = 0)
+
+      diversity_facet <- diversity_boxplot_function(counts_data_wide, lineage, sample_metadata, rarefaction_cutoff)
 
       plot_diversity_box(diversity_facet)
 
@@ -2635,9 +2635,26 @@ server <- function(input, output, session) {
 
       sample_metadata <- input_data_reactive()$data
       
-      alpha_diversity_data <- reactive_counts_data()
+      counts_data <- reactive_counts_data()
 
-      diversity_facet <- diversity_boxplot_function(alpha_diversity_data, lineage, sample_metadata)
+      counts_data_long <- counts_data %>% pivot_longer(cols = -!!sym(lineage), names_to = "Sample", values_to = "Counts")
+
+      rarefaction_cutoff <- counts_data_long %>% group_by(Sample) %>% 
+        summarise(Total = sum(Counts), Singletons = sum(Counts==1), GC = 100*(1-(Singletons/Total))) %>% 
+        filter(GC>=95) %>% summarise(Min = min(Total)) %>% pull(Min)
+
+      counts_data_wide <- counts_data_long %>% pivot_wider(names_from = !!sym(lineage), values_from = Counts, values_fill = 0) %>% 
+        as.data.frame()
+
+      counts_data_wide <- counts_data_wide %>% dplyr::select(Sample, everything())
+
+      rownames(counts_data_wide) <- counts_data_wide$Sample
+
+      counts_data_wide <- counts_data_wide[,-1]
+
+      counts_data_wide <- round(counts_data_wide, digits = 0)
+
+      diversity_facet <- diversity_boxplot_function(counts_data_wide, lineage, sample_metadata, rarefaction_cutoff)
 
       plot_diversity_box(diversity_facet)
 
@@ -2651,7 +2668,7 @@ server <- function(input, output, session) {
 
     if(route()=="Realtime")
     {
-      req(nrow(reactive_rel_abundance_matrix()) > 0, input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
+      req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
       
@@ -2661,7 +2678,9 @@ server <- function(input, output, session) {
 
       abundance_cutoff <- input$abundance_cutoff
 
-      matrix <- reactive_rel_abundance_matrix()
+      sample_list <- cohort_sample_list()$Barcode
+
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
 
@@ -2722,7 +2741,7 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(nrow(reactive_rel_abundance_matrix())>0, input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
+      req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
       
@@ -2732,7 +2751,9 @@ server <- function(input, output, session) {
 
       abundance_cutoff <- input$abundance_cutoff
 
-      matrix <- reactive_rel_abundance_matrix()
+      sample_list <- cohort_sample_list()$Barcode
+
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
     
       nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
       
@@ -2792,7 +2813,7 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(nrow(reactive_rel_abundance_matrix())>0, input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
+      req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
 
       lineage <- input$taxa
 
@@ -2804,7 +2825,9 @@ server <- function(input, output, session) {
 
       top_taxa <- input$biplot_taxa
 
-      matrix <- reactive_rel_abundance_matrix()
+      sample_list <- cohort_sample_list()$Barcode
+
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff, top_taxa)
 
@@ -2868,13 +2891,19 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(nrow(reactive_rel_abundance_matrix())>0, input$taxa, input_data_reactive(), input$realtime_control)
+      req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$realtime_control, input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      sample_list <- cohort_sample_list()$Barcode
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- reactive_rel_abundance_matrix()
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       control_group <- input$realtime_control
 
@@ -2957,13 +2986,19 @@ server <- function(input, output, session) {
     
     if(route()=="Realtime")
     {
-      req(nrow(reactive_rel_abundance_matrix())>0, input$taxa, input_data_reactive())
+      req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      sample_list <- classified_samples_list()$Barcode
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
       
-      matrix <- reactive_rel_abundance_matrix()
+      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
       heatmap_ggplot <- diversity_heatmap_function(matrix, lineage, sample_metadata)
 
@@ -3114,7 +3149,7 @@ server <- function(input, output, session) {
           labs(
             x = "Log2 Fold Change",
             y = "-Log10(Adjusted P-value)",
-            caption = paste0("ANCOM-BC2 is applied on ", lineage, " counts matrix with the prevalnce cutoff of ", prevalence_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
+            caption = paste0("ANCOM-BC2 is applied on ", lineage, " counts matrix with the prevalence cutoff of ", prevalence_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
           ) +
           theme_classic() +
           geom_label_repel(aes(label = ifelse(Name %in% c("Upregulated", "Downregulated"), !!sym(lineage), "")), size = 5, color = "#2b71c2", box.padding = 0.5) +
@@ -3161,6 +3196,8 @@ server <- function(input, output, session) {
 
       matrix <- reactive_counts_matrix()
 
+      req(daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff))
+
       volcano_plot <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$volcano_plot
 
       daa_result <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$daa_result
@@ -3186,6 +3223,8 @@ server <- function(input, output, session) {
       control <- input$control
       
       matrix <- reactive_counts_matrix()
+
+      req(daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff))
       
       volcano_plot <- daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff)$volcano_plot
 

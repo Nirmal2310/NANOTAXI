@@ -3,7 +3,7 @@ required_cran = c("shiny", "shinyBS", "reticulate", "tidyverse", "shinyjs", "DT"
 "dendextend", "BiocManager", "vegan", "grid", "gridExtra", "ggsci",
 "scales", "viridis", "circlize", "ggrepel", "devtools", "compositions",
 "forcats", "formattable", "future", "promises", "ggtext", "FactoMineR",
-"ggforce", "bslib")
+"ggforce", "bslib", "cowplot")
 
 required_bioc <- c("ComplexHeatmap", "ANCOMBC")
 
