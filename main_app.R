@@ -2296,8 +2296,6 @@ server <- function(input, output, session) {
                                 scale_y_continuous(expand = expansion(mult = 0), limits = c(0, simpson_max_value)) +
                                 ggtitle("Simpson")
 
-        # diversity_facet <- as_ggplot(grid.grabExpr(grid.arrange(shannon_diversity_plot, simpson_diversity_plot, ncol=2)))
-
         diversity_facet <- plot_grid(shannon_diversity_plot, simpson_diversity_plot, ncol = 2, align = 'v', axis = 'lrtb')
 
         plot_diversity_curve(diversity_facet)
