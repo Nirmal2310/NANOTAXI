@@ -666,6 +666,30 @@ server <- function(input, output, session) {
 
   observe({
 
+    req(cohort_analysis_list(), input$taxa, cohort_sample_list(), input$prevalence_cutoff, input$abundance_cutoff)
+
+    sample_list <- cohort_sample_list()$Barcode
+
+    lineage <- input$taxa
+
+    prevalence_cutoff <- input$prevalence_cutoff
+
+    abundance_cutoff <- input$abundance_cutoff
+
+    rel_abundance_matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+    taxa_names_data <- sort(rownames(rel_abundance_matrix))
+
+    choices_list <- setNames(taxa_names_data, taxa_names_data)
+
+    current_selection <- isolate(input$toi)
+
+    updateSelectizeInput(session, 'toi', choices = choices_list, server = TRUE, selected = if (is.null(current_selection)) NULL else intersect(current_selection, taxa_names_data))
+
+  })
+
+  observe({
+
     req(nrow(reactive_rel_abundance_matrix())>0)
 
     taxa_names_data <- sort(rownames(reactive_rel_abundance_matrix()))
