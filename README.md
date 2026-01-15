@@ -78,23 +78,25 @@ You can also run the app directly from GitHub using the following command:
 shiny::runGitHub("NANOTAXI", "Nirmal2310")
 ```
 
-The app will download and install the required conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system.
+The app will download and install the required Conda environments and databases necessary for real-time classification of long reads when it starts up for the first time. So, please ensure that enough free space is available on the system.
 
-If you are running the application in the remote server and wants to open the interface in the local browser, please use the given step by step guide:
+**Running in Remote Server**
 
-- Assign a port for running local R Shiny server by using the following command:
+If you are running the application on the remote server and want to open the interface in the local browser, please use the given step-by-step guide:
+
+- Assign a port for running a local R Shiny server by using the following command:
 
 ```bash
 echo "options(shiny.port=5316)" >> ~/.Rprofile
 ```
-Here, I have assigned the port **5316** for running R Shiny Applications. Please ensure that the port is free before assigning it to the run Shiny Applications.
+Here, I have assigned the port **5316** for running R Shiny Applications. Please ensure that the port is free before assigning it to run Shiny Applications.
 
-- Connect to the Remote Server in the new window by using the following command:
+- Connect to the Remote Server in a new window by using the following command:
 
 ```bash
 ssh -L 8080:localhost:5316 hostname@ip_address
 ```
-Change the local host port number, host name and the ip address accordingly.
+Change the local host port number, host name and the IP address accordingly.
 
 - Now launch the Shiny App through the server's terminal:
 
@@ -112,25 +114,25 @@ http://127.0.0.1:8080
 While setting up the MinKNOW app for sequencing, please make sure that under the **barcoding setting**, both **Trim barcodes** and **Barcode both ends** are disabled as shown below:
 
 <img src="www/Barcode_Setting.png" alt="Barcode Setup" style="width: 100%"/>
-This is to minimise the unclassified reads after demultiplexing. The application uses Dorado to trim the barcodes during the analysis of demultiplexed barcoded reads.
+This is to minimise the rate of unclassified reads during a live run. NANOTAXI utilises Dorado to trim the barcodes during the analysis of demultiplexed barcoded reads, ensuring the removal of synthetic DNA sequence.
 
 <br>
 
-Also, in the **Output settings**, please select **Number of reads** under **Based on** option and enter **500** under **Reads threshold** option as the app will process the barcoded data as the batch of 500 reads per barcode. The reference screenshot is shown below:
+Additionally, in the **Output settings**, please select **Number of reads** under the **Based on** option and enter **500** under the **Reads threshold** option, as the app will process the barcoded data in batches of 500 reads per barcode. The reference screenshot is shown below:
 
 <img src="www/Output_Setting.png" alt="Output Setting" style="width: 100%"/>
 
 <br>
 
-Lastly, Minknow core 5.x requires a secure channel connection be made by the minknow API. In order to do this, please add the following line to the ~/.bashrc:
+Lastly, Minknow core 5.x requires a secure channel connection to be made by the Minknow API. In order to do this, please add the following line to the ~/.bashrc:
 
 ```bash
 echo "export MINKNOW_TRUSTED_CA=\"/var/lib/minknow/data/rpc-certs/minknow/ca.crt\"" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-To set up Offline Analysis, tick the checkbox adjacent to the setup option in **Offline Analysis** under the **INPUT** tab. It will first download and install all the required software and databases and then analyse the data.<br> 
-However, currently all the pipelines are available in both real-time and offline settings. So, all the required softwares and databases will be downloaded and installed during the initial launch of the application.
+To set up Offline Analysis, tick the checkbox adjacent to the setup option in **Offline Analysis** under the **INPUT** tab. It will first download and install all the required software and databases, and then analyse the data.<br> 
+However, all pipelines are currently available in both real-time and offline settings. All required software and databases will be downloaded and installed during the initial launch of the application.
 
 <img src="www/Offline_Setup.png" alt="Offline Setup" style="width: 100%"/>
 
@@ -169,7 +171,7 @@ We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) with its 
 
 <br>
 
-The user can run the example dataset by selecting **Example Data**, add the control group name in **Select Control Group** and clicking **Use Example Data** under **INPUT** tab.
+The user can run the example dataset by selecting **Example Data**, adding the control group name in **Select Control Group** and clicking **Use Example Data** under the **INPUT** tab.
 
 <img src="www/Example_run.png" alt="Example Run" style="width: 100%"/>
 
@@ -199,6 +201,7 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 ## Acknowledgements
 
 #### Pipelines/Software Used in the App:
+- [Dorado](https://github.com/nanoporetech/dorado)
 - [KRAKEN2](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1891-0)
 - [EMU](https://www.nature.com/articles/s41592-022-01520-4)
 - [BLASTn](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_SPEC=GeoBlast&PAGE_TYPE=BlastSearch)
