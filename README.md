@@ -30,7 +30,7 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 
 To run the app locally, please install R version >= 4.4.2 and RStudio. Also, please ensure that the MinKNOW app version >= 24.06.10.
 
-You can install R and all the required packages using a single command. If not present, this command will install the conda and create a new environment named nanotaxi-env.
+You can install R and all the required R packages using a single command. If not present, this command will install the conda and create a new environment named nanotaxi-env.
 
 ```bash
 if which conda >/dev/null; then
@@ -75,21 +75,62 @@ shiny::runApp("main_app.R")
 You can also run the app directly from GitHub using the following command:
 
 ```r
-# Make Sure that the shiny package is installed in the R.
 shiny::runGitHub("NANOTAXI", "Nirmal2310")
 ```
 
-This app will download the conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system. 
+The app will download and install the required conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system.
+
+If you are running the application in the remote server and wants to open the interface in the local browser, please use the given step by step guide:
+
+- Assign a port for running local R Shiny server by using the following command:
+
+```bash
+echo "options(shiny.port=5316)" >> ~/.Rprofile
+```
+Here, I have assigned the port **5316** for running R Shiny Applications. Please ensure that the port is free before assigning it to the run Shiny Applications.
+
+- Connect to the Remote Server in the new window by using the following command:
+
+```bash
+ssh -L 8080:localhost:5316 hostname@ip_address
+```
+Change the local host port number, host name and the ip address accordingly.
+
+- Now launch the Shiny App through the server's terminal:
+
+```bash
+shiny::runApp("main_app.R", launch.browser=FALSE)
+```
+
+- Finally, open NANOTAXI in your browser of choice by entering the following address:
+
+```bash
+http://127.0.0.1:8080
+```
+<br>
 
 While setting up the MinKNOW app for sequencing, please make sure that under the **barcoding setting**, both **Trim barcodes** and **Barcode both ends** are disabled as shown below:
 
 <img src="www/Barcode_Setting.png" alt="Barcode Setup" style="width: 100%"/>
+This is to minimise the unclassified reads after demultiplexing. The application uses Dorado to trim the barcodes during the analysis of demultiplexed barcoded reads.
 
-Also, in the **Output settings**, please select **Time elapsed** under **Based on** option and **Every 1 minute** under **Frequency** option as the app will read the output data every 2 minutes. The reference screenshot is shown below:
+<br>
+
+Also, in the **Output settings**, please select **Number of reads** under **Based on** option and enter **500** under **Reads threshold** option as the app will process the barcoded data as the batch of 500 reads per barcode. The reference screenshot is shown below:
 
 <img src="www/Output_Setting.png" alt="Output Setting" style="width: 100%"/>
 
-To set up Offline Analysis, tick the checkbox adjacent to the setup option in **Offline Analysis** under the **INPUT** tab. It will first download and install all the required software and databases and then analyse the data.
+<br>
+
+Lastly, Minknow core 5.x requires a secure channel connection be made by the minknow API. In order to do this, please add the following line to the ~/.bashrc:
+
+```bash
+echo "export MINKNOW_TRUSTED_CA=\"/var/lib/minknow/data/rpc-certs/minknow/ca.crt\"" >> ~/.bashrc
+source ~/.bashrc
+```
+
+To set up Offline Analysis, tick the checkbox adjacent to the setup option in **Offline Analysis** under the **INPUT** tab. It will first download and install all the required software and databases and then analyse the data.<br> 
+However, currently all the pipelines are available in both real-time and offline settings. So, all the required softwares and databases will be downloaded and installed during the initial launch of the application.
 
 <img src="www/Offline_Setup.png" alt="Offline Setup" style="width: 100%"/>
 
@@ -97,7 +138,7 @@ To set up Offline Analysis, tick the checkbox adjacent to the setup option in **
 
 The Test Dataset is taken from the Bioproject ID [PRJEB82315](https://www.ebi.ac.uk/ena/browser/view/PRJEB82315).
 
-We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyse the test dataset comprising 20 samples representing 20 barcodes and classified into three groups based on body fluids.
+We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) with its custom database to analyse the test dataset comprising 20 samples representing 20 barcodes and classified into three groups based on body fluids.
 
 <div  class="sample_info">
 
@@ -163,7 +204,7 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 - [BLASTn](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_SPEC=GeoBlast&PAGE_TYPE=BlastSearch)
 - [TaxonKit](https://www.sciencedirect.com/science/article/pii/S1673852721000837)
 - [BBTools](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/)
-- [NanoFilt](https://academic.oup.com/bioinformatics/article/34/15/2666/4934939?login=true)
+- [Chopper](https://academic.oup.com/bioinformatics/article/39/5/btad311/7160911?login=true)
 - [SeqKit](https://onlinelibrary.wiley.com/doi/10.1002/imt2.191)
 - [Minimap2](https://academic.oup.com/bioinformatics/article/34/18/3094/4994778)
 - [GNU Parallel](https://zenodo.org/records/14911163)
@@ -193,6 +234,7 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 - [markdown](https://cran.r-project.org/web/packages/markdown/index.html/)
 - [validate](https://github.com/data-cleaning/validate)
 - [ggpubr](https://github.com/kassambara/ggpubr)
+- [cowplot](https://wilkelab.org/cowplot/)
 - [dendextend](https://github.com/talgalili/dendextend)
 - [BiocManager](https://github.com/Bioconductor/BiocManager)
 - [vegan](https://github.com/vegandevs/vegan)
