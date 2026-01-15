@@ -10,7 +10,7 @@
 
 ### **NANOTAXI** : End to End GUI for Real-Time Classification of Multiplexed Nanopore Amplicon Sequencing Data
 
-- It offers faster results using Real-Time Workflow 
+- It offers faster results using Real-Time Workflow.
 
 - The app is an easy to use GUI for Researchers with minimal coding background.
 
@@ -28,9 +28,9 @@ Please post issues on [GitHub](https://github.com/Nirmal2310/NANOTAXI/issues), a
 
 ## **INSTALLATION**
 
-To run this app locally on your machine, please install R version >= 4.3.3 and RStudio. Also, please ensure that the MinKNOW application version >= 24.06.10.
+To run this app locally on your machine, please install R version >= 4.4.2. Also, please ensure that the MinKNOW application version >= 25.09.16.
 
-You can install R and all the required packages using a single command. If not present, this command will install the conda and create a new environment named nanotaxi-env.
+You can install R and all the required packages using a single command. If not present, this command will install the conda and create a new environment named nanotaxi-env (preferred route).
 
 ```bash
 if which conda >/dev/null; then
@@ -74,19 +74,50 @@ shiny::runApp("main_app.R")
 You can also run the app directly from GitHub using the following command:
 
 ```r
-# Make Sure that the shiny package is installed in the R.
 shiny::runGitHub("NANOTAXI", "Nirmal2310")
 ```
 
-This app will download the conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system. 
+This app will download the conda environments and databases required to classify long reads in real-time while starting up for the first time. So, please ensure that enough free space is available on the system.
+
+**Running in Remote Server**
+
+If you are running the application on the remote server and want to open the interface in the local browser, please use the given step-by-step guide:
+
+- Assign a port for running a local R Shiny server by using the following command:
+
+```bash
+echo "options(shiny.port=5316)" >> ~/.Rprofile
+```
+Here, I have assigned the port **5316** for running R Shiny Applications. Please ensure that the port is free before assigning it to run Shiny Applications.
+
+- Connect to the Remote Server in a new window by using the following command:
+
+```bash
+ssh -L 8080:localhost:5316 hostname@ip_address
+```
+Change the local host port number, host name and the IP address accordingly.
+
+- Now launch the Shiny App through the server's terminal:
+
+```bash
+shiny::runApp("main_app.R", launch.browser=FALSE)
+```
+
+- Finally, open NANOTAXI in your browser of choice by entering the following address:
+
+```bash
+http://127.0.0.1:8080
+```
+<br>
 
 While setting up the MinKNOW app for sequencing, please make sure that under the **barcoding setting**, both **Trim barcodes** and **Barcode both ends** are enabled as shown below:
 
 <img src="Barcode_Setting.png" alt="Barcode Setup" style="width: 40%"/>
 <p></p>
 
-Also, in the **Output settings**, please select **Time elapsed** under **Based on** option and **Every 1 minute** under **Frequency** option as the app will read the 
-output data every 2 minutes. The reference screenshot is shown below:
+This is to minimise the rate of unclassified reads during a live run. NANOTAXI utilises Dorado to trim the barcodes during the analysis of demultiplexed barcoded reads, ensuring the removal of synthetic DNA sequence.
+
+Additionally, in the **Output settings**, please select **Number of reads** under the **Based on** option and enter **500** under the **Reads threshold** option, as the app will process the barcoded data in batches of 500 reads per barcode. The reference screenshot is shown below:
 
 <p></p>
 
@@ -100,7 +131,7 @@ To set up Offline Analysis, tick the checkbox adjacent to the setup option in **
 
 <p></p>
 
-If you are running the App for the first time please tick the checkbox "setup" in the Input Data tab to install the required tools, R packages and databases.
+If you are running the App for the first time please tick the checkbox "setup" in the Input Data tab to install the required tools, R packages and databases. However, all pipelines are currently available in both real-time and offline settings. All required software and databases will be downloaded and installed during the initial launch of the application.
 
 <a name="inputdata"></a>
 
@@ -173,7 +204,7 @@ Example Sample Information file: [Sample Information](Sample_information.csv)
 
 ## **BACKEND PIPELINE** 
 
-NANOTAXI is a bioinformatics platform designed for real-time and post-run analysis of nanopore 16S sequencing data. It offers distinct online (live) and offline (post-run) workflows to accommodate different research needs.
+NANOTAXI is a bioinformatics platform designed for real-time and post-run analysis of barcoded nanopore 16S sequencing data. It offers various pipelines and databases to process the data in online (live) and offline (post-run) mode to accommodate different research needs.
 
 ## Real-Time Online Analysis
 
@@ -181,17 +212,38 @@ During a live sequencing run, NANOTAXI connects to the MinKNOW software via its 
 
 ### Workflow Steps:
 
-1.  **Data Processing:** The workflow begins by filtering raw FASTQ files using NanoFilt to retain high-quality, full-length 16S reads.
-2.  **Taxonomic Classification:** Users can choose one of two classification methods for the filtered reads:
-    *   **Kraken2** with the GTDB database.
-    *   **Minimap2** with the GSR database.
-3.  **Per-Barcode Results:** The classification results for each barcode are presented as a table and a relative abundance bar plot. NANOTAXI also generates bar plots for read-length and Q-score distributions.
+1.  **Data Processing:** The workflow begins by filtering raw FASTQ files using Chopper to retain high-quality, full-length 16S reads.
+2.  **Taxonomic Classification:**<br>
+Users can choose one of four classification methods for the filtered reads:
+    *   **Kraken2**
+    *   **Minimap2**
+    *   **EMU**
+    *   **Nucleotide BLAST**<br>
 
-This entire analysis updates every two minutes to incorporate new data.
+    User can also choose one of five databases to classify the reads:
+
+    *   **NCBI REFSEQ**
+    *   **EMU DATABASE**
+    *   **GSR DATABASE**
+    *   **MIMt DATABASE**
+    *   **GTDB DATABASE**
+
+3.  **Per-Barcode Results:** The classification results for each barcode are presented as a table and a taxon abundance bar plot. NANOTAXI also generates bar plots per barcode for read-length, Q-score distributions, rarefaction and diversity.
+
+#### Available Realtime Settings 
+
+<img src="Realtime Setting.png" alt="REALTIME" style="width: 100%"/>
+<br>
+
+In default setting, NANOTAXI utilises 24 computational threads to process the barcoded reads. NANOTAXI assign minimum of 4 threads to process each barcode in parallel, but it changes dynamically based on the barcodes available for processing. Example: If only 4 barcodes have new reads to process, NANOTAXI assigns 6 computational threads to process each of them in parallel.
+
+Additionally, NANOTAXI process 500 reads per barcode in each iteration to maintain smooth real-time functionality. Users can change this value using the Batch Size input parameter but increasing it to a very large number will cause a massive lag. So, please ensure to increase the number of computational threads using the Number of threads input parameter if using a large batch size.
+
+Lastly, NANOTAXI applies a wait time of 10 seconds between each iteration to avoid the continuous execution of computationally heavy tasks. Users can change this value using the Update Interval input parameter.
 
 ### Cohort-Level Analysis (Online)
 
-Thirty minutes after a run begins, NANOTAXI initiates a cohort-level analysis, which updates every 10 minutes. This provides an overview of the entire experiment by performing common microbiome analyses, including:
+After the five successful iterations of read classification, NANOTAXI initiates a cohort-level analysis, which updates every two minutes. This provides an overview of the entire experiment by performing common microbiome analyses, including:
 
 *   Relative abundance (stacked bar plot)
 *   Alpha diversity analysis
@@ -206,19 +258,26 @@ The offline mode allows users to re-analyze completed experiments with greater f
 
 ### Available Pipelines:
 
-It supports multiple taxonomic classification pipelines, including:
+All the pipelines and databases supported in real-time mode is also supported for offline mode. The supported pipelines are:
 
-*   **Kraken2** with the MIMt Database.
-*   **Kraken2** with the GTDB database.
-*   **BLASTn** with the NCBI 16S Database.
-*   **EMU** with the EMU 16S Database.
-*   **Minimap2** with the GSR database.
+*   **Kraken2**
+*   **BLASTn**
+*   **EMU**
+*   **Minimap2**
+
+The supported databases are:
+
+*   **NCBI REFSEQ**
+*   **GTDB DATABASE**
+*   **GSR DATABASE**
+*   **MIMt DATABASE**
+*   **EMU DATABASE**
 
 After processing, a comprehensive cohort-level analysis is performed, mirroring the analyses available in the real-time workflow.
 
 ## Output and Accessibility
 
-*   **Downloadable Results:** All plots and tables generated by NANOTAXI can be downloaded as high-resolution images and CSV files, respectively.
+*   **Downloadable Results:** All plots and tables generated by NANOTAXI can be downloaded as high-resolution images (PDF) and CSV files, respectively.
 *   **Easy Installation:** To ensure ease of use, the platform automatically installs all required tools and databases, making it accessible to researchers and clinicians with minimal computational expertise.
 
 Graphical abstract of **NANOTAXI** is shown below:
@@ -857,61 +916,53 @@ Example Output File: [Cohort Consolidated Data](Species_Counts_Data.csv)
 ### **TAXON COUNTS TABLE**
 The table displays the read counts per species for each barcode by default. Users can select different taxa level till **Kingdom** for each barcode, the table will be adjusted accordingly. Users can download the counts table in **CSV (comma-seperated-values)** format.
 
-<style>
-  .classification_data {
-    margin-left:30px;
-    width:60%;
-  }
-
-  .classification_data th, .classification_data td {
-    padding: 10px;
-    border: 1px solid #000000;
-    text-align: left;
-    width:10%;
-
-  }
-</style>
-
-<div class="classification_data">
-
-| Species                        | Counts |
-| :----------------------------- | :----- |
-| Enterococcus casseliflavus     | 8      |
-| Klebsiella pneumoniae          | 8      |
-| Enterococcus ratti             | 7      |
-| Enterococcus malodoratus       | 6      |
-| Rahnella inusitata             | 6      |
-| Enterococcus asini             | 4      |
-| Enterococcus hermanniensis     | 4      |
-| Enterococcus faecium           | 3      |
-| Erwinia piriflorinigrans       | 3      |
-| Enterobacter kobei             | 2      |
-
-
-</div>
+<img src="taxon_table.png" alt="Read Length Plot" style="width: 100%">
 
 ### **READ-LENGTH BAR PLOT**
 The bar plot displays the distribution of read-length per barcode. Reads with length >=1400 bp and <=1800 bp are shown with the bar color of **Cyan Azure** and reads with length smaller than 1400 bp or greater than 1800 bp are shown with the bar color of **Charm Pink**. Reads colored with **Cyan Azure** represents the true 16s reads and will be retained prior to read classification step. Remaining reads might be a result of chimera formation or are of low quality, and they will affect the downstream analysis. Because of that these reads are filtered prior to read classification step. Users can download the Read-Length Bar plot in **PDF** format.
 
 <br>
 <br>
-<img src="read_length_plot.png" alt="Read Length Plot" style="width: 70%">
+<img src="read_length_plot.png" alt="Read Length Plot" style="width: 100%">
 
 ### **Q-SCORE BAR PLOT**
 The bar plot displays the distribution of Q-Score (Read Quality) of reads per barcode. Reads with Q-Score >=10 are shown with the bar color of **Cyan Azure** and reads with Q-Score <10 are shown with the bar color of **Charm Pink**. The poor quality reads (Q-Score <10) will have errors introduced during the sequencing and because of that they will affect the classification result and downstream analysis. Because of that these reads will be filtered out prior to read classification step. Users can download the Q-Score Bar plot in **PDF** format.
 
 <br>
 <br>
-<img src="q_score_plot.png" alt="Q-score Plot" style="width: 70%">
+<img src="q_score_plot.png" alt="Q-score Plot" style="width: 100%">
 
 ### **READ CLASSIFICATION BAR PLOT**
-The bar plot displays the classified reads for the top N species for each barcode by default. Users can select the number of distinct taxon to display and different taxon level upto **Kingdom** for each barcode, the plot will be adjusted accordingly. The classified reads will have length in between 1400 bp to 1800 bp and the Q-Score >= 10. Users can download the Read Classification Bar plot in **PDF** format.
+The bar plot displays the classified reads for the top 10 species for each barcode by default. Users can select the number of distinct taxon to display and different taxon level upto **Kingdom** for each barcode, the plot will be adjusted accordingly. The classified reads will have length in between 1400 bp to 1800 bp and the Q-Score >= 10. Users can download the Read Classification Bar plot in **PDF** format.
 
 <br>
 <br>
-<img src="Classification_plot.png" alt="Classification Plot" style="width: 70%">
+<img src="Classification_plot.png" alt="Classification Plot" style="width: 100%">
 
 <br>
+
+### **RAREFACTION CURVE**
+The rarefaction line plot displays the number of unique species captured in Y axis and number of classified reads in X axis. By default, Species with at-least 10 supporting reads will be included in the plot. However, users can modify the cutoff by updating the Absolute Counts Cutoff parameter adjacent to the plot.
+Early in the run, the curve climbs steeply as new species are discovered. As the curve flattens into a horizontal plateau (the asymptote), it indicates that additional sequencing is unlikely to reveal new microbial diversity.
+
+<br>
+<br>
+<img src="rarefaction_curve.png" alt="Rarefaction Curve" style="width: 100%">
+
+<br>
+
+### **DIVERSITY CURVE**
+The diversity line plot move beyond simple species counting to measure the **stability** and **evenness** of the microbial community as data streams in.
+The X axis of the plot shows the number of classified reads and the Y axis of the plot shows the diversity index.
+Two diversity indices are reported, **Shannon** and **Simpson** index.<br>
+**Shannon Index** emphasizes species richness and the presence of rare species. In the line plot, the Shannon Index will fluctuate early on and eventually stabilize. A sudden drop in a stabilized Shannon curve can alert the user to a contamination event or the sudden dominance of a single pathogen.<br>
+**Simpson Index** is more sensitive to the **dominance** of common species. It measures the probability that two randomly selected individuals belong to the same species.<br>
+By default, Species with at-least 10 supporting reads will be included in the plot. However, users can modify the cutoff by updating the Absolute Counts Cutoff parameter adjacent to the plot.<br>
+Monitoring these indices in real-time ensures that the sample being sequenced is a true representation of the biological source. If these indices have not reached a steady state, the community profile is still shifting, and sequencing should continue.
+
+<br>
+<br>
+<img src="diversity_curve.png" alt="Diversity Plot" style="width: 100%">
 
 ## **COHORT ANALYSIS**
 <a name="cohortanalysis"></a>
@@ -1062,3 +1113,5 @@ differences between the faeces and crop digesta groups. In contrast, taxa includ
 | Shigella dysenteriae    |   Feces - Zymobiomics  | TRUE      | TRUE         | 2.267545374  | 0.034676 | Not Significant |
 
 </div>
+
+<br>
