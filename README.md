@@ -177,7 +177,7 @@ The user can run the example dataset by selecting **Example Data**, adding the c
 
 ## Demo
 
-Please see the demo of Real-time classification by using the following [link](TODO)
+Please see the demo of Real-time classification by using the following [link](https://youtu.be/2QoAKN4wpOE)
 
 ## Documentation
 
