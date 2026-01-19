@@ -199,7 +199,7 @@ if [ ! -d GSR ]; then
 
         seqkit faidx GSR-DB_full-16S_filt_seqs.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GSR-DB_full-16S_filt_seqs.fasta.fai > gsr_filtered_ids
 
         seqkit faidx -X gsr_filtered_ids GSR-DB_full-16S_filt_seqs.fasta > GSR_final_seqs.fasta
 
@@ -256,7 +256,7 @@ if [ ! -d GTDB ]; then
 
         seqkit faidx GTDB_16S_reps.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' GTDB_16S_reps.fasta.fai > gtdb_filtered_ids
 
         seqkit faidx -X gtdb_filtered_ids GTDB_16S_reps.fasta > temp && mv temp GTDB_16S_reps.fasta
 
@@ -299,7 +299,7 @@ if [ ! -d MIMT ]; then
 
         seqkit faidx MIMt.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' MIMt.fasta.fai | grep -Ff - <(awk -F "\t" '{print $1}' seq2tax.map.tsv) > mimt_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' MIMt.fasta.fai | grep -Ff - <(awk -F "\t" '{print $1}' seq2tax.map.tsv) > mimt_filtered_ids
 
         seqkit faidx -X mimt_filtered_ids MIMt.fasta > MIMT_final_seqs.fasta
 
@@ -346,7 +346,7 @@ if [ ! -d REFSEQ ]; then
 
         seqkit faidx refseq_16S.fasta
 
-        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=900 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
+        awk 'BEGIN{FS="\t";OFS="\t"}{if($2>=1200 && $2<=1800) print $1}' refseq_16S.fasta.fai > refseq_filtered_ids
 
         seqkit faidx -X refseq_filtered_ids refseq_16S.fasta > refseq_final_seqs.fasta
 
