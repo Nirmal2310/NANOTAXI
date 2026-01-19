@@ -805,9 +805,9 @@ if [ ! -d EMUDB ]; then
 
         sed -i 's/ .*$//g' species_taxid.fasta && mv species_taxid.fasta EMU.fasta
 
-        join <(grep ">" EMU.fasta | sed 's/>//;s/ .*$//g' | awk 'BEGIN{FS=OFS="\t"}{$2=$1; gsub(/:.*$/,"",$2); print $2,$1}' | sort -k1 -n -r) \
+        join -t $'\t' <(grep ">" EMU.fasta | sed 's/>//;s/ .*$//g' | awk 'BEGIN{FS=OFS="\t"}{$2=$1; gsub(/:.*$/,"",$2); print $2,$1}' | sort -k1 -n -r) \
         <(awk 'BEGIN{FS=OFS="\t"}{if(NR>1) print $1,$9,$7,$6,$5,$4,$3,$2}' taxonomy.tsv | sort -k1 -n -r) | \
-        awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$3,$4,$5,$6,$7,$8,$9" "$10}' | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{print $2,$3,$4,$5,$6,$7,$8,$9" "$10}' | \
         cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > EMU_taxa.txt
 
         rm -r taxonomy.tsv
@@ -1269,9 +1269,9 @@ if [ ! -d EMUDB ]; then
 
         sed -i 's/ .*$//g' species_taxid.fasta
 
-        join <(grep ">" species_taxid.fasta | sed 's/>//;s/ .*$//g' | awk 'BEGIN{FS=OFS="\t"}{$2=$1; gsub(/:.*$/,"",$2); print $2,$1}' | sort -k1 -n -r) \
+        join -t $'\t' <(grep ">" species_taxid.fasta | sed 's/>//;s/ .*$//g' | awk 'BEGIN{FS=OFS="\t"}{$2=$1; gsub(/:.*$/,"",$2); print $2,$1}' | sort -k1 -n -r) \
         <(awk 'BEGIN{FS=OFS="\t"}{if(NR>1) print $1,$9,$7,$6,$5,$4,$3,$2}' taxonomy.tsv | sort -k1 -n -r) | \
-        awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$3,$4,$5,$6,$7,$8,$9" "$10}' | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{print $2,$3,$4,$5,$6,$7,$8,$9" "$10}' | \
         cat <(echo -e "REF_ID\tKingdom\tPhylum\tClass\tOrder\tFamily\tGenus\tSpecies") - > EMU_taxa.txt
 
         source $path/bin/activate blast
