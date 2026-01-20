@@ -9,11 +9,11 @@ tabPanel(
                                                           "Family", "Order", "Class", "Phylum"),
                     selected = "Species"), style="color: #00607D;"),
         div(sliderInput("top_taxa", "Top N", min = 1, max = 25, value = 5), style="color: #00607D;"),
+        div(selectizeInput("toi", "Select Taxon Name", choices = NULL, selected = NULL, multiple = TRUE, options = list(searchConjunction = 'and')), style="color: #00607D;"),
         div(sliderInput("prevalence_cutoff", "Prevalence Cutoff (%)", min = 5, max = 100, value = 10), style="color: #00607D;"),
         div(numericInput("abundance_cutoff", "Relative Abundance Cutoff (%)", value = 0.1), style="color: #00607D;"),
         div(numericInput("counts_cutoff", "Absolute Counts Cutoff", value = 10), style="color: #00607D;"),
-        div(sliderInput("biplot_taxa", "Biplot Top Taxa", min = 5, max = 25, value = 10), style="color: #00607D;"),
-        div(selectizeInput("toi", "Select Taxon Name", choices = NULL, selected = NULL, multiple = TRUE, options = list(searchConjunction = 'and')), style="color: #00607D; height: 300px;")
+        div(sliderInput("biplot_taxa", "Biplot Top Taxa", min = 5, max = 25, value = 10), style="color: #00607D;")
       ),
       column(
         width = 10,

@@ -1,6 +1,8 @@
 source("packages.R")
 
-plan(multisession, workers = 16)
+worker_threads <- parallel::detectCores()/2
+
+plan(multisession, workers = worker_threads)
 
 ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height="100%", width="12%"), "",
               style="position: absolute; top: 3px; left: 10px; background-color:white"),
@@ -106,12 +108,6 @@ server <- function(input, output, session) {
   plot_diversity_curve <- reactiveVal()
 
   result_dir_val <- reactiveVal()
-
-  reactive_rel_abundance_matrix <- reactiveVal()
-
-  reactive_counts_data <- reactiveVal()
-
-  reactive_counts_matrix <- reactiveVal()
 
   realtime_daa_data <- reactiveVal()
 
@@ -618,53 +614,6 @@ server <- function(input, output, session) {
   })
 
   observe({
-    
-    req(cohort_run(), route()=="Offline", result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
-
-    lineage <- input$taxa
-
-    prevalence_cutoff <- input$prevalence_cutoff
-
-    abundance_cutoff <- input$abundance_cutoff
-
-    dir <- result_dir_val()
-
-    result_list <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)
-
-    reactive_rel_abundance_matrix(result_list$rel_abundance_renormalized_matrix)
-
-    reactive_counts_data(result_list$counts_data)
-
-    reactive_counts_matrix(result_list$counts_matrix)
-
-  })
-
-  observe({
-    
-    req(route()=="Example", input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
-
-    file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
-                                                                                                list.files("Example/"))])
-      
-    lineage <- input$taxa
-
-    sample_metadata <- input_data_reactive()$data
-
-    prevalence_cutoff <- input$prevalence_cutoff
-
-    abundance_cutoff <- input$abundance_cutoff
-
-    result_list <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)
-
-    reactive_rel_abundance_matrix(result_list$rel_abundance_renormalized_matrix)
-
-    reactive_counts_data(result_list$counts_data)
-
-    reactive_counts_matrix(result_list$counts_matrix)
-  
-  })
-
-  observe({
 
     req(cohort_analysis_list(), input$taxa, cohort_sample_list(), input$prevalence_cutoff, input$abundance_cutoff)
 
@@ -690,9 +639,46 @@ server <- function(input, output, session) {
 
   observe({
 
-    req(nrow(reactive_rel_abundance_matrix())>0)
+    req(route()=="Example", input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
-    taxa_names_data <- sort(rownames(reactive_rel_abundance_matrix()))
+    file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
+
+    lineage <- input$taxa
+
+    sample_metadata <- input_data_reactive()$data
+
+    prevalence_cutoff <- input$prevalence_cutoff
+
+    abundance_cutoff <- input$abundance_cutoff
+
+    rel_abundance_renormalized_matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+    taxa_names_data <- sort(rownames(rel_abundance_renormalized_matrix))
+
+    choices_list <- setNames(taxa_names_data, taxa_names_data)
+
+    current_selection <- isolate(input$toi)
+
+    updateSelectizeInput(session, 'toi', choices = choices_list, server = TRUE, selected = if (is.null(current_selection)) NULL else intersect(current_selection, taxa_names_data))
+
+  })
+
+  observe({
+
+    req(cohort_run(), route()=="Offline", result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+
+    lineage <- input$taxa
+
+    prevalence_cutoff <- input$prevalence_cutoff
+
+    abundance_cutoff <- input$abundance_cutoff
+
+    dir <- result_dir_val()
+
+    rel_abundance_renormalized_matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+    taxa_names_data <- sort(rownames(rel_abundance_renormalized_matrix))
 
     choices_list <- setNames(taxa_names_data, taxa_names_data)
 
@@ -868,7 +854,7 @@ server <- function(input, output, session) {
 
   example_analysis <- function(path, file_list, lineage, prevalence_cutoff, abundance_cutoff) 
   {
-    samples_header <- gsub("_final_emu_result","",file_list)
+    samples_header <- gsub("_final_emu_result","", file_list)
     
     sample_data_list <- list()
     
@@ -937,6 +923,7 @@ server <- function(input, output, session) {
 
     return(list(
     'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
+    'rel_abundance_filtered_matrix' = rel_abundance_filtered_matrix,
     'counts_matrix' = counts_matrix,
     'counts_data' = counts_data))
   }
@@ -1001,6 +988,7 @@ server <- function(input, output, session) {
 
       return(list(
         'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
+        'rel_abundance_filtered_matrix' = rel_abundance_filtered_matrix,
         'counts_data' = counts_data,
         'counts_matrix' = counts_matrix))
   }
@@ -1085,6 +1073,7 @@ server <- function(input, output, session) {
     
     return(list(
       'rel_abundance_renormalized_matrix' = rel_abundance_renormalized_matrix,
+      'rel_abundance_filtered_matrix' = rel_abundance_filtered_matrix,
       'counts_data' = counts_data,
       'counts_matrix' = counts_matrix))
   }
@@ -1393,6 +1382,8 @@ server <- function(input, output, session) {
 
     nmds_df$Group <- factor(nmds_df$Group)
 
+    print(nmds_df[is.na(nmds_df)])
+
     nmds_plot <- ggplot(data = nmds_df, aes(x = MDS1, y = MDS2, fill = Group)) +
       geom_point(size=5, shape = 21, color = "black") +
       stat_ellipse(aes(colour = Group, fill = Group), level = 0.95, alpha = 0.25, geom = "polygon") +
@@ -1499,14 +1490,14 @@ server <- function(input, output, session) {
     return(permanova_res)
   }
 
-  diversity_heatmap_function <- function(mat, lineage, sample_metadata)
+  diversity_heatmap_function <- function(normalized_mat, lineage, sample_metadata, filtered_mat, prevalence_cutoff)
   {
     
-    data <- mat %>% as.matrix()
+    data <- normalized_mat %>% as.matrix()
 
     passed_df <- data.frame(Sample_Id = colnames(data))
     
-    transformed_data <- t(clr(t(data)))
+    transformed_data <- base::scale(t(clr(t(data))))
 
     heatmap_df <- as.data.frame(transformed_data)
 
@@ -1553,35 +1544,45 @@ server <- function(input, output, session) {
     )
     
     col_fun <- colorRampPalette(c("darkblue", "blue", "white", "red", "darkred"))(length(breaks)-1)
-    
-    prevalence <- rowSums(data > 1e-9)
+
+    total_samples <- length(passed_df$Sample_Id)
+
+    filtered_df <- as.data.frame(filtered_mat)
+
+    filtered_df[[lineage]] <- rownames(filtered_mat)
+
+    filtered_df <- filtered_df %>% pivot_longer(cols=-!!sym(lineage), names_to = "Sample_Id", values_to = "Abundance")
+
+    filtered_df <- filtered_df %>% filter(Abundance>1e-10)
+
+    filtered_df <- filtered_df %>% group_by(!!sym(lineage)) %>% summarise(Prevalence = (n()/total_samples)*100)
+
+    min_prevalence <- prevalence_cutoff
+
+    prevalence <- setNames(filtered_df$Prevalence, filtered_df[[lineage]])
+
+    common_rows <- intersect(rownames(heatmap_matrix), names(prevalence))
+
+    heatmap_matrix <- heatmap_matrix[common_rows, , drop=FALSE]
+
+    prevalence <- prevalence[common_rows]
     
     heatmap_plot <- Heatmap(
       heatmap_matrix,
-      name = "CLR",
-      
-      
+      name = "zCLR",
       row_names_gp = gpar(fontsize = 8),
       row_names_max_width = unit(5, "cm"),
-      row_names_side = "right",
-      
-      
-      cluster_rows = color_branches(row_dend, k = 4),
-      cluster_columns = color_branches(column_dend, k = 4),
-      
-      
-      show_column_names = TRUE,
+      row_names_side = "right",cluster_rows = color_branches(row_dend, k = 4),
+      cluster_columns = color_branches(column_dend, k = 4),show_column_names = TRUE,
       column_names_gp = gpar(fontsize = 10, fontface = "bold"),
       column_title = NULL,
       column_title_gp = gpar(fontsize = 14, fontface = "bold"),
-      column_dend_height = unit(15, "mm"),
-    
-      bottom_annotation = col_annotate,
-    
+      column_dend_height = unit(15, "mm"),bottom_annotation = col_annotate,
+      
       right_annotation = rowAnnotation(
         Prevalence = anno_barplot(prevalence,
         gp = gpar(fill = "#008B45FF", color = "white"),
-        ylim = c(1,25)),
+        ylim = c(min_prevalence, 100)),
         annotation_name_rot = 0,
         annotation_name_side = "top",
         annotation_name_align = TRUE,
@@ -1590,12 +1591,8 @@ server <- function(input, output, session) {
         width = unit(2.5, "cm")
       ),
       
-      
       col = col_fun,
-      
-      
       rect_gp = gpar(col = "white", lwd = 0.15),
-      
       
       heatmap_legend_param = list(
         title_gp = gpar(fontsize = 12, fontface = "bold"),
@@ -1604,16 +1601,13 @@ server <- function(input, output, session) {
         grid_width = unit(0.5, "cm")
       ),
       
-      
       clustering_distance_rows = "euclidean",
       clustering_distance_columns = "euclidean",
       clustering_method_rows = "complete",
       clustering_method_columns = "complete"
     )
     
-    
-
-    heatmap_ggplot <- as_ggplot(grid.grabExpr(print(heatmap_plot)))
+    heatmap_ggplot <- as_ggplot(grid.grabExpr(draw(heatmap_plot)))
 
     return(heatmap_ggplot)
   }
@@ -1966,11 +1960,18 @@ server <- function(input, output, session) {
     
     else if(route()=="Example")
     {
-      req(reactive_counts_data(), input$taxa)
+      req(input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
                       
       lineage <- input$taxa
 
-      abundance_data <- reactive_counts_data()
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+      
+      abundance_data <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       abundance_val(abundance_data)
 
@@ -1980,9 +1981,17 @@ server <- function(input, output, session) {
 
     else if(route()=="Offline")
     {
-      req(reactive_counts_data())
+      req(cohort_run(), result_dir_val(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
-      abundance_data <- reactive_counts_data()
+      lineage <- input$taxa
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      dir <- result_dir_val()
+      
+      abundance_data <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       abundance_val(abundance_data)
 
@@ -2525,13 +2534,26 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(reactive_rel_abundance_matrix(), input$taxa, input$top_taxa, input_data_reactive())
+      req(input$taxa, input$top_taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       top_n <- input$top_taxa
+
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
       
-      stacked_df <- reactive_rel_abundance_matrix()
+      lineage <- input$taxa
+
+      sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      rel_abundance_renormalized_matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+      
+      stacked_df <- rel_abundance_renormalized_matrix
 
       if(is.null(input$toi) || length(input$toi) == 0) {
         stacked_barplot <- stacked_barplot_function(stacked_df, lineage, top_n)
@@ -2548,13 +2570,21 @@ server <- function(input, output, session) {
 
     else if(route()=="Offline")
     {
-      req(reactive_rel_abundance_matrix(), input$taxa, input$top_taxa, input_data_reactive())
+      req(cohort_run(), result_dir_val(), input$taxa, input$top_taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       top_n <- input$top_taxa
 
-      stacked_df <- reactive_rel_abundance_matrix()
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      dir <- result_dir_val()
+
+      rel_abundance_renormalized_matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      stacked_df <- rel_abundance_renormalized_matrix
 
       if(is.null(input$toi) || length(input$toi) == 0) {
         stacked_barplot <- stacked_barplot_function(stacked_df, lineage, top_n)
@@ -2616,13 +2646,20 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(reactive_counts_data(), input$taxa, input_data_reactive())
+      req(input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
       
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
       
-      counts_data <- reactive_counts_data()
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+      
+      counts_data <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       counts_data_long <- counts_data %>% pivot_longer(cols = -!!sym(lineage), names_to = "Sample", values_to = "Counts")
 
@@ -2651,13 +2688,19 @@ server <- function(input, output, session) {
     
     else if(route() == "Offline")
     {
-      req(reactive_counts_data(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, cohort_run(), result_dir_val())
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      dir <- result_dir_val()
       
-      counts_data <- reactive_counts_data()
+      counts_data <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$counts_data
 
       counts_data_long <- counts_data %>% pivot_longer(cols = -!!sym(lineage), names_to = "Sample", values_to = "Counts")
 
@@ -2715,17 +2758,22 @@ server <- function(input, output, session) {
     else if(route()=="Example")
     {
       
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
                       
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
 
-      matrix <- reactive_rel_abundance_matrix()
-
       prevalence_cutoff <- input$prevalence_cutoff
 
       abundance_cutoff <- input$abundance_cutoff
+
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
+
+      rel_abundance_renormalized_matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      matrix <- rel_abundance_renormalized_matrix
 
       pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
 
@@ -2737,7 +2785,7 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+      req(cohort_run(), result_dir_val(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
@@ -2747,7 +2795,11 @@ server <- function(input, output, session) {
 
       abundance_cutoff <- input$abundance_cutoff
 
-      matrix <- reactive_rel_abundance_matrix()
+      dir <- result_dir_val()
+
+      rel_abundance_renormalized_matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      matrix <- rel_abundance_renormalized_matrix
 
       pcoa_plot <- diversity_pcoa_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
 
@@ -2787,7 +2839,7 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
       
       lineage <- input$taxa
 
@@ -2797,7 +2849,12 @@ server <- function(input, output, session) {
 
       abundance_cutoff <- input$abundance_cutoff
 
-      matrix <- reactive_rel_abundance_matrix()
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
+
+      rel_abundance_renormalized_matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      matrix <- rel_abundance_renormalized_matrix
 
       nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
       
@@ -2809,7 +2866,7 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+      req(cohort_run(), result_dir_val(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
@@ -2819,7 +2876,11 @@ server <- function(input, output, session) {
 
       abundance_cutoff <- input$prevalence_cutoff
 
-      matrix <- reactive_rel_abundance_matrix()
+      dir <- result_dir_val()
+
+      rel_abundance_renormalized_matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      matrix <- rel_abundance_renormalized_matrix
 
       nmds_plot <- diversity_nmds_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff)
       
@@ -2861,7 +2922,7 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
 
       lineage <- input$taxa
 
@@ -2873,7 +2934,12 @@ server <- function(input, output, session) {
 
       top_taxa <- input$biplot_taxa
 
-      matrix <- reactive_rel_abundance_matrix()
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
+
+      rel_abundance_renormalized_matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+      
+      matrix <- rel_abundance_renormalized_matrix
 
       pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff, top_taxa)
 
@@ -2885,7 +2951,7 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
+      req(cohort_run(), result_dir_val(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$biplot_taxa)
 
       lineage <- input$taxa
 
@@ -2897,7 +2963,11 @@ server <- function(input, output, session) {
 
       top_taxa <- input$biplot_taxa
 
-      matrix <- reactive_rel_abundance_matrix()
+      dir <- result_dir_val()
+
+      rel_abundance_renormalized_matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+
+      matrix <- rel_abundance_renormalized_matrix
 
       pca_plot <- diversity_pca_function(matrix, lineage, sample_metadata, prevalence_cutoff, abundance_cutoff, top_taxa)
 
@@ -2939,7 +3009,7 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$control)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff, input$control)
 
       lineage <- input$taxa
 
@@ -2950,8 +3020,13 @@ server <- function(input, output, session) {
       abundance_cutoff <- input$abundance_cutoff
 
       control_group <- input$control
+
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
       
-      matrix <- reactive_rel_abundance_matrix()
+      rel_abundance_renormalized_matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
+      
+      matrix <- rel_abundance_renormalized_matrix
       
       permanova_res <- diversity_permanova_function(matrix, lineage, sample_metadata, control_group)
 
@@ -2963,15 +3038,23 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$control)
+      req(cohort_run(), result_dir_val(), input_data_reactive(), input$taxa, input$control, input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
 
       control_group <- input$control
+
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      dir <- result_dir_val()
+
+      rel_abundance_renormalized_matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
       
-      matrix <- reactive_rel_abundance_matrix()
+      matrix <- rel_abundance_renormalized_matrix
       
       permanova_res <- diversity_permanova_function(matrix, lineage, sample_metadata, control_group)
 
@@ -3019,10 +3102,14 @@ server <- function(input, output, session) {
       prevalence_cutoff <- input$prevalence_cutoff
 
       abundance_cutoff <- input$abundance_cutoff
-      
-      matrix <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)$rel_abundance_renormalized_matrix
 
-      heatmap_ggplot <- diversity_heatmap_function(matrix, lineage, sample_metadata)
+      result_list <- cohort_realtime_analysis(cohort_analysis_list(), sample_list, lineage, prevalence_cutoff, abundance_cutoff)
+      
+      filtered_matrix <- result_list$rel_abundance_filtered_matrix
+      
+      renormalized_matrix <- result_list$rel_abundance_renormalized_matrix
+
+      heatmap_ggplot <- diversity_heatmap_function(renormalized_matrix, lineage, sample_metadata, filtered_matrix, prevalence_cutoff)
 
       plot_real_heatmap(heatmap_ggplot)
 
@@ -3032,7 +3119,7 @@ server <- function(input, output, session) {
 
     else if(route()=="Example")
     {
-      req(reactive_rel_abundance_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
@@ -3041,10 +3128,17 @@ server <- function(input, output, session) {
       prevalence_cutoff <- input$prevalence_cutoff
 
       abundance_cutoff <- input$abundance_cutoff
-      
-      matrix <- reactive_rel_abundance_matrix()
 
-      heatmap_ggplot <- diversity_heatmap_function(matrix, lineage, sample_metadata)
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
+      
+      result_list <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)
+
+      filtered_matrix <- result_list$rel_abundance_filtered_matrix
+      
+      renormalized_matrix <- result_list$rel_abundance_renormalized_matrix
+
+      heatmap_ggplot <- diversity_heatmap_function(renormalized_matrix, lineage, sample_metadata, filtered_matrix, prevalence_cutoff)
 
       plot_real_heatmap(heatmap_ggplot)
 
@@ -3054,15 +3148,25 @@ server <- function(input, output, session) {
 
     else if(route() == "Offline")
     {
-      req(reactive_rel_abundance_matrix(), input$taxa, input_data_reactive())
+      req(cohort_run(), result_dir_val(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff)
 
       lineage <- input$taxa
 
       sample_metadata <- input_data_reactive()$data
-      
-      matrix <- reactive_rel_abundance_matrix()
 
-      heatmap_ggplot <- diversity_heatmap_function(matrix, lineage, sample_metadata)
+      prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      dir <- result_dir_val()
+
+      result_list <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)
+      
+      filtered_matrix <- result_list$rel_abundance_filtered_matrix
+      
+      renormalized_matrix <- result_list$rel_abundance_renormalized_matrix
+
+      heatmap_ggplot <- diversity_heatmap_function(renormalized_matrix, lineage, sample_metadata, filtered_matrix, prevalence_cutoff)
 
       plot_real_heatmap(heatmap_ggplot)
 
@@ -3202,7 +3306,7 @@ server <- function(input, output, session) {
     }
     else if(route()=="Example")
     {
-      req(reactive_counts_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$counts_cutoff, input$abundance_cutoff, input$control)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$counts_cutoff, input$abundance_cutoff, input$control)
 
       lineage <- input$taxa
 
@@ -3216,7 +3320,10 @@ server <- function(input, output, session) {
 
       control <- input$control
 
-      matrix <- reactive_counts_matrix()
+      file_list <- gsub(".txt", "", list.files("Example/")[grep("\\_final_emu_result.txt$",
+                                                                                                list.files("Example/"))])
+      
+      matrix <- example_analysis("Example", file_list, lineage, prevalence_cutoff, abundance_cutoff)$counts_matrix
 
       req(daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff))
 
@@ -3232,19 +3339,23 @@ server <- function(input, output, session) {
     }
     else if(route()=="Offline")
     {
-      req(reactive_counts_matrix(), input_data_reactive(), input$taxa, input$prevalence_cutoff, input$counts_cutoff, input$control)
+      req(input_data_reactive(), input$taxa, input$prevalence_cutoff, input$counts_cutoff, input$control, cohort_run(), result_dir_val(), input$abundance_cutoff)
       
       lineage <- input$taxa
       
       sample_metadata <- input_data_reactive()$data
       
       prevalence_cutoff <- input$prevalence_cutoff
+
+      abundance_cutoff <- input$abundance_cutoff
+
+      dir <- result_dir_val()
       
       counts_cutoff <- input$counts_cutoff
       
       control <- input$control
       
-      matrix <- reactive_counts_matrix()
+      matrix <- cohort_offline_analysis(dir, lineage, prevalence_cutoff, abundance_cutoff)$counts_matrix
 
       req(daa_volcano_plot(matrix, lineage, sample_metadata, control, prevalence_cutoff, counts_cutoff))
       
