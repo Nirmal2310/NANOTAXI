@@ -4,7 +4,7 @@ eval "$(conda shell.bash hook)"
 
 helpFunction()
 {
-   echo "Usage: real_time_blast.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85 -q 10 -n REFSEQ -t 4 -s 500"
+   echo "Usage: real_time_mmseqs.sh -d /path/to/data/directory -k kit-name -b barcode01 -m 1400 -M 1800 -i 85 -q 10 -n REFSEQ -t 4 -s 500"
    echo -e "\t-d <str> Path Containing Sequencing Data."
    echo -e "\t-k <str> Kit-name."
    echo -e "\t-b <str> Barcode Name."
@@ -80,33 +80,33 @@ fi
 
 if [ "$db" == "REFSEQ" ]; then
 
-    BLAST_DB=$(grep BLAST_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export BLAST_REFSEQ="//;s/"//g;s/$/\/REFSEQ_BLAST/')
+    MMSEQS_DB=$(grep MMSEQS_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_REFSEQ="//;s/"//g;s/$/\/REFSEQ_MMSEQS/')
 
-    TAXA_DATA=$(grep BLAST_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export BLAST_REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
+    TAXA_DATA=$(grep MMSEQS_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
 
 elif [ "$db" == "GTDB" ]; then
     
-    BLAST_DB=$(grep BLAST_GTDB ~/.bashrc | tail -n 1 | sed 's/export BLAST_GTDB="//;s/"//g;s/$/\/GTBD_BLAST/')
+    MMSEQS_DB=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTBD_MMSEQS/')
 
-    TAXA_DATA=$(grep BLAST_GTDB ~/.bashrc | tail -n 1 | sed 's/export BLAST_GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
+    TAXA_DATA=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
 
 elif [ "$db" == "MIMT" ]; then
 
-    BLAST_DB=$(grep BLAST_MIMT ~/.bashrc | tail -n 1 | sed 's/export BLAST_MIMT="//;s/"//g;s/$/\/MIMT_BLAST/')
+    MMSEQS_DB=$(grep MMSEQS_MIMT ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_MIMT="//;s/"//g;s/$/\/MIMT_MMSEQS/')
 
-    TAXA_DATA=$(grep BLAST_MIMT ~/.bashrc | tail -n 1 | sed 's/export BLAST_MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
+    TAXA_DATA=$(grep MMSEQS_MIMT ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
 
 elif [ "$db" == "GSR" ]; then
 
-    BLAST_DB=$(grep BLAST_GSR ~/.bashrc | tail -n 1 | sed 's/export BLAST_GSR="//;s/"//g;s/$/\/GSR_BLAST/')
+    MMSEQS_DB=$(grep MMSEQS_GSR ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GSR="//;s/"//g;s/$/\/GSR_MMSEQS/')
 
-    TAXA_DATA=$(grep BLAST_GSR ~/.bashrc | tail -n 1 | sed 's/export BLAST_GSR="//;s/"//g;s/$/\/GSR_taxa.txt/')
+    TAXA_DATA=$(grep MMSEQS_GSR ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GSR="//;s/"//g;s/$/\/GSR_taxa.txt/')
 
 elif [ "$db" == "EMUDB" ]; then
 
-    BLAST_DB=$(grep BLAST_EMU ~/.bashrc | tail -n 1 | sed 's/export BLAST_EMU="//;s/"//g;s/$/\/EMU_BLAST/')
+    MMSEQS_DB=$(grep MMSEQS_EMU ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_EMU="//;s/"//g;s/$/\/EMU_MMSEQS/')
 
-    TAXA_DATA=$(grep BLAST_EMU ~/.bashrc | tail -n 1 | sed 's/export BLAST_EMU="//;s/"//g;s/$/\/EMU_taxa.txt/')
+    TAXA_DATA=$(grep MMSEQS_EMU ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_EMU="//;s/"//g;s/$/\/EMU_taxa.txt/')
 
 fi
 
@@ -164,17 +164,22 @@ if [ ! -f $data_path/$barcode/$db/processed_reads.txt ]; then
 
     if [ "$(grep ">" $data_path/$barcode/$db/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
-        conda activate blast
+        conda activate mmseqs
 
-        blastn -db $BLAST_DB -query $data_path/$barcode/$db/${barcode}_16S.fasta -out $data_path/$barcode/$db/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 \
-        -perc_identity $identity -qcov_hsp_perc $coverage -outfmt "6" -task megablast -word_size 16
+        mmseqs createdb -v 0 --threads $threads $data_path/$barcode/$db/${barcode}_16S.fasta $data_path/$barcode/$db/${barcode}DB
+
+        mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c 0.85 --cov-mode 2 --db-load-mode 2 --remove-tmp-files 1 -v 0 $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp
+
+        mmseqs convertalis -v 0 --threads $threads $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp_output.txt
+
+        awk 'BEGIN{FS=OFS="\t"} !seen[$1] {print; seen[$1]=1}' $data_path/$barcode/$db/${barcode}_temp_output.txt > $data_path/$barcode/$db/${barcode}_mmseqs_output.txt
 
         conda activate minimap2
+    
+        python $script_path/add_taxon_info.py -c <(awk 'BEGIN{FS="\t";OFS="\t"}{print $2}' $data_path/${barcode}/$db/${barcode}_mmseqs_output.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}') -t $TAXA_DATA | \
+        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/${barcode}/$db/${barcode}_final_mmseqs_result.txt
 
-        python $script_path/add_taxon_info.py -c <(awk 'BEGIN{FS="\t";OFS="\t"}{print $2}' $data_path/${barcode}/$db/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}') -t $TAXA_DATA | \
-        awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq > $data_path/${barcode}/$db/${barcode}_final_blast_result.txt
-
-        rm -r $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_blast.txt
+        rm -r $data_path/$barcode/$db/${barcode}_temp_output.txt $data_path/$barcode/$db/${barcode}_mmseqs_output.txt $data_path/$barcode/$db/${barcode}DB* $data_path/$barcode/$db/${barcode}_mmseqs2_result* $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_temp
     
     else
         
@@ -214,17 +219,22 @@ else
 
         if [ "$(grep ">" $data_path/$barcode/$db/${barcode}_16S.fasta | wc -l)" -gt 0 ]; then
 
-            conda activate blast
+            conda activate mmseqs
 
-            blastn -db $BLAST_DB -query $data_path/$barcode/$db/${barcode}_16S.fasta -out $data_path/$barcode/$db/${barcode}_blast.txt -num_threads $threads -max_target_seqs 1 -max_hsps 1 \
-            -perc_identity $identity -qcov_hsp_perc $coverage -outfmt "6" -task megablast -word_size 16
+            mmseqs createdb -v 0 --threads $threads $data_path/$barcode/$db/${barcode}_16S.fasta $data_path/$barcode/$db/${barcode}DB
+
+            mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c 0.85 --cov-mode 2 --db-load-mode 2 --remove-tmp-files 1 -v 0 $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp
+
+            mmseqs convertalis -v 0 --threads $threads $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp_output.txt
+
+            awk 'BEGIN{FS=OFS="\t"} !seen[$1] {print; seen[$1]=1}' $data_path/$barcode/$db/${barcode}_temp_output.txt > $data_path/$barcode/$db/${barcode}_mmseqs_output.txt
 
             conda activate minimap2
+        
+            python $script_path/add_taxon_info.py -c <(awk 'BEGIN{FS="\t";OFS="\t"}{print $2}' $data_path/${barcode}/$db/${barcode}_mmseqs_output.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}') -t $TAXA_DATA | \
+            awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/${barcode}/$db/${barcode}_final_mmseqs_result.txt
 
-            python $script_path/add_taxon_info.py -c <(awk 'BEGIN{FS="\t";OFS="\t"}{print $2}' $data_path/${barcode}/$db/${barcode}_blast.txt | sort | uniq -c | awk 'BEGIN{FS=" ";OFS="\t"}{print $2,$1}') -t $TAXA_DATA | \
-            awk 'BEGIN{FS="\t";OFS="\t"}{if(NR>1) print $1, $2, $4, $5, $6, $7, $8, $9, $1}' | sort -k1 -n -r | uniq >> $data_path/${barcode}/$db/${barcode}_final_blast_result.txt
-
-            rm -r $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_blast.txt
+            rm -r $data_path/$barcode/$db/${barcode}_temp_output.txt $data_path/$barcode/$db/${barcode}_mmseqs_output.txt $data_path/$barcode/$db/${barcode}DB* $data_path/$barcode/$db/${barcode}_mmseqs2_result* $data_path/$barcode/$db/${barcode}_hist_temp.txt $data_path/$barcode/$db/${barcode}_temp
         
         else
             

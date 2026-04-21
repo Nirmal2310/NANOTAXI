@@ -148,9 +148,9 @@ else
             
             echo "bash $script_path/real_time_kraken.sh -d $data_path -k $kit_name -b $barcode -m $min -M $max -t $r -c $conf -q $q_score -n $db -p $per_job_thread -s $batch_size > /dev/null"
         
-        elif [ $pipeline == "BLASTn" ]; then
+        elif [ $pipeline == "MMseqs" ]; then
 
-            echo "bash $script_path/real_time_blash.sh -d $data_path -k $kit_name -b $barcode -m $min -M $max -i $identity -c $coverage -q $q_score -n $db -t $per_job_thread -s $batch_size > /dev/null"
+            echo "bash $script_path/real_time_mmseqs.sh -d $data_path -k $kit_name -b $barcode -m $min -M $max -i $identity -c $coverage -q $q_score -n $db -t $per_job_thread -s $batch_size > /dev/null"
         
         elif [ $pipeline == "EMU" ]; then
 

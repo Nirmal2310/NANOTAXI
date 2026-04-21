@@ -5,30 +5,30 @@ required_cran = c("shiny", "shinyBS", "reticulate", "tidyverse", "shinyjs", "DT"
 "forcats", "formattable", "future", "promises", "ggtext", "FactoMineR",
 "ggforce", "bslib", "cowplot")
 
-required_bioc <- c("ComplexHeatmap", "ANCOMBC")
+required_bioc <- c("ComplexHeatmap", "ANCOMBC", "MicrobiomeProfiler", "enrichplot")
 
 sapply(required_cran, function(x){
   if(!require(x, character.only = TRUE)){
-    install.packages(x); suppressPackageStartupMessages(library(x,  character.only = TRUE))}
-  else{suppressPackageStartupMessages(library(x, character.only = TRUE))}
+    install.packages(x, ask=FALSE); suppressMessages(suppressPackageStartupMessages(library(x,  character.only = TRUE)))}
+  else{suppressMessages(suppressPackageStartupMessages(library(x, character.only = TRUE)))}
   }
 )
 
 sapply(required_bioc, function(x){
   if(!require(x, character.only = TRUE)){
-    BiocManager::install(x)
-    suppressPackageStartupMessages(library(x, character.only = TRUE))
+    BiocManager::install(x, ask=FALSE)
+    suppressMessages(suppressPackageStartupMessages(library(x, character.only = TRUE)))
   }else{
-    suppressPackageStartupMessages(library(x, character.only = TRUE))
+    suppressMessages(suppressPackageStartupMessages(library(x, character.only = TRUE)))
   }
 })
 
 if(!require("pairwiseAdonis", character.only = TRUE)){
-  suppressPackageStartupMessages(library(devtools))
-  devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
-  suppressPackageStartupMessages(library("pairwiseAdonis", character.only = TRUE))
+  suppressMessages(suppressPackageStartupMessages(library(devtools)))
+  devtools::install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis", upgrade = FALSE)
+  suppressMessages(suppressPackageStartupMessages(library("pairwiseAdonis", character.only = TRUE)))
 } else{
-  suppressPackageStartupMessages(library("pairwiseAdonis", character.only = TRUE))
+  suppressMessages(suppressPackageStartupMessages(library("pairwiseAdonis", character.only = TRUE)))
 }
 
 work_dir <- getwd()

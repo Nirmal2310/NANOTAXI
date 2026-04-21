@@ -16,7 +16,7 @@ tabPanel(
           condition = "input.data_file_type == 'upload'",
           fileInput("inputfile", "Select the sample Information File", accept = ".csv", multiple = FALSE),
           textInput("realtime_control", "Select Control Group", value = ""),
-          selectInput("realtime_pipeline", "Select Analysis Tool", choices = list("Kraken2", "Minimap2", "BLASTn", "EMU"),
+          selectInput("realtime_pipeline", "Select Analysis Tool", choices = list("Kraken2", "Minimap2", "MMseqs", "EMU"),
                       selected = "Minimap2"),
           selectInput("realtime_database", "Select Database", choices = list("GTDB", "MIMT", "GSR", "REFSEQ", "EMUDB"),
                       selected = "REFSEQ"),
@@ -43,9 +43,9 @@ tabPanel(
           condition = "input.data_file_type == 'precomputed'",
           textInput("fastqdir", "Enter the Directory Containing Raw Data", value = ""),
           fileInput("metafile", "Select the sample Information File", accept = ".csv", multiple = FALSE),
-          textInput("control", "Select Control Group", value = ""),
+          textInput("offline_control", "Select Control Group", value = ""),
           selectInput("kitname", "Kit Name", choices = list("SQK-16S024", "SQK-16S114-24"), selected = "SQK-16S114-24"),
-          selectInput("pipeline", "Select Analysis Tool", choices = list("EMU", "BLASTn", "Kraken2", "Minimap2"),
+          selectInput("pipeline", "Select Analysis Tool", choices = list("EMU", "MMseqs", "Kraken2", "Minimap2"),
                       selected = "EMU"),
           selectInput("database", "Select Database", choices = list("GTDB", "MIMT", "GSR", "REFSEQ", "EMUDB"),
                       selected = "EMUDB"),
@@ -64,8 +64,8 @@ tabPanel(
         ),
         conditionalPanel(
           condition = "input.data_file_type == 'examplelist'",
-          textInput("control", "Select Control Group", value = ""),
-          actionButton("example_run", "Use Example Data")
+          textInput("example_control", "Select Control Group", value = ""),
+          actionButton("example_run", "Start Example Run")
         )
     )),
 
@@ -78,7 +78,7 @@ tabPanel(
         ),
         bsCollapsePanel(title = "Analysis Results: Ready to View Other Tabs",
                         value = "analysis_panel",
-                        downloadButton("download_results_csv","Save Results as CSV File"),
+                        downloadButton("download_results_tsv","Save Results as TSV File"),
                         DTOutput("analysisoutput")
                         )
       )

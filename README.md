@@ -18,7 +18,7 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 | Kraken2 | Both | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Minimap2 | Both | ✓ | ✓ | ✓ | ✓ | ✓ |
 | EMU | Both | ✓ | ✓ | ✓ | ✓ | ✓ |
-| BLAST | Both | ✓ | ✓ | ✓ | ✓ | ✓ |
+| MMSEQS | Both | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 #### Legend
 - ✓: Tool supports this database
@@ -28,9 +28,9 @@ Offering Real-time 16s DNA Classification of Long Read Sequencing.
 
 ## Installation
 
-To run the app locally, please install R version >= 4.4.2. Also, please ensure that the MinKNOW app version >= 24.06.10.
+To run the app locally, please install R version >= 4.4.2 and RStudio. Also, please ensure that the MinKNOW app version >= 24.06.10.
 
-You can install R and all the required R packages using a single command. If not present, this command will install the conda and create a new environment named nanotaxi-env.
+You can install R and all the required packages using a single command. If not present, this command will install the conda and create a new environment named nanotaxi-env.
 
 ```bash
 if which conda >/dev/null; then
@@ -75,6 +75,7 @@ shiny::runApp("main_app.R")
 You can also run the app directly from GitHub using the following command:
 
 ```r
+# Make Sure that the shiny package is installed in the R.
 shiny::runGitHub("NANOTAXI", "Nirmal2310")
 ```
 
@@ -140,7 +141,7 @@ However, all pipelines are currently available in both real-time and offline set
 
 The Test Dataset is taken from the Bioproject ID [PRJEB82315](https://www.ebi.ac.uk/ena/browser/view/PRJEB82315).
 
-We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) with its custom database to analyse the test dataset comprising 20 samples representing 20 barcodes and classified into three groups based on body fluids.
+We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) to analyse the test dataset comprising 20 samples representing 20 barcodes and classified into three groups based on body fluids.
 
 <div  class="sample_info">
 
@@ -171,13 +172,13 @@ We have used [Emu](https://www.nature.com/articles/s41592-022-01520-4) with its 
 
 <br>
 
-The user can run the example dataset by selecting **Example Data**, adding the control group name in **Select Control Group** and clicking **Use Example Data** under the **INPUT** tab.
+The user can run the example dataset by selecting **Example Data**, add the control group name in **Select Control Group** and clicking **Use Example Data** under **INPUT** tab.
 
 <img src="www/Example_run.png" alt="Example Run" style="width: 100%"/>
 
 ## Demo
 
-Please see the demo of Real-time classification by using the following [link.](https://youtu.be/2QoAKN4wpOE)
+Please see the demo of Real-time classification by using the following [link](https://youtu.be/2QoAKN4wpOE)
 
 ## Documentation
 
@@ -186,7 +187,7 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 ## Roadmap
 
 - [x] Add Differential Abundance Analysis.
-- [x] Add support for GSR DB, MIMt DB, REFSEQ, EMUDB and GTDB.
+- [x] Add support for GSR DB, MIMt DB, REFSEQ and GTDB.
 - [ ] Add support for SQK-MAB114.24 (16S + ITS).
 
 ## Authors
@@ -201,23 +202,22 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 ## Acknowledgements
 
 #### Pipelines/Software Used in the App:
-- [Dorado](https://github.com/nanoporetech/dorado)
 - [KRAKEN2](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-019-1891-0)
 - [EMU](https://www.nature.com/articles/s41592-022-01520-4)
-- [BLASTn](https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastn&BLAST_SPEC=GeoBlast&PAGE_TYPE=BlastSearch)
+- [MMseqs2](https://doi.org/10.1038/nbt.3988)
 - [TaxonKit](https://www.sciencedirect.com/science/article/pii/S1673852721000837)
 - [BBTools](https://jgi.doe.gov/data-and-tools/software-tools/bbtools/)
-- [Chopper](https://academic.oup.com/bioinformatics/article/39/5/btad311/7160911?login=true)
+- [Chopper](https://doi.org/10.1093/bioinformatics/btad311)
 - [SeqKit](https://onlinelibrary.wiley.com/doi/10.1002/imt2.191)
 - [Minimap2](https://academic.oup.com/bioinformatics/article/34/18/3094/4994778)
 - [GNU Parallel](https://zenodo.org/records/14911163)
+- [PICRUSt2](https://doi.org/10.5281/zenodo.15119770)
 
 #### Databases Used in the App:
 - [GTDB](https://academic.oup.com/nar/article/50/D1/D785/6370255)
 - [NCBI 16s Database](https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/)
 - [GSR DB](https://journals.asm.org/doi/10.1128/msystems.00950-23)
 - [MIMt](https://link.springer.com/article/10.1186/s40793-024-00634-w)
-- [EMUDB](https://osf.io/56uf7/files/qrbne)
 
 #### Python Packages Used in the App:
 - [minknow-api](https://github.com/nanoporetech/minknow_api) = 6.0.4
@@ -237,7 +237,6 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 - [markdown](https://cran.r-project.org/web/packages/markdown/index.html/)
 - [validate](https://github.com/data-cleaning/validate)
 - [ggpubr](https://github.com/kassambara/ggpubr)
-- [cowplot](https://wilkelab.org/cowplot/)
 - [dendextend](https://github.com/talgalili/dendextend)
 - [BiocManager](https://github.com/Bioconductor/BiocManager)
 - [vegan](https://github.com/vegandevs/vegan)
@@ -259,3 +258,4 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 - [ComplexHeatmap](https://github.com/jokergoo/ComplexHeatmap)
 - [pairwiseAdonis](https://github.com/pmartinezarbizu/pairwiseAdonis)
 - [ANCOM-BC2](https://github.com/FrederickHuangLin/ANCOMBC)
+- [MicrobiomeProfiler](https://doi.org/10.18129/B9.bioc.MicrobiomeProfiler)
