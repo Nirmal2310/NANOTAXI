@@ -3275,65 +3275,66 @@ server <- function(input, output, session) {
 
   })
 
-  output$taxa_table <- suppressWarnings(renderDT({
+  output$taxa_table <- renderDT({
 
     req(input$barcode_select, classified_list(), input$taxon_select, classified_samples_list())
 
-    if(!input$barcode_select %in% classified_samples_list()$Barcode) {
-
+    if (!input$barcode_select %in% classified_samples_list()$Barcode) {
       return(NULL)
-
     }
 
-    else {
-      
-      df <- classified_list()[[which(classified_samples_list()$Barcode == input$barcode_select)]]
+    df <- classified_list()[[which(classified_samples_list()$Barcode == input$barcode_select)]]
+    taxa <- input$taxon_select
 
-      taxa <- input$taxon_select
-
-      df <- df  %>% dplyr::select(c(!!sym(taxa), Counts)) %>% 
-      filter(!!sym(taxa) != "Unclassified") %>% 
-      group_by(!!sym(taxa)) %>% 
-      summarise(Counts = sum(Counts)) %>% 
-      mutate(Abundance = (Counts/sum(Counts))*100) %>%
+    df <- df %>%
+      dplyr::select(!!sym(taxa), Counts) %>%
+      filter(!!sym(taxa) != "Unclassified") %>%
+      group_by(!!sym(taxa)) %>%
+      summarise(Counts = sum(Counts), .groups = "drop") %>%
+      mutate(Abundance = (Counts / sum(Counts)) * 100) %>%
       arrange(desc(Counts)) %>%
       select(!!sym(taxa), Counts, Abundance)
 
-      taxa_count_table(df)
+    taxa_count_table(df)
 
-      df$Abundance = df$Abundance/100
+    df$Abundance <- df$Abundance / 100
 
-      suppressWarnings(datatable(df, escape = FALSE, options = list(
+    datatable(
+      df,
+      escape = FALSE,
+      rownames = FALSE,
+      options = list(
+        paging = TRUE,
         pageLength = 10,
-        autoWidth = TRUE,
-        rownames = FALSE,
-        columnDefs = list(list(className = "dt-left", targets = 0:2))))) %>%
-        formatPercentage("Abundance", 1) %>%
-        formatStyle("Abundance",
-        background = styleColorBar(df$Abundance, "steelblue",  -90),
-        backgroundSize = '98% 88%',
-        backgroundRepeat = 'no-repeat',
-        backgroundPosition = "center")
-    }
+        scrollX = TRUE,
+        scrollY = "350px",
+        autoWidth = FALSE,
+        columnDefs = list(list(className = "dt-left", targets = 0:2)),
+        initComplete = JS(
+          "function(settings, json) {",
+          "$(this.api().table().header()).css({'background-color': '#6C7AE0', 'color': '#FFFFFF', 'font-weight': 'bold'});",
+          "$(this.api().table().body()).find('tr.odd').css({'background-color': '#FFFFFF', 'color': '#000000'});",
+          "$(this.api().table().body()).find('tr.even').css({'background-color': '#F8F6FF', 'color': '#000000'});",
+          "}"
+        ),
+        drawCallback = JS(
+          "function(settings) {",
+          "$(this.api().table().body()).find('tr.odd').css({'background-color': '#FFFFFF', 'color': '#000000'});",
+          "$(this.api().table().body()).find('tr.even').css({'background-color': '#F8F6FF', 'color': '#000000'});",
+          "}"
+        )
+      )
+    ) %>%
+      formatPercentage("Abundance", 1) %>%
+      formatStyle(
+        "Abundance",
+        background = styleColorBar(df$Abundance, "steelblue", -90),
+        backgroundSize = "98% 88%",
+        backgroundRepeat = "no-repeat",
+        backgroundPosition = "center"
+      )
 
-  }, ,height = 350, options = list(paging = TRUE,
-                                   pageLength = 10,
-                                   scrollX = TRUE,
-                                   scrollY = TRUE,
-                                   autoWidth = FALSE,
-                                   server = TRUE,
-                                   rownames = FALSE,
-                                   initComplete = JS("function(settings, json) {",
-                                                     "$(this.api().table().header()).css({'background-color': '#6C7AE0', 'color': '#FFFFFF', 'font-weight': 'bold'});",
-                                                     "$(this.api().table().body()).find('tr.odd').css({'background-color': '#FFFFFF', 'color': '#000000'})",
-                                                     "$(this.api().table().body()).find('tr.even').css({'background-color': '#F8F6FF', 'color': '#000000'})",
-                                                     "}"),
-                                   drawCallback = JS(
-                                     "function(settings) {",
-                                     "$(this.api().table().body()).find('tr.odd').css({'background-color': '#FFFFFF', 'color': '#000000'});",
-                                     "$(this.api().table().body()).find('tr.even').css({'background-color': '#F8F6FF', 'color': '#000000'});",
-                                     "}")
-                 )))
+  }, server = TRUE)
 
   output$plot_stacked_barplot <- renderPlotly({
 
