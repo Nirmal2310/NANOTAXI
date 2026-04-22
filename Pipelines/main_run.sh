@@ -122,7 +122,7 @@ else
 
     echo "New files found, now processing."
 
-    conda activate seqkit
+    conda activate bbtools
 
     n=$(cat "$data_path/barcode_list" | wc -l)
 
