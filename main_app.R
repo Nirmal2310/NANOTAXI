@@ -2252,7 +2252,7 @@ server <- function(input, output, session) {
                                 axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
                                 legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
                                 axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
+                                strip.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
                                 strip.background = element_blank(),
                                 plot.caption = element_markdown(
                                   color = "#0F6E73", size = 15,
