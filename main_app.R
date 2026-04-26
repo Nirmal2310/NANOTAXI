@@ -4,17 +4,77 @@ available_threads <- parallel::detectCores()
 
 plan(multisession, workers = available_threads)
 
-ui <- navbarPage(title = div(class="titleimg",img(src="Nanotaxi.png", height="100%", width="12%"), "",
-              style="position: absolute; top: 3px; left: 10px; background-color:white"),
-              id = "main_navbar",
+ui <- navbarPage(title = div(class = "titleimg",
+                             img(src = "Nanotaxi.png", 
+                                 class = "logo-image",
+                                 alt = "Logo")),
+                 id = "main_navbar",
   tags$head(
-    tags$style(HTML('.navbar-nav {
-                            height: 25px;
-                            padding-left: 120px;
-                            backgroun-color:white}'),
-               HTML('.navbar-brand {width: 20px; font-size:35px; text-align:left; background-color:white}'),
-               HTML('.navbar-default {
-                    background-color: white}'))
+    tags$style(HTML('
+      .titleimg {
+        position: absolute;
+        top: 3px;
+        left: 10px;
+        background-color: white;
+        height: auto;
+        max-height: 50px;
+      }
+      
+      .logo-image {
+        height: auto;
+        width: auto;
+        max-height: 40px;
+        max-width: 100%;
+        object-fit: contain;
+      }
+      
+      .navbar-nav {
+        height: auto;
+        padding-left: 120px;
+        background-color: white;
+      }
+      
+      @media (max-width: 992px) {
+        .navbar-nav {
+          padding-left: 100px;
+        }
+        .logo-image {
+          max-height: 35px;
+        }
+      }
+      
+      @media (max-width: 768px) {
+        .navbar-nav {
+          padding-left: 80px;
+        }
+        .titleimg {
+          top: 5px;
+        }
+        .logo-image {
+          max-height: 30px;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .navbar-nav {
+          padding-left: 60px;
+        }
+        .logo-image {
+          max-height: 25px;
+        }
+      }
+      
+      .navbar-brand {
+        width: auto;
+        font-size: 35px;
+        text-align: left;
+        background-color: white;
+      }
+      
+      .navbar-default {
+        background-color: white;
+      }
+    '))
   ),
   useShinyjs(),
   source("UI/ui-tab-intro.R", local = TRUE)$value,
@@ -2138,6 +2198,8 @@ server <- function(input, output, session) {
         comparison_groups <- unique(final_data$Comparison) %>% as.vector()
 
         final_data <- final_data %>% filter(Name != "Not Significant")
+
+        final_data <- final_data %>% group_by(Comparison) %>% mutate(Rank_Metric = sign(LFC) * (-log10(P_adj))) %>% dplyr::arrange(Rank_Metric, desc = TRUE)
         
         return(list(
           'final_data' = final_data,
@@ -2156,6 +2218,131 @@ server <- function(input, output, session) {
     }, seed=TRUE)
 
   })
+
+  functional_daa_plot_analysis <- function(input_daa_data, functional_category, num_category, prev_cutoff, counts_cutoff, case_group, control_group) {
+    
+    if(functional_category=="KO") {
+
+      ranked_genes <- input_daa_data$Rank_Metric %>% as.vector()
+
+      names(ranked_genes) <- input_daa_data[[functional_category]]
+
+      ranked_genes <- sort(ranked_genes, decreasing = TRUE)
+
+      set.seed(231098)
+
+      ranked_genes <- ranked_genes + rnorm(length(ranked_genes), 0, 1e-10)
+
+      ranked_genes <- sort(ranked_genes, decreasing = TRUE)
+
+      gsea_analysis <- clusterProfiler::gseKEGG(geneList = ranked_genes, organism = "ko", keyType = "kegg", 
+                                                minGSSize = 10, maxGSSize = 500, pvalueCutoff = 0.05, 
+                                                pAdjustMethod = "BH", verbose = FALSE, eps = 0, nPermSimple = 10000)
+
+      enrichment_plot <- enrichplot::dotplot(gsea_analysis, showCategory=num_category, font.size = 12, split=".sign") +
+                          facet_grid(.~.sign) +
+                          labs(caption = paste0("ANCOM-BC2 is applied on ", functional_category, " counts matrix with the prevalence cutoff of ", prev_cutoff, " % and counts cutoff of ", counts_cutoff, ".")) +
+                          theme_linedraw() +
+                          ggtitle(paste0("Dot plot showing top ", num_category, " enriched pathways (", functional_category, ") in ", case_group, " with respect to ", control_group)) +
+                          theme(
+                                axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                                axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                                legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                                axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                                axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                                legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                                axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
+                                strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
+                                strip.background = element_blank(),
+                                plot.caption = element_markdown(
+                                  color = "#0F6E73", size = 15,
+                                  margin = margin(20, 0, 10, 0), face = "bold",
+                                  hjust = 0.5
+                                ),
+                                plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
+                          )
+
+      enrichment_table <- gsea_analysis@result[,c("ID", "Description", "setSize", "enrichmentScore", "NES", "pvalue", "p.adjust", "qvalue", "rank")]
+
+    } else if(functional_category=="MetaCyc") {
+
+      terms_df <- input_daa_data %>% group_by(Name) %>% summarise(Counts = n())
+
+      if(nrow(terms_df[terms_df$Counts>=num_category/2,])==2) {
+        up_count <- num_category/2
+        down_count <- num_category/2
+      } else if(nrow(terms_df[terms_df$Counts>=num_category/2,])==1) {
+        if(terms_df[terms_df$Counts<num_category/2, 1]=="Depleted") {
+          down_count <- terms_df[terms_df$Counts<num_category/2, 2] %>% as.numeric()
+          up_count <- (num_category/2)-down_count
+        } else {
+          up_count <- terms_df[terms_df$Counts<num_category/2, 2] %>% as.numeric()
+          down_count <- (num_category/2)-up_count
+        }
+      } else {
+        up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
+        down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
+      }
+
+      input_daa_data <- input_daa_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
+                                  group_modify(~ {
+                                    if(.y$Name=="Enriched") {
+                                      slice_head(.x, n=up_count)
+                                    } else {
+                                      slice_head(.x, n=down_count)
+                                    }
+                                  }) %>% ungroup()
+
+      input_daa_data <- input_daa_data %>% arrange(LFC) %>% mutate(MetaCyc = factor(MetaCyc, levels = MetaCyc))
+
+      color_group <- c("Enriched" = "#F6807F", "Depleted" = "#9EB5F0")
+
+      total_path <- up_count + down_count
+
+      max_lfc_value <- max(abs(input_daa_data$LFC), na.rm=TRUE)
+
+      enrichment_plot <- input_daa_data %>% ggplot(aes(x=LFC, y=MetaCyc, color = Name, fill = Name)) +
+                          geom_bar(stat="identity") +
+                          scale_color_manual(values = color_group) +
+                          scale_fill_manual(values = color_group) +
+                          geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
+                          labs(
+                                  x = "Log2 Fold Change",
+                                  y = "Differentially Abundant MetaCyc Pathways",
+                                  caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", prev_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
+                                ) +
+                          theme_linedraw() +
+                          ggtitle(paste0("Bi-directional Bar plot showing Top ", num_category," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
+                          theme(
+                            axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                            axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                            legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                            axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                            axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                            legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
+                            axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
+                            strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
+                            strip.background = element_blank(),
+                            plot.caption = element_markdown(
+                              color = "#0F6E73", size = 15,
+                              margin = margin(20, 0, 10, 0), face = "bold",
+                              hjust = 0.5
+                            ),
+                            plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
+                          ) +
+                          scale_y_discrete(labels = scales::label_wrap(40)) +
+                          xlim(-(max_lfc_value+0.5), (max_lfc_value+0.5))
+
+      enrichment_table <- data.frame()
+
+    }
+
+    return(list(
+      'enrichment_plot' = enrichment_plot,
+      'enrichment_table' = enrichment_table
+    ))
+  
+  }
   
   observe(
   {
@@ -2671,7 +2858,7 @@ server <- function(input, output, session) {
     
     req(input_data_reactive(), input$fun_cat, route())
     
-    named_category_list <- setNames(c("KO", "EC", "MetaCyc"), c("Kegg Orthologs (KO)", "Enzyme Commission (EC)", "MetaCyc Pathway"))
+    named_category_list <- setNames(c("KO", "MetaCyc"), c("Kegg Orthologs (KO)", "MetaCyc Pathway"))
 
     if(route()=="Example") {
       
@@ -2698,14 +2885,6 @@ server <- function(input, output, session) {
         colnames(functional_counts_data)[1] <- "ID"
 
         functional_counts_data$ID <- gsub("ko:", "", functional_counts_data$ID)
-
-        functional_counts_data <- functional_counts_data[,-2]
-      
-      } else if(functional_category=="Enzyme Commission (EC)") {
-        
-        functional_counts_data <- read.delim(file="Example/ec_pred_metagenome_unstrat_annotated.tsv", header = TRUE, sep="\t")
-
-        colnames(functional_counts_data)[1] <- "ID"
 
         functional_counts_data <- functional_counts_data[,-2]
       
@@ -2755,14 +2934,6 @@ server <- function(input, output, session) {
 
         functional_counts_data <- functional_counts_data[,-2]
       
-      } else if(functional_category=="Enzyme Commission (EC)") {
-
-        functional_counts_data <- reactive_ec_data()
-
-        colnames(functional_counts_data)[1] <- "ID"
-
-        functional_counts_data <- functional_counts_data[,-2]
-      
       } else if(functional_category=="MetaCyc Pathway") {
         
         functional_counts_data <- reactive_metacyc_data()
@@ -2806,14 +2977,6 @@ server <- function(input, output, session) {
         colnames(functional_counts_data)[1] <- "ID"
 
         functional_counts_data$ID <- gsub("ko:", "", functional_counts_data$ID)
-
-        functional_counts_data <- functional_counts_data[,-2]
-      
-      } else if(functional_category=="Enzyme Commission (EC)") {
-
-        functional_counts_data <- reactive_ec_data()
-
-        colnames(functional_counts_data)[1] <- "ID"
 
         functional_counts_data <- functional_counts_data[,-2]
       
@@ -4091,10 +4254,6 @@ server <- function(input, output, session) {
 
         functional_counts_data$description <- gsub(" \\[.*", "", functional_counts_data$description)
       
-      } else if(functional_category=="Enzyme Commission (EC)") {
-        
-        functional_counts_data <- read.delim(file="Example/ec_pred_metagenome_unstrat_annotated.tsv", header = TRUE, sep="\t")
-      
       } else if(functional_category=="MetaCyc Pathway") {
         
         functional_counts_data <- read.delim(file="Example/metacyc_pred_metagenome_unstrat_annotated.tsv", header = TRUE, sep="\t")
@@ -4150,10 +4309,6 @@ server <- function(input, output, session) {
         functional_counts_data <- reactive_ko_data()
 
         functional_counts_data$description <- gsub(" \\[.*", "", functional_counts_data$description)
-      
-      } else if(functional_category=="Enzyme Commission (EC)") {
-
-        functional_counts_data <- reactive_ec_data()
       
       } else if(functional_category=="MetaCyc Pathway") {
         
@@ -4211,10 +4366,6 @@ server <- function(input, output, session) {
 
         functional_counts_data$description <- gsub(" \\[.*", "", functional_counts_data$description)
       
-      } else if(functional_category=="Enzyme Commission (EC)") {
-
-        functional_counts_data <- reactive_ec_data()
-      
       } else if(functional_category=="MetaCyc Pathway") {
         
         functional_counts_data <- reactive_metacyc_data()
@@ -4261,6 +4412,14 @@ server <- function(input, output, session) {
 
       comp_group <- input$daa_fun_com
 
+      functional_category <- functional_daa_category()
+
+      prev_cutoff <- functional_daa_prevalence()
+
+      counts_cutoff <- functional_daa_counts()
+
+      num_category <- input$path_count
+
       if(is.null(comp_group) || length(comp_group) == 0 || comp_group == "") {
 
         case_group <- strsplit(functional_daa_groups()[1], " - ", fixed=TRUE)[[1]][1]
@@ -4270,125 +4429,23 @@ server <- function(input, output, session) {
         enrichment_data <- functional_daa_result %>% filter(Comparison==functional_daa_groups()[1])
 
         if(nrow(enrichment_data)>0) {
+
+          functional_daa_plot_results <- functional_daa_plot_analysis(enrichment_data, functional_category, num_category, prev_cutoff, counts_cutoff, case_group, control_group)
+
+          plot_functional_analysis_daa(functional_daa_plot_results$enrichment_plot)
+
+          if(functional_category=="KO") {
             
-            if(functional_daa_category()!="MetaCyc") {
-            
-            enrichment_analysis <- MicrobiomeProfiler::enrichKO(enrichment_data[[functional_daa_category()]], pAdjustMethod = "BH", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, pvalueCutoff = 0.05)
-
-            enrichment_table <- enrichment_analysis@result[,c("ID", "Description", "GeneRatio", "BgRatio", "RichFactor", "FoldEnrichment", "zScore", "pvalue", "p.adjust", "qvalue", "Count")]
-
-            enrichment_table <- enrichment_table %>% filter(p.adjust <= 0.05)
-
-            if(nrow(enrichment_table)>0) {
-              
-              table_functional_daa(enrichment_table)
-              
-              enrichment_plot <- enrichplot::dotplot(enrichment_analysis, showCategory=input$path_count, font.size = 12) +
-                                    labs(caption = paste0("ANCOM-BC2 is applied on ", functional_daa_category(), " counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), " % and counts cutoff of ", functional_daa_counts(), ".")
-                                    ) +
-                                    theme_linedraw() +
-                                    ggtitle(paste0("Dot plot showing top ", input$path_count, " enriched pathways (", functional_daa_category(), ") in ", case_group, " with respect to ", control_group)) +
-                                    theme(
-                                          axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                          axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                          legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                          axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                          axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                          legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                          axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                          strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                          strip.background = element_blank(),
-                                          plot.caption = element_markdown(
-                                            color = "#0F6E73", size = 15,
-                                            margin = margin(20, 0, 10, 0), face = "bold",
-                                            hjust = 0.5
-                                          ),
-                                          plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                    )
-            
-            plot_functional_analysis_daa(enrichment_plot)
-
-            enrichment_plot
-
-            }
-
+            table_functional_daa(functional_daa_plot_results$enrichment_table)
+          
           } else {
 
             table_functional_daa(functional_daa_result)
-
-            num_entries <- input$path_count
-
-            terms_df <- enrichment_data %>% group_by(Name) %>% summarise(Counts = n())
-
-            if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==2) {
-              up_count <- num_entries/2
-              down_count <- num_entries/2
-            } else if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==1) {
-              if(terms_df[terms_df$Counts<num_entries/2, 1]=="Depleted") {
-                down_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-                up_count <- (num_entries/2)-down_count
-              } else {
-                up_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-                down_count <- (num_entries/2)-up_count
-              }
-            } else {
-              up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
-              down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
-            }
-
-            enrichment_data <- enrichment_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
-                                  group_modify(~ {
-                                    if(.y$Name=="Enriched") {
-                                      slice_head(.x, n=up_count)
-                                    } else {
-                                      slice_head(.x, n=down_count)
-                                    }
-                                  }) %>% ungroup()
-
-            enrichment_data <- enrichment_data %>% arrange(LFC) %>% mutate(MetaCyc = factor(MetaCyc, levels = MetaCyc))
-
-            color_group <- c("Enriched" = "#F6807F", "Depleted" = "#9EB5F0")
-
-            total_path <- up_count + down_count
-
-            max_lfc_value <- max(abs(enrichment_data$LFC), na.rm=TRUE)
-
-            enrichment_plot <- enrichment_data %>% ggplot(aes(x=LFC, y=MetaCyc, color = Name, fill = Name)) +
-                                  geom_bar(stat="identity") +
-                                  scale_color_manual(values = color_group) +
-                                  scale_fill_manual(values = color_group) +
-                                  geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
-                                  labs(
-                                          x = "Log2 Fold Change",
-                                          y = "Differentially Abundant MetaCyc Pathways",
-                                          caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), "% and counts cutoff of ", functional_daa_counts(), ".")
-                                        ) +
-                                  theme_linedraw() +
-                                  ggtitle(paste0("Bi-directional Bar plot showing Top ", total_path," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
-                                  theme(
-                                    axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                    axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                    legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                    axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                    axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                    legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                    axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                    strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                    strip.background = element_blank(),
-                                    plot.caption = element_markdown(
-                                      color = "#0F6E73", size = 15,
-                                      margin = margin(20, 0, 10, 0), face = "bold",
-                                      hjust = 0.5
-                                    ),
-                                    plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                  ) +
-                                  scale_y_discrete(labels = scales::label_wrap(40)) +
-                                  xlim(-(max_lfc_value+0.5), (max_lfc_value+0.5))
-            plot_functional_analysis_daa(enrichment_plot)
-
-            enrichment_plot
-
+          
           }
+
+          functional_daa_plot_results$enrichment_plot
+        
         }
       
       } else {
@@ -4401,124 +4458,21 @@ server <- function(input, output, session) {
 
         if(nrow(enrichment_data)>0) {
 
-          if(functional_daa_category()!="MetaCyc") {
+          functional_daa_plot_results <- functional_daa_plot_analysis(enrichment_data, functional_category, num_category, prev_cutoff, counts_cutoff, case_group, control_group)
 
-          enrichment_analysis <- MicrobiomeProfiler::enrichKO(enrichment_data[[functional_daa_category()]], pAdjustMethod = "BH", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, pvalueCutoff = 0.05)
+          plot_functional_analysis_daa(functional_daa_plot_results$enrichment_plot)
 
-          enrichment_table <- enrichment_analysis@result[,c("ID", "Description", "GeneRatio", "BgRatio", "RichFactor", "FoldEnrichment", "zScore", "pvalue", "p.adjust", "qvalue", "Count")]
-
-          enrichment_table <- enrichment_table %>% filter(p.adjust <= 0.05)
-
-          if(nrow(enrichment_table)>0) {
+          if(functional_category=="KO") {
             
-            table_functional_daa(enrichment_table)
-            
-            enrichment_plot <- enrichplot::dotplot(enrichment_analysis, showCategory=input$path_count, font.size = 12) +
-                                  labs(caption = paste0("ANCOM-BC2 is applied on ", functional_daa_category(), " counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), " % and counts cutoff of ", functional_daa_counts(), ".")
-                                  ) +
-                                  theme_linedraw() +
-                                  ggtitle(paste0("Dot plot showing top ", input$path_count, " enriched pathways (", functional_daa_category(), ") in ", case_group, " with respect to ", control_group)) +
-                                  theme(
-                                        axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                        strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                        strip.background = element_blank(),
-                                        plot.caption = element_markdown(
-                                          color = "#0F6E73", size = 15,
-                                          margin = margin(20, 0, 10, 0), face = "bold",
-                                          hjust = 0.5
-                                        ),
-                                        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                  )
+            table_functional_daa(functional_daa_plot_results$enrichment_table)
+          
+          } else {
 
-            plot_functional_analysis_daa(enrichment_plot)
-
-            enrichment_plot
+            table_functional_daa(functional_daa_result)
           
           }
-        
-        } else {
 
-          table_functional_daa(functional_daa_result)
-
-          num_entries <- input$path_count
-
-          terms_df <- enrichment_data %>% group_by(Name) %>% summarise(Counts = n())
-
-          if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==2) {
-            up_count <- num_entries/2
-            down_count <- num_entries/2
-          } else if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==1) {
-            if(terms_df[terms_df$Counts<num_entries/2, 1]=="Depleted") {
-              down_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              up_count <- (num_entries/2)-down_count
-            } else {
-              up_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              down_count <- (num_entries/2)-up_count
-            }
-          } else {
-            up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
-            down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
-          }
-
-          enrichment_data <- enrichment_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
-                                group_modify(~ {
-                                  if(.y$Name=="Enriched") {
-                                    slice_head(.x, n=up_count)
-                                  } else {
-                                    slice_head(.x, n=down_count)
-                                  }
-                                }) %>% ungroup()
-
-          enrichment_data <- enrichment_data %>% arrange(LFC) %>% mutate(MetaCyc = factor(MetaCyc, levels = MetaCyc))
-
-          color_group <- c("Enriched" = "#F6807F", "Depleted" = "#9EB5F0")
-
-          total_path <- up_count + down_count
-
-          max_lfc_value <- max(abs(enrichment_data$LFC), na.rm=TRUE)
-
-          enrichment_plot <- enrichment_data %>% ggplot(aes(x=LFC, y=MetaCyc, color = Name, fill = Name)) +
-                                geom_bar(stat="identity") +
-                                scale_color_manual(values = color_group) +
-                                scale_fill_manual(values = color_group) +
-                                geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
-                                labs(
-                                        x = "Log2 Fold Change",
-                                        y = "Differentially Abundant MetaCyc Pathways",
-                                        caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), "% and counts cutoff of ", functional_daa_counts(), ".")
-                                      ) +
-                                theme_linedraw() +
-                                ggtitle(paste0("Bi-directional Bar plot showing Top ", total_path," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
-                                theme(
-                                  axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                  strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                  strip.background = element_blank(),
-                                  plot.caption = element_markdown(
-                                    color = "#0F6E73", size = 15,
-                                    margin = margin(20, 0, 10, 0), face = "bold",
-                                    hjust = 0.5
-                                  ),
-                                  plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                ) +
-                                scale_y_discrete(labels = scales::label_wrap(40)) +
-                                xlim(-(max_lfc_value+0.5), (max_lfc_value+0.5))
-          plot_functional_analysis_daa(enrichment_plot)
-
-          enrichment_plot
-
-        }
+          functional_daa_plot_results$enrichment_plot
         
         }
 
@@ -4532,6 +4486,14 @@ server <- function(input, output, session) {
 
       comp_group <- input$daa_fun_com
 
+      functional_category <- functional_daa_category()
+
+      prev_cutoff <- functional_daa_prevalence()
+
+      counts_cutoff <- functional_daa_counts()
+
+      num_category <- input$path_count
+
       if(is.null(comp_group) || length(comp_group) == 0 || comp_group == "") {
 
         case_group <- strsplit(functional_daa_groups()[1], " - ", fixed=TRUE)[[1]][1]
@@ -4542,125 +4504,21 @@ server <- function(input, output, session) {
 
         if(nrow(enrichment_data)>0) {
 
-          if(functional_daa_category()!="MetaCyc") {
+          functional_daa_plot_results <- functional_daa_plot_analysis(enrichment_data, functional_category, num_category, prev_cutoff, counts_cutoff, case_group, control_group)
 
-          enrichment_analysis <- MicrobiomeProfiler::enrichKO(enrichment_data[[functional_daa_category()]], pAdjustMethod = "BH", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, pvalueCutoff = 0.05)
+          plot_functional_analysis_daa(functional_daa_plot_results$enrichment_plot)
 
-          enrichment_table <- enrichment_analysis@result[,c("ID", "Description", "GeneRatio", "BgRatio", "RichFactor", "FoldEnrichment", "zScore", "pvalue", "p.adjust", "qvalue", "Count")]
-
-          enrichment_table <- enrichment_table %>% filter(p.adjust <= 0.05)
-
-          if(nrow(enrichment_table)>0) {
+          if(functional_category=="KO") {
             
-            table_functional_daa(enrichment_table)
-            
-            enrichment_plot <- enrichplot::dotplot(enrichment_analysis, showCategory=input$path_count, font.size = 12) +
-                                  labs(caption = paste0("ANCOM-BC2 is applied on ", functional_daa_category(), " counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), " % and counts cutoff of ", functional_daa_counts(), ".")
-                                  ) +
-                                  theme_linedraw() +
-                                  ggtitle(paste0("Dot plot showing top ", input$path_count, " enriched pathways (", functional_daa_category(), ") in ", case_group, " with respect to ", control_group)) +
-                                  theme(
-                                        axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                        strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                        strip.background = element_blank(),
-                                        plot.caption = element_markdown(
-                                          color = "#0F6E73", size = 15,
-                                          margin = margin(20, 0, 10, 0), face = "bold",
-                                          hjust = 0.5
-                                        ),
-                                        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                  )
+            table_functional_daa(functional_daa_plot_results$enrichment_table)
           
-          plot_functional_analysis_daa(enrichment_plot)
-
-          enrichment_plot
-
-          }
-
-        } else {
-
-          table_functional_daa(functional_daa_result)
-
-          num_entries <- input$path_count
-
-          terms_df <- enrichment_data %>% group_by(Name) %>% summarise(Counts = n())
-
-          if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==2) {
-            up_count <- num_entries/2
-            down_count <- num_entries/2
-          } else if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==1) {
-            if(terms_df[terms_df$Counts<num_entries/2, 1]=="Depleted") {
-              down_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              up_count <- (num_entries/2)-down_count
-            } else {
-              up_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              down_count <- (num_entries/2)-up_count
-            }
           } else {
-            up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
-            down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
+
+            table_functional_daa(functional_daa_result)
+          
           }
 
-          enrichment_data <- enrichment_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
-                                group_modify(~ {
-                                  if(.y$Name=="Enriched") {
-                                    slice_head(.x, n=up_count)
-                                  } else {
-                                    slice_head(.x, n=down_count)
-                                  }
-                                }) %>% ungroup()
-
-          enrichment_data <- enrichment_data %>% arrange(LFC) %>% mutate(MetaCyc = factor(MetaCyc, levels = MetaCyc))
-
-          color_group <- c("Enriched" = "#F6807F", "Depleted" = "#9EB5F0")
-
-          total_path <- up_count + down_count
-
-          max_lfc_value <- max(abs(enrichment_data$LFC), na.rm=TRUE)
-
-          enrichment_plot <- enrichment_data %>% ggplot(aes(x=LFC, y=MetaCyc, color = Name, fill = Name)) +
-                                geom_bar(stat="identity") +
-                                scale_color_manual(values = color_group) +
-                                scale_fill_manual(values = color_group) +
-                                geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
-                                labs(
-                                        x = "Log2 Fold Change",
-                                        y = "Differentially Abundant MetaCyc Pathways",
-                                        caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), "% and counts cutoff of ", functional_daa_counts(), ".")
-                                      ) +
-                                theme_linedraw() +
-                                ggtitle(paste0("Bi-directional Bar plot showing Top ", total_path," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
-                                theme(
-                                  axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                  strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                  strip.background = element_blank(),
-                                  plot.caption = element_markdown(
-                                    color = "#0F6E73", size = 15,
-                                    margin = margin(20, 0, 10, 0), face = "bold",
-                                    hjust = 0.5
-                                  ),
-                                  plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                ) +
-                                scale_y_discrete(labels = scales::label_wrap(40)) +
-                                xlim(-(max_lfc_value+0.5), (max_lfc_value+0.5))
-          
-          plot_functional_analysis_daa(enrichment_plot)
-
-          enrichment_plot
-
-        }
+          functional_daa_plot_results$enrichment_plot
 
         }
       
@@ -4674,125 +4532,21 @@ server <- function(input, output, session) {
 
         if(nrow(enrichment_data)>0) {
 
-          if(functional_daa_category()!="MetaCyc") {
+          functional_daa_plot_results <- functional_daa_plot_analysis(enrichment_data, functional_category, num_category, prev_cutoff, counts_cutoff, case_group, control_group)
 
-          enrichment_analysis <- MicrobiomeProfiler::enrichKO(enrichment_data[[functional_daa_category()]], pAdjustMethod = "BH", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, pvalueCutoff = 0.05)
+          plot_functional_analysis_daa(functional_daa_plot_results$enrichment_plot)
 
-          enrichment_table <- enrichment_analysis@result[,c("ID", "Description", "GeneRatio", "BgRatio", "RichFactor", "FoldEnrichment", "zScore", "pvalue", "p.adjust", "qvalue", "Count")]
-
-          enrichment_table <- enrichment_table %>% filter(p.adjust <= 0.05)
-
-          if(nrow(enrichment_table)>0) {
+          if(functional_category=="KO") {
             
-            table_functional_daa(enrichment_table)
-            
-            enrichment_plot <- enrichplot::dotplot(enrichment_analysis, showCategory=input$path_count, font.size = 12) +
-                                  labs(caption = paste0("ANCOM-BC2 is applied on ", functional_daa_category(), " counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), " % and counts cutoff of ", functional_daa_counts(), ".")
-                                  ) +
-                                  theme_linedraw() +
-                                  ggtitle(paste0("Dot plot showing top ", input$path_count, " enriched pathways (", functional_daa_category(), ") in ", case_group, " with respect to ", control_group)) +
-                                  theme(
-                                        axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                        strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                        strip.background = element_blank(),
-                                        plot.caption = element_markdown(
-                                          color = "#0F6E73", size = 15,
-                                          margin = margin(20, 0, 10, 0), face = "bold",
-                                          hjust = 0.5
-                                        ),
-                                        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                  )
-
-            plot_functional_analysis_daa(enrichment_plot)
-
-            enrichment_plot
+            table_functional_daa(functional_daa_plot_results$enrichment_table)
           
-          }
-        
-        } else {
-
-          table_functional_daa(functional_daa_result)
-
-          num_entries <- input$path_count
-
-          terms_df <- enrichment_data %>% group_by(Name) %>% summarise(Counts = n())
-
-          if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==2) {
-            up_count <- num_entries/2
-            down_count <- num_entries/2
-          } else if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==1) {
-            if(terms_df[terms_df$Counts<num_entries/2, 1]=="Depleted") {
-              down_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              up_count <- (num_entries/2)-down_count
-            } else {
-              up_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              down_count <- (num_entries/2)-up_count
-            }
           } else {
-            up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
-            down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
+
+            table_functional_daa(functional_daa_result)
+          
           }
 
-          enrichment_data <- enrichment_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
-                                group_modify(~ {
-                                  if(.y$Name=="Enriched") {
-                                    slice_head(.x, n=up_count)
-                                  } else {
-                                    slice_head(.x, n=down_count)
-                                  }
-                                }) %>% ungroup()
-
-          enrichment_data <- enrichment_data %>% arrange(LFC) %>% mutate(MetaCyc = factor(MetaCyc, levels = MetaCyc))
-
-          color_group <- c("Enriched" = "#F6807F", "Depleted" = "#9EB5F0")
-
-          total_path <- up_count + down_count
-
-          max_lfc_value <- max(abs(enrichment_data$LFC), na.rm=TRUE)
-
-          enrichment_plot <- enrichment_data %>% ggplot(aes(x=LFC, y=MetaCyc, color = Name, fill = Name)) +
-                                geom_bar(stat="identity") +
-                                scale_color_manual(values = color_group) +
-                                scale_fill_manual(values = color_group) +
-                                geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
-                                labs(
-                                        x = "Log2 Fold Change",
-                                        y = "Differentially Abundant MetaCyc Pathways",
-                                        caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), "% and counts cutoff of ", functional_daa_counts(), ".")
-                                      ) +
-                                theme_linedraw() +
-                                ggtitle(paste0("Bi-directional Bar plot showing Top ", total_path," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
-                                theme(
-                                  axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                  strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                  strip.background = element_blank(),
-                                  plot.caption = element_markdown(
-                                    color = "#0F6E73", size = 15,
-                                    margin = margin(20, 0, 10, 0), face = "bold",
-                                    hjust = 0.5
-                                  ),
-                                  plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                ) +
-                                scale_y_discrete(labels = scales::label_wrap(40)) +
-                                xlim(-(max_lfc_value+0.5), (max_lfc_value+0.5))
-          
-          plot_functional_analysis_daa(enrichment_plot)
-
-          enrichment_plot
-
-        }
+          functional_daa_plot_results$enrichment_plot
 
         }
 
@@ -4806,6 +4560,14 @@ server <- function(input, output, session) {
 
       comp_group <- input$daa_fun_com
 
+      functional_category <- functional_daa_category()
+
+      prev_cutoff <- functional_daa_prevalence()
+
+      counts_cutoff <- functional_daa_counts()
+
+      num_category <- input$path_count
+
       if(is.null(comp_group) || length(comp_group) == 0 || comp_group == "") {
 
         case_group <- strsplit(functional_daa_groups()[1], " - ", fixed=TRUE)[[1]][1]
@@ -4816,125 +4578,21 @@ server <- function(input, output, session) {
 
         if(nrow(enrichment_data)>0) {
 
-          if(functional_daa_category()!="MetaCyc") {
+          functional_daa_plot_results <- functional_daa_plot_analysis(enrichment_data, functional_category, num_category, prev_cutoff, counts_cutoff, case_group, control_group)
 
-          enrichment_analysis <- MicrobiomeProfiler::enrichKO(enrichment_data[[functional_daa_category()]], pAdjustMethod = "BH", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, pvalueCutoff = 0.05)
+          plot_functional_analysis_daa(functional_daa_plot_results$enrichment_plot)
 
-          enrichment_table <- enrichment_analysis@result[,c("ID", "Description", "GeneRatio", "BgRatio", "RichFactor", "FoldEnrichment", "zScore", "pvalue", "p.adjust", "qvalue", "Count")]
-
-          enrichment_table <- enrichment_table %>% filter(p.adjust <= 0.05)
-
-          if(nrow(enrichment_table)>0) {
+          if(functional_category=="KO") {
             
-            table_functional_daa(enrichment_table)
-            
-            enrichment_plot <- enrichplot::dotplot(enrichment_analysis, showCategory=input$path_count, font.size = 12) +
-                                  labs(caption = paste0("ANCOM-BC2 is applied on ", functional_daa_category(), " counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), " % and counts cutoff of ", functional_daa_counts(), ".")
-                                  ) +
-                                  theme_linedraw() +
-                                  ggtitle(paste0("Dot plot showing top ", input$path_count, " enriched pathways (", functional_daa_category(), ") in ", case_group, " with respect to ", control_group)) +
-                                  theme(
-                                        axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                        strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                        strip.background = element_blank(),
-                                        plot.caption = element_markdown(
-                                          color = "#0F6E73", size = 15,
-                                          margin = margin(20, 0, 10, 0), face = "bold",
-                                          hjust = 0.5
-                                        ),
-                                        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                  )
+            table_functional_daa(functional_daa_plot_results$enrichment_table)
           
-          plot_functional_analysis_daa(enrichment_plot)
-
-          enrichment_plot
-
-          }
-
-        } else {
-
-          table_functional_daa(functional_daa_result)
-
-          num_entries <- input$path_count
-
-          terms_df <- enrichment_data %>% group_by(Name) %>% summarise(Counts = n())
-
-          if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==2) {
-            up_count <- num_entries/2
-            down_count <- num_entries/2
-          } else if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==1) {
-            if(terms_df[terms_df$Counts<num_entries/2, 1]=="Depleted") {
-              down_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              up_count <- (num_entries/2)-down_count
-            } else {
-              up_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-              down_count <- (num_entries/2)-up_count
-            }
           } else {
-            up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
-            down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
+
+            table_functional_daa(functional_daa_result)
+          
           }
 
-          enrichment_data <- enrichment_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
-                                group_modify(~ {
-                                  if(.y$Name=="Enriched") {
-                                    slice_head(.x, n=up_count)
-                                  } else {
-                                    slice_head(.x, n=down_count)
-                                  }
-                                }) %>% ungroup()
-
-          enrichment_data <- enrichment_data %>% arrange(LFC) %>% mutate(MetaCyc = factor(MetaCyc, levels = MetaCyc))
-
-          color_group <- c("Enriched" = "#F6807F", "Depleted" = "#9EB5F0")
-
-          total_path <- up_count + down_count
-
-          max_lfc_value <- max(abs(enrichment_data$LFC), na.rm=TRUE)
-
-          enrichment_plot <- enrichment_data %>% ggplot(aes(x=LFC, y=MetaCyc, color = Name, fill = Name)) +
-                                geom_bar(stat="identity") +
-                                scale_color_manual(values = color_group) +
-                                scale_fill_manual(values = color_group) +
-                                geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
-                                labs(
-                                        x = "Log2 Fold Change",
-                                        y = "Differentially Abundant MetaCyc Pathways",
-                                        caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), "% and counts cutoff of ", functional_daa_counts(), ".")
-                                      ) +
-                                theme_linedraw() +
-                                ggtitle(paste0("Bi-directional Bar plot showing Top ", total_path," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
-                                theme(
-                                  axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                  strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                  strip.background = element_blank(),
-                                  plot.caption = element_markdown(
-                                    color = "#0F6E73", size = 15,
-                                    margin = margin(20, 0, 10, 0), face = "bold",
-                                    hjust = 0.5
-                                  ),
-                                  plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                ) +
-                                scale_y_discrete(labels = scales::label_wrap(40)) +
-                                xlim(-(max_lfc_value+0.5), (max_lfc_value+0.5))
-          
-          plot_functional_analysis_daa(enrichment_plot)
-
-          enrichment_plot
-
-        }
+          functional_daa_plot_results$enrichment_plot
 
         }
       
@@ -4948,145 +4606,21 @@ server <- function(input, output, session) {
 
         if(nrow(enrichment_data)>0) {
 
-          if(functional_daa_category()!="MetaCyc") {
+          functional_daa_plot_results <- functional_daa_plot_analysis(enrichment_data, functional_category, num_category, prev_cutoff, counts_cutoff, case_group, control_group)
 
-          enrichment_analysis <- MicrobiomeProfiler::enrichKO(enrichment_data[[functional_daa_category()]], pAdjustMethod = "BH", minGSSize = 10, maxGSSize = 500, qvalueCutoff = 0.2, pvalueCutoff = 0.05)
+          plot_functional_analysis_daa(functional_daa_plot_results$enrichment_plot)
 
-          enrichment_table <- enrichment_analysis@result[,c("ID", "Description", "GeneRatio", "BgRatio", "RichFactor", "FoldEnrichment", "zScore", "pvalue", "p.adjust", "qvalue", "Count")]
-
-          enrichment_table <- enrichment_table %>% filter(p.adjust <= 0.05)
-
-          if(nrow(enrichment_table)>0) {
+          if(functional_category=="KO") {
             
-            table_functional_daa(enrichment_table)
-            
-            enrichment_plot <- enrichplot::dotplot(enrichment_analysis, showCategory=input$path_count, font.size = 12) +
-                                  labs(caption = paste0("ANCOM-BC2 is applied on ", functional_daa_category(), " counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), " % and counts cutoff of ", functional_daa_counts(), ".")
-                                  ) +
-                                  theme_linedraw() +
-                                  ggtitle(paste0("Dot plot showing top ", input$path_count, " enriched pathways (", functional_daa_category(), ") in ", case_group, " with respect to ", control_group)) +
-                                  theme(
-                                        axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                        axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                        strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                        strip.background = element_blank(),
-                                        plot.caption = element_markdown(
-                                          color = "#0F6E73", size = 15,
-                                          margin = margin(20, 0, 10, 0), face = "bold",
-                                          hjust = 0.5
-                                        ),
-                                        plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                  )
-
-            plot_functional_analysis_daa(enrichment_plot)
-
-            enrichment_plot
+            table_functional_daa(functional_daa_plot_results$enrichment_table)
           
-          }
-        
-        } else {
-          
-          table_functional_daa(functional_daa_result)
-
-          enrichment_data <- functional_daa_result %>% filter(Comparison==comp_group)
-
-          num_entries <- input$path_count
-
-          terms_df <- enrichment_data %>% group_by(Name) %>% summarise(Counts = n())
-
-          if(length(unique(terms_df$Name))==2) {
-            if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==2) {
-              up_count <- num_entries/2
-              down_count <- num_entries/2
-            } else if(nrow(terms_df[terms_df$Counts>=num_entries/2,])==1) {
-              if(terms_df[terms_df$Counts<num_entries/2, 1]=="Depleted") {
-                down_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-                up_count <- (num_entries/2)-down_count
-              } else {
-                up_count <- terms_df[terms_df$Counts<num_entries/2, 2] %>% as.numeric()
-                down_count <- (num_entries/2)-up_count
-              }
-            } else {
-              up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
-              down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
-            }
           } else {
-            if(terms_df$Name=="Enriched") {
-              down_count <- 0
-              if(terms_df$Counts>=num_entries) {
-                up_count <- num_entries
-              } else {
-                up_count <- as.vector(terms_df$Counts)
-              }
-            } else {
-              up_count <- 0
-              if(terms_df$Counts>=num_entries) {
-                down_count <- num_entries
-              } else {
-                down_count <- as.vector(terms_df$Counts)
-              }
-            }
+
+            table_functional_daa(functional_daa_result)
+          
           }
 
-          enrichment_data <- enrichment_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
-                                group_modify(~ {
-                                  if(.y$Name=="Enriched") {
-                                    slice_head(.x, n=up_count)
-                                  } else {
-                                    slice_head(.x, n=down_count)
-                                  }
-                                }) %>% ungroup()
-
-          enrichment_data <- enrichment_data %>% arrange(LFC) %>% mutate(MetaCyc = factor(MetaCyc, levels = MetaCyc))
-
-          color_group <- c("Enriched" = "#F6807F", "Depleted" = "#9EB5F0")
-
-          total_path <- up_count + down_count
-
-          max_lfc_value <- max(abs(enrichment_data$LFC), na.rm=TRUE)
-
-          enrichment_plot <- enrichment_data %>% ggplot(aes(x=LFC, y=MetaCyc, color = Name, fill = Name)) +
-                                geom_bar(stat="identity") +
-                                scale_color_manual(values = color_group) +
-                                scale_fill_manual(values = color_group) +
-                                geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "red") +
-                                labs(
-                                        x = "Log2 Fold Change",
-                                        y = "Differentially Abundant MetaCyc Pathways",
-                                        caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", functional_daa_prevalence(), "% and counts cutoff of ", functional_daa_counts(), ".")
-                                      ) +
-                                theme_linedraw() +
-                                ggtitle(paste0("Bi-directional Bar plot showing Top ", total_path," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", functional_daa_control())) +
-                                theme(
-                                  axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.text = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
-                                  axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                                  strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
-                                  strip.background = element_blank(),
-                                  plot.caption = element_markdown(
-                                    color = "#0F6E73", size = 15,
-                                    margin = margin(20, 0, 10, 0), face = "bold",
-                                    hjust = 0.5
-                                  ),
-                                  plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
-                                ) +
-                                scale_y_discrete(labels = scales::label_wrap(40)) +
-                                xlim(-(max_lfc_value+0.5), (max_lfc_value+0.5))
-          
-          plot_functional_analysis_daa(enrichment_plot)
-
-          enrichment_plot
-
-        }
+          functional_daa_plot_results$enrichment_plot
 
         }
 
@@ -5169,7 +4703,7 @@ server <- function(input, output, session) {
       },
       content = function(file) {
         ggsave(file, plot_taxa_stacked(),
-               width = 18, height = 9, units = "in", dpi = "retina", bg = "white", device = "pdf")
+               width = 18, height = 6, units = "in", dpi = "retina", bg = "white", device = "pdf")
       }
     )
     
@@ -5181,7 +4715,7 @@ server <- function(input, output, session) {
       },
       content = function(file) {
         ggsave(file, plot_diversity_box(),
-               width = 13.69, height = 8.27, units = "in", dpi = 600, bg = "white", device = "pdf")
+               width = 11, height = 6, units = "in", dpi = 600, bg = "white", device = "pdf")
         
       }
     )
@@ -5287,9 +4821,15 @@ server <- function(input, output, session) {
 
     output$download_functional_daa_csv <- downloadHandler(
       filename = function() {
-        req(functional_daa_category())
+        req(functional_daa_category(), input$daa_fun_com)
         category <- functional_daa_category()
-        paste0("DAA_ANCOMBC2_", category, "_final_", Sys.Date(), ".tsv")
+        comp_group <-  input$daa_fun_com
+        comp_group <- gsub(" ", "", comp_group)
+        if(functional_daa_category()=="KO") {
+          paste0("DAA_ANCOMBC2_", category, "_final_", comp_group, "_",Sys.Date(), ".tsv")
+        } else if(functional_daa_category()=="MetaCyc") {
+          paste0("DAA_ANCOMBC2_", category, "_final_", Sys.Date(), ".tsv")
+        }
       },
       content = function(file) {
       write.table(table_functional_daa(), file, row.names = FALSE, quote = FALSE, sep="\t")
@@ -5303,15 +4843,13 @@ server <- function(input, output, session) {
         comp_group <- gsub(" ", "", comp_group)
         if(functional_daa_category()=="KO") {
           paste0("Enrichment_plot_top_", input$path_count, "_enriched_pathways_KO_", comp_group, "_", Sys.Date(), ".pdf")
-        } else if(functional_daa_category()=="EC") {
-          paste0("Enrichment_plot_top_", input$path_count, "_enriched_pathways_EC_", comp_group, "_", Sys.Date(), ".pdf")
         } else if(functional_daa_category()=="MetaCyc") {
           paste0("DAA_Barplot_top", input$path_count, "_enriched_pathways_MetaCyc_", comp_group, "_", Sys.Date(), ".pdf")
         }
       },
       content = function(file) {
         ggsave(file, plot_functional_analysis_daa(),
-              width = 23.69, height = 12, units = "in", dpi = 600, bg = "white", device = "pdf")
+              width = 16, height = 12, units = "in", dpi = 600, bg = "white", device = "pdf")
       }
     )
 }

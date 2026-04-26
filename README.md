@@ -259,4 +259,4 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 - [ComplexHeatmap](https://github.com/jokergoo/ComplexHeatmap)
 - [pairwiseAdonis](https://github.com/pmartinezarbizu/pairwiseAdonis)
 - [ANCOM-BC2](https://github.com/FrederickHuangLin/ANCOMBC)
-- [MicrobiomeProfiler](https://doi.org/10.18129/B9.bioc.MicrobiomeProfiler)
+- [clusterProfiler](https://doi.org/10.1089/omi.2011.0118)

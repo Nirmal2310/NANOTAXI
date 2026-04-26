@@ -590,7 +590,7 @@ The output table contains:
 
 <div class="permanova_table">
 
-| Pair | R2 | P | Padj |
+| Pair | R² | P | Padj |
 |:--|--:|--:|--:|
 | Crop Digesta vs Zymobiomics | 0.754 | 0.012 | 0.012 |
 | Crop Digesta vs Feces | 0.550 | 0.001 | 0.0015 |
@@ -655,17 +655,16 @@ In the example dataset, **Escherichia coli** and **Enterococcus faecalis** are d
 
 To estimate the functional potential of the observed microbial communities, NANOTAXI includes a functional inference workflow based on **PICRUSt2**. Using 16S rRNA gene-derived taxonomic profiles, PICRUSt2 predicts the abundances of microbial gene families and metabolic pathways, allowing downstream functional interpretation of the community composition.
 
-NANOTAXI reports predicted functional profiles for three categories:
+NANOTAXI reports predicted functional profiles for two categories:
 
 - **KEGG Orthologs (KO)**
-- **Enzyme Commission (EC) numbers**
 - **MetaCyc pathways**
 
 For downstream comparative analysis, the resulting functional abundance tables are normalised using **Total Sum Scaling (TSS)** and transformed using the **Centered Log-Ratio (CLR)** transformation. This reduces the effect of library-size differences and accounts for the compositional nature of the data before ordination and differential abundance analysis.
 
 ### **Functional PCA Plot**
 
-This plot shows **Principal Component Analysis (PCA)** of the inferred functional abundance profiles. Samples are displayed on the first two principal components, with the percentage of explained variance shown on the axes. Users can choose the functional category (**KO**, **EC**, or **MetaCyc**) using the **Functional Pathway Group** dropdown menu.
+This plot shows **Principal Component Analysis (PCA)** of the inferred functional abundance profiles. Samples are displayed on the first two principal components, with the percentage of explained variance shown on the axes. Users can choose the functional category (**KO** or **MetaCyc**) using the **Functional Pathway Group** dropdown menu.
 
 Workflow:
 
@@ -680,7 +679,7 @@ This analysis helps identify broad functional differences between sample groups.
 
 ### **Functional Enrichment Dot Plot**
 
-Differential abundance analysis is performed on the inferred functional profiles using **ANCOM-BC2**. For **KEGG Ortholog (KO)** and **Enzyme Commission (EC)** categories, significantly altered features are further analysed for pathway enrichment using **MicrobiomeProfiler**.
+Differential abundance analysis is applied to the inferred functional profiles using the **ANCOM-BC2** method. For **KEGG Orthologs (KOs)**, the resulting differentially abundant terms are ranked by their adjusted p-values, and subsequent **Gene Set Enrichment Analysis (GSEA)** is performed using the **clusterProfiler** package.
 
 The enriched pathways are displayed as a dot plot. By default, the top **10** pathways per comparison are shown, and this can be adjusted up to **20** in the app.
 
@@ -688,7 +687,7 @@ The enriched pathways are displayed as a dot plot. By default, the top **10** pa
 
 ### **Functional Enrichment Bi-directional Bar Plot**
 
-or **MetaCyc pathways**, differential abundance results are visualised as a bi-directional bar plot showing **log2 fold changes** between groups. This representation highlights both enriched and depleted pathways in a single view.
+For **MetaCyc pathways**, differential abundance results are visualised as a bi-directional bar plot showing **log2 fold changes** between groups. This representation highlights both enriched and depleted pathways in a single view.
 
 All functional differential abundance results can be downloaded as a **TSV** file for further analysis.
 

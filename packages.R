@@ -5,7 +5,7 @@ required_cran = c("shiny", "shinyBS", "reticulate", "tidyverse", "shinyjs", "DT"
 "forcats", "formattable", "future", "promises", "ggtext", "FactoMineR",
 "ggforce", "bslib", "cowplot")
 
-required_bioc <- c("ComplexHeatmap", "ANCOMBC", "MicrobiomeProfiler", "enrichplot")
+required_bioc <- c("ComplexHeatmap", "ANCOMBC", "clusterProfiler", "enrichplot")
 
 sapply(required_cran, function(x){
   if(!require(x, character.only = TRUE)){

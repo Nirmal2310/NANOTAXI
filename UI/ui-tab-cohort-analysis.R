@@ -15,7 +15,7 @@ tabPanel(
         div(numericInput("counts_cutoff", "Absolute Counts Cutoff", value = 10), style="color: #00607D;"),
         div(bslib::input_switch("show_names", "Show Barcodes Name"), style="font-size: 15px; font-weight: bold; color: #00607D"),
         div(sliderInput("biplot_taxa", "Biplot Top Taxa", min = 5, max = 25, value = 10), style="color: #00607D;"),
-        div(selectInput("fun_cat", "Functional Pathway Group", choices = list("Kegg Orthologs (KO)", "Enzyme Commission (EC)", "MetaCyc Pathway"),
+        div(selectInput("fun_cat", "Functional Pathway Group", choices = list("Kegg Orthologs (KO)", "MetaCyc Pathway"),
                         selected = "Kegg Ontology (KO)"), style="color: #00607D;"),
         div(sliderInput("path_count", "DA Functional Categories", min = 6, max = 20, value = 10, step = 2), style="color: #00607D;")
       ),
