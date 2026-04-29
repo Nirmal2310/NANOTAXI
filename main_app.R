@@ -2043,7 +2043,7 @@ server <- function(input, output, session) {
             verbose = FALSE),
             em_control = list(tol = 1e-5, max_iter = 100),
             lme_control = lme4::lmerControl(), 
-            mdfdr_control = list(fwer_ctrl_method = "BH", B = 100), 
+            mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
             trend_control = NULL)))
         
         res_pair <- output$res_pair
@@ -2080,7 +2080,7 @@ server <- function(input, output, session) {
 
         final_data <- final_data %>% filter(Sensitive==TRUE)
 
-        final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(control, " - ", Comparison), Comparison))
+        final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(Comparison, " - ", control), Comparison))
 
         final_data$Comparison <- gsub("_Group", " - ", final_data$Comparison)
 
@@ -2149,7 +2149,7 @@ server <- function(input, output, session) {
             verbose = FALSE),
             em_control = list(tol = 1e-5, max_iter = 100),
             lme_control = lme4::lmerControl(), 
-            mdfdr_control = list(fwer_ctrl_method = "BH", B = 100), 
+            mdfdr_control = list(fwer_ctrl_method = "holm", B = 100),
             trend_control = NULL)))
         
         res_pair <- output$res_pair
@@ -2186,7 +2186,7 @@ server <- function(input, output, session) {
 
         final_data <- final_data %>% filter(Sensitive==TRUE)
 
-        final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(control, " - ", Comparison), Comparison))
+        final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(Comparison, " - ", control), Comparison))
 
         final_data$Comparison <- gsub("_Group", " - ", final_data$Comparison)
 
@@ -2321,7 +2321,6 @@ server <- function(input, output, session) {
                             axis.title.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
                             legend.title = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
                             axis.line = element_line(colour = "black", linewidth = 0.5, linetype = "solid" ),
-                            strip.text.x = element_text(size = 20, face = "bold", colour = "#5B5DC7"),
                             strip.background = element_blank(),
                             plot.caption = element_markdown(
                               color = "#0F6E73", size = 15,
@@ -4179,9 +4178,9 @@ server <- function(input, output, session) {
         
         comp <- comparison_groups[group]
 
-        case_group <- strsplit(comp, " - ", fixed=TRUE)[[1]][1]
-
         control_group <- strsplit(comp, " - ", fixed=TRUE)[[1]][2]
+
+        case_group <- strsplit(comp, " - ", fixed=TRUE)[[1]][1]
 
         volcano_plot_list[[comp]] <- taxa_daa_result %>% filter(Comparison==comp) %>%
                                       ggplot(aes(x = LFC, y = -log10(P_adj), color = Name)) +
@@ -4450,9 +4449,9 @@ server <- function(input, output, session) {
       
       } else {
 
-        case_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][2]
+        case_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][1]
 
-        control_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][1]
+        control_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][2]
           
         enrichment_data <- functional_daa_result %>% filter(Comparison==comp_group)
 
@@ -4524,9 +4523,9 @@ server <- function(input, output, session) {
       
       } else {
 
-        case_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][2]
+        case_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][1]
 
-        control_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][1]
+        control_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][2]
           
         enrichment_data <- functional_daa_result %>% filter(Comparison==comp_group)
 
@@ -4598,9 +4597,9 @@ server <- function(input, output, session) {
       
       } else {
 
-        case_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][2]
+        case_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][1]
 
-        control_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][1]
+        control_group <- strsplit(comp_group, " - ", fixed=TRUE)[[1]][2]
           
         enrichment_data <- functional_daa_result %>% filter(Comparison==comp_group)
 
