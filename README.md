@@ -187,7 +187,7 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 ## Roadmap
 
 - [x] Add Differential Abundance Analysis.
-- [x] Add support for GSR DB, MIMt DB, REFSEQ and GTDB.
+- [x] Add support for EMUDB, GSR DB, MIMt DB, REFSEQ and GTDB.
 - [x] Add support for PICRUSt2 for functional inference.
 - [ ] Add support for SQK-MAB114.24 (16S + ITS).
 
