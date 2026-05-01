@@ -3503,6 +3503,8 @@ server <- function(input, output, session) {
 
   output$plot_stacked_barplot <- renderPlotly({
 
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
+
     if(route()=="Realtime")
     {
       
@@ -3708,6 +3710,8 @@ server <- function(input, output, session) {
 
   output$plot_pcoa <- renderPlot({
 
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
+
     if(route()=="Realtime")
     {
       req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff, cohort_delay_done())
@@ -3790,6 +3794,8 @@ server <- function(input, output, session) {
 
   output$plot_nmds <- renderPlot({
     
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
+    
     if(route()=="Realtime")
     {
       req(cohort_analysis_list(), cohort_sample_list(), input$taxa, input_data_reactive(), input$prevalence_cutoff, input$abundance_cutoff, cohort_delay_done())
@@ -3870,6 +3876,8 @@ server <- function(input, output, session) {
   }, height = 600)
 
   output$plot_pca <- renderPlot({
+
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
     
     if(route()=="Realtime")
     {
@@ -3957,6 +3965,8 @@ server <- function(input, output, session) {
   }, height = 600)
 
   output$permanova_data <- suppressWarnings(DT::renderDataTable({
+
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
     
     if(route()=="Realtime")
     {
@@ -4065,6 +4075,8 @@ server <- function(input, output, session) {
   ))
 
   output$plot_heatmap <- renderPlot({
+
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
     
     if(route()=="Realtime")
     {
@@ -4233,6 +4245,8 @@ server <- function(input, output, session) {
   }, height = 600)
 
   output$plot_functional_pca <- renderPlot({
+    
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
 
     if(route()=="Example") {
 
@@ -4405,6 +4419,8 @@ server <- function(input, output, session) {
   }, height = 600)
 
   output$plot_functional_daa <- renderPlot({
+
+    req(route()=="Example" || route()=="Offline" || route()=="Realtime")
 
     if(route()=="Example") {
       
