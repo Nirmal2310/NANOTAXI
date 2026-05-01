@@ -92,7 +92,7 @@ if [ ! -d $output_dir ]; then
     python $path/envs/picrust2/bin/add_descriptions.py -i $output_dir/pathways_out/path_abun_unstrat.tsv.gz -o $output_dir/pathways_out/path_abun_unstrat_annotated.tsv -m METACYC
 else
     
-    awk -F "\t" '{if(NR>1) print $0}' $input_counts | sort | uniq | cat <(head -n 1 $input_counts) - > $tmp_file && mv $tmp_file $input_counts
+    awk -F "\t" '{if(NR>1) print $0}' $input_counts | sort | uniq | cat <(head -n 1 $input_counts) - > $tmp_file && cp $tmp_file $input_counts && rm -r $tmp_file
 
     echo "Stopping since picrust2 output directory already exists"
 

@@ -2241,7 +2241,9 @@ server <- function(input, output, session) {
                                                   minGSSize = 10, maxGSSize = 500, pvalueCutoff = 0.05, 
                                                   pAdjustMethod = "BH", verbose = FALSE, eps = 0, nPermSimple = 10000)
 
-        enrichment_plot <- enrichplot::dotplot(gsea_analysis, showCategory=num_category, font.size = 12, split=".sign") +
+        if(nrow(gsea_analysis@result)>0) {
+          
+          enrichment_plot <- enrichplot::dotplot(gsea_analysis, showCategory=num_category, font.size = 12, split=".sign") +
                             facet_grid(.~.sign) +
                             labs(caption = paste0("ANCOM-BC2 is applied on ", functional_category, " counts matrix with the prevalence cutoff of ", prev_cutoff, " % and counts cutoff of ", counts_cutoff, ".")) +
                             theme_linedraw() +
@@ -2264,26 +2266,44 @@ server <- function(input, output, session) {
                                   plot.title = element_text(size = 15, face = "bold", colour = "#5B5DC7", hjust = 0.5)
                             )
 
-        enrichment_table <- gsea_analysis@result[,c("ID", "Description", "setSize", "enrichmentScore", "NES", "pvalue", "p.adjust", "qvalue", "rank")]
+          enrichment_table <- gsea_analysis@result[,c("ID", "Description", "setSize", "enrichmentScore", "NES", "pvalue", "p.adjust", "qvalue", "rank")]
+        
+        } else {
+          
+          enrichment_table <- data.frame()
+
+          enrichment_plot <- plot.new()
+        
+        }
 
       } else if(functional_category=="MetaCyc") {
 
         terms_df <- input_daa_data %>% group_by(Name) %>% summarise(Counts = n())
 
-        if(nrow(terms_df[terms_df$Counts>=num_category/2,])==2) {
-          up_count <- num_category/2
-          down_count <- num_category/2
-        } else if(nrow(terms_df[terms_df$Counts>=num_category/2,])==1) {
-          if(terms_df[terms_df$Counts<num_category/2, 1]=="Depleted") {
-            down_count <- terms_df[terms_df$Counts<num_category/2, 2] %>% as.numeric()
-            up_count <- (num_category/2)-down_count
+        if(nrow(terms_df)==1) {
+          if(terms_df[,1]=="Depleted") {
+              up_count <- 0
+              down_count <- min(num_category, terms_df %>% filter(Name=="Depleted") %>% select(Counts) %>% as.numeric())
           } else {
-            up_count <- terms_df[terms_df$Counts<num_category/2, 2] %>% as.numeric()
-            down_count <- (num_category/2)-up_count
+              down_count <- 0
+              up_count <- min(num_category, terms_df %>% filter(Name=="Enriched") %>% select(Counts) %>% as.numeric())
           }
         } else {
-          up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
-          down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
+          if(nrow(terms_df[terms_df$Counts>=(num_category/2),])==2) {
+            up_count <- num_category/2
+            down_count <- num_category/2
+          } else if(nrow(terms_df[terms_df$Counts>=(num_category/2),])==1) {
+            if(terms_df[terms_df$Counts<num_category/2, 1]=="Depleted") {
+              down_count <- terms_df[terms_df$Counts<num_category/2, 2] %>% as.numeric()
+              up_count <- min(num_category-down_count, terms_df %>% filter(Name=="Enriched") %>% select(Counts) %>% as.numeric())
+            } else {
+              up_count <- terms_df[terms_df$Counts<num_category/2, 2] %>% as.numeric()
+              down_count <- min(num_category-up_count, terms_df %>% filter(Name=="Depleted") %>% select(Counts) %>% as.numeric())
+            }
+          } else {
+            up_count <- terms_df[terms_df$Name=="Enriched", 2] %>% as.numeric()
+            down_count <- terms_df[terms_df$Name=="Depleted", 2] %>% as.numeric()
+          }
         }
 
         input_daa_data <- input_daa_data %>% group_by(Name) %>% arrange(desc(abs(LFC)), .by_group=TRUE) %>%
@@ -2314,7 +2334,7 @@ server <- function(input, output, session) {
                                     caption = paste0("ANCOM-BC2 is applied on MetaCyc counts matrix with the prevalence cutoff of ", prev_cutoff, "% and counts cutoff of ", counts_cutoff, ".")
                                   ) +
                             theme_linedraw() +
-                            ggtitle(paste0("Bi-directional Bar plot showing Top ", num_category," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
+                            ggtitle(paste0("Bi-directional Bar plot showing Top ", total_path," Differentially Abundant MetaCyc Pathways\nin ", case_group, " with respect to ", control_group)) +
                             theme(
                               axis.text.x = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
                               axis.text.y = element_text(size = 15, face = "bold", colour = "#5B5DC7"),
