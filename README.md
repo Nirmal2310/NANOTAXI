@@ -219,6 +219,7 @@ If you have any feedback/issues, please report the issue via [GitHub](https://gi
 - [NCBI 16s Database](https://ftp.ncbi.nlm.nih.gov/refseq/TargetedLoci/Bacteria/)
 - [GSR DB](https://journals.asm.org/doi/10.1128/msystems.00950-23)
 - [MIMt](https://link.springer.com/article/10.1186/s40793-024-00634-w)
+- [EMU Database](https://www.nature.com/articles/s41592-022-01520-4)
 
 #### Python Packages Used in the App:
 - [minknow-api](https://github.com/nanoporetech/minknow_api) = 6.0.4
