@@ -86,7 +86,7 @@ if [ "$db" == "REFSEQ" ]; then
 
 elif [ "$db" == "GTDB" ]; then
     
-    MMSEQS_DB=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTBD_MMSEQS/')
+    MMSEQS_DB=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTDB_MMSEQS/')
 
     TAXA_DATA=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
 
