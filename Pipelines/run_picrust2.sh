@@ -55,7 +55,7 @@ tmp_file=$(mktemp)
 
 if [ ! -d $output_dir ]; then
 
-    awk -F "\t" '{if(NR>1) print $0}' $input_counts | sort | uniq | cat <(head -n 1 $input_counts) - > $tmp_file && mv $tmp_file $input_counts
+    awk -F "\t" '{if(NR>1) print $0}' $input_counts | sort | uniq | cat <(head -n 1 $input_counts) - > $tmp_file && cp $tmp_file $input_counts && rm -r $tmp_file
     
     conda activate bbtools
 

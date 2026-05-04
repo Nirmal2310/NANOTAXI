@@ -71,11 +71,15 @@ if [ "$db" == "REFSEQ" ]; then
 
     MMSEQS_DB=$(grep MMSEQS_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_REFSEQ="//;s/"//g;s/$/\/REFSEQ_MMSEQS/')
 
+    MMSEQS_IDX=$(grep MMSEQS_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_REFSEQ="//;s/"//g;s/$/\/REFSEQ_MMSEQS.idx/')
+
     TAXA_DATA=$(grep MMSEQS_REFSEQ ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_REFSEQ="//;s/"//g;s/$/\/RefSeq_taxa.txt/')
 
 elif [ "$db" == "GTDB" ]; then
     
     MMSEQS_DB=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTBD_MMSEQS/')
+
+    MMSEQS_IDX=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTBD_MMSEQS.idx/')
 
     TAXA_DATA=$(grep MMSEQS_GTDB ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GTDB="//;s/"//g;s/$/\/GTDB_taxa.txt/')
 
@@ -83,11 +87,15 @@ elif [ "$db" == "MIMT" ]; then
 
     MMSEQS_DB=$(grep MMSEQS_MIMT ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_MIMT="//;s/"//g;s/$/\/MIMT_MMSEQS/')
 
+    MMSEQS_IDX=$(grep MMSEQS_MIMT ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_MIMT="//;s/"//g;s/$/\/MIMT_MMSEQS.idx/')
+
     TAXA_DATA=$(grep MMSEQS_MIMT ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_MIMT="//;s/"//g;s/$/\/MIMT_taxa.txt/')
 
 elif [ "$db" == "GSR" ]; then
 
     MMSEQS_DB=$(grep MMSEQS_GSR ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GSR="//;s/"//g;s/$/\/GSR_MMSEQS/')
+
+    MMSEQS_IDX=$(grep MMSEQS_GSR ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GSR="//;s/"//g;s/$/\/GSR_MMSEQS.idx/')
 
     TAXA_DATA=$(grep MMSEQS_GSR ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_GSR="//;s/"//g;s/$/\/GSR_taxa.txt/')
 
@@ -95,9 +103,17 @@ elif [ "$db" == "EMUDB" ]; then
 
     MMSEQS_DB=$(grep MMSEQS_EMU ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_EMU="//;s/"//g;s/$/\/EMU_MMSEQS/')
 
+    MMSEQS_IDX=$(grep MMSEQS_EMU ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_EMU="//;s/"//g;s/$/\/EMU_MMSEQS.idx/')
+
     TAXA_DATA=$(grep MMSEQS_EMU ~/.bashrc | tail -n 1 | sed 's/export MMSEQS_EMU="//;s/"//g;s/$/\/EMU_taxa.txt/')
 
 fi
+
+cat $MMSEQS_IDX > /dev/null
+
+cov=$(echo "scale=2; $coverage / 100" | bc | sed 's/^/0/g')
+
+iden=$(echo "scale=2; $identity / 100" | bc | sed 's/^/0/g')
 
 
 if [ ! -f $path/barcode_list ]
@@ -123,7 +139,7 @@ do
 
     mmseqs createdb -v 0 --threads $threads $path/$barcode/${barcode}_16s.fasta $path/$barcode/${barcode}DB
 
-    mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c 0.85 --cov-mode 2 --db-load-mode 2 --remove-tmp-files 1 -s 7.5 -v 0 $path/$barcode/${barcode}DB $MMSEQS_DB $path/$barcode/${barcode}_mmseqs2_result $path/$barcode/${barcode}_temp
+    mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c $cov --cov-mode 2 --db-load-mode 3 --min-seq-id $iden --remove-tmp-files 0 -s 7.5 -v 0 $path/$barcode/${barcode}DB $MMSEQS_DB $path/$barcode/${barcode}_mmseqs2_result $path/$barcode/${barcode}_temp
 
     mmseqs convertalis -v 0 --threads $threads $path/$barcode/${barcode}DB $MMSEQS_DB $path/$barcode/${barcode}_mmseqs2_result $path/$barcode/${barcode}_temp_output.txt
 

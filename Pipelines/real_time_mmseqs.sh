@@ -72,6 +72,10 @@ script_path=$(dirname "$(readlink -f "$0")")
 
 tmp_file=$(mktemp)
 
+cov=$(echo "scale=2; $coverage / 100" | bc | sed 's/^/0/g')
+
+iden=$(echo "scale=2; $identity / 100" | bc | sed 's/^/0/g')
+
 if [ -z "$data_path" ]
     then
     echo "Please provide the path to the Data Directory.";
@@ -168,7 +172,7 @@ if [ ! -f $data_path/$barcode/$db/processed_reads.txt ]; then
 
         mmseqs createdb -v 0 --threads $threads $data_path/$barcode/$db/${barcode}_16S.fasta $data_path/$barcode/$db/${barcode}DB
 
-        mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c 0.85 --cov-mode 2 --db-load-mode 2 --remove-tmp-files 1 -v 0 $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp
+        mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c $cov --cov-mode 2 --min-seq-id $iden --db-load-mode 3 --remove-tmp-files 0 -s 2 -v 0 $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp
 
         mmseqs convertalis -v 0 --threads $threads $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp_output.txt
 
@@ -223,7 +227,7 @@ else
 
             mmseqs createdb -v 0 --threads $threads $data_path/$barcode/$db/${barcode}_16S.fasta $data_path/$barcode/$db/${barcode}DB
 
-            mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c 0.85 --cov-mode 2 --db-load-mode 2 --remove-tmp-files 1 -v 0 $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp
+            mmseqs search --threads $threads --search-type 3 -e 1.000E-10 -c $cov --cov-mode 2 --min-seq-id $iden --db-load-mode 2 --remove-tmp-files 1 -v 0 $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp
 
             mmseqs convertalis -v 0 --threads $threads $data_path/$barcode/$db/${barcode}DB $MMSEQS_DB $data_path/$barcode/$db/${barcode}_mmseqs2_result $data_path/$barcode/$db/${barcode}_temp_output.txt
 

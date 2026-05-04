@@ -410,6 +410,25 @@ server <- function(input, output, session) {
       status_checked(TRUE)
     }
   })
+
+  observe({
+    req(trigger() == 1)
+
+    req(is_running(), status_checked(), state() == "Sequencing")
+
+    data_base <- input$realtime_database
+
+    input_pipeline <- input$realtime_pipeline
+
+    script_path <- paste0(getwd(), "/Scripts")
+
+    if(input_pipeline=="MMseqs") {
+        
+      system(paste0("bash ", script_path, "/load_mmseqsdb_index.sh -n ", data_base))
+    
+    }
+  
+  })
   
   observe({
     if (is_running() && status_checked() && state() == "Sequencing") {
