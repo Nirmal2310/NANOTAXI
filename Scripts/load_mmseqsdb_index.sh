@@ -2,8 +2,8 @@
 
 helpFunction()
 {
-   echo "Usage: load_mmseqsdb_index.sh -n REFSEQ"
-   echo -e "\t-n <str> Database Name. [default: REFSEQ]"
+   echo "Usage: load_mmseqsdb_index.sh -n EMUDB"
+   echo -e "\t-n <str> Database Name."
    exit 1 # Exit script after printing help
 }
 
@@ -17,6 +17,12 @@ do
         ;;
     esac
 done
+
+if [ -z "$db" ]
+    then
+    echo "Please provide the database name.";
+    helpFunction
+fi
 
 if [ "$db" == "REFSEQ" ]; then
 
