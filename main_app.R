@@ -410,25 +410,6 @@ server <- function(input, output, session) {
       status_checked(TRUE)
     }
   })
-
-  observe({
-    req(trigger() == 1)
-
-    req(is_running(), status_checked(), state() == "Sequencing")
-
-    data_base <- input$realtime_database
-
-    input_pipeline <- input$realtime_pipeline
-
-    script_path <- paste0(getwd(), "/Scripts")
-
-    if(input_pipeline=="MMseqs") {
-        
-      system(paste0("bash ", script_path, "/load_mmseqsdb_index.sh -n ", data_base))
-    
-    }
-  
-  })
   
   observe({
     if (is_running() && status_checked() && state() == "Sequencing") {
@@ -488,6 +469,25 @@ server <- function(input, output, session) {
 
     }
 
+  })
+
+  observe({
+    req(trigger() == 1)
+
+    req(is_running(), status_checked(), state() == "Sequencing")
+
+    data_base <- input$realtime_database
+
+    input_pipeline <- input$realtime_pipeline
+
+    script_path <- paste0(getwd(), "/Scripts")
+
+    if(input_pipeline=="MMseqs") {
+        
+      system(paste0("bash ", script_path, "/load_mmseqsdb_index.sh -n ", data_base))
+    
+    }
+  
   })
 
   observeEvent(realtime_task$result(), {
@@ -2043,6 +2043,12 @@ server <- function(input, output, session) {
 
         control <- control_group
 
+        if(control %in% unique(metadata$Group)) {
+
+        } else {
+          control <- unique(metadata$Group)[1]
+        }
+
         metadata$Group <- as.factor(metadata$Group)
 
         metadata$Group <- relevel(metadata$Group, ref = control)
@@ -2150,6 +2156,12 @@ server <- function(input, output, session) {
         control <- control_group
 
         metadata$Group <- as.factor(metadata$Group)
+
+        if(control %in% unique(metadata$Group)) {
+
+        } else {
+          control <- unique(metadata$Group)[1]
+        }
 
         metadata$Group <- relevel(metadata$Group, ref = control)
 
@@ -2588,10 +2600,24 @@ server <- function(input, output, session) {
 
   output$download_results_tsv <- downloadHandler(
       filename = function() {
-        req(input$taxa)
-        lineage <- input$taxa
-        paste0(lineage,"_Counts_Data_", Sys.Date(), ".tsv")
-        },
+        req(input$taxa, route())
+        if(route()=="Realtime") {
+          req(input$realtime_pipeline, input$realtime_database)
+          lineage <- input$taxa
+          tool <- input$realtime_pipeline
+          database <- input$database
+          paste0(lineage,"_Counts_Data_", tool, "_", database, "_", Sys.Date(), ".tsv")
+        } else if(route()=="Offline") {
+          req(input$pipeline, input$database)
+          lineage <- input$taxa
+          tool <- input$pipeline
+          database <- input$database
+          paste0(lineage,"_Counts_Data_", tool, "_", database, "_", Sys.Date(), ".tsv")
+        } else {
+          lineage <- input$taxa
+          paste0(lineage,"_Counts_Data_", Sys.Date(), ".tsv")
+        }
+      },
       content = function(file) {
         write.table(abundance_val(), file, row.names = FALSE, quote = FALSE, sep="\t")
       }
