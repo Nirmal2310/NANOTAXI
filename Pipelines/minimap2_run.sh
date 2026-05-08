@@ -11,8 +11,8 @@ helpFunction()
     echo -e "\t-t <int> Number of threads to be used for the analysis. [default: 16]"
     echo -e "\t-m <int> Minimum Read Length. [default: 1400]"
     echo -e "\t-M <int> Maximum Read Length. [default: 1800]"
-    echo -e "\t-i <int> Minimum BLAST Identity(%). [default: 85]"
-    echo -e "\t-c <int> Minimum BLAST Coverage(%). [default: 85]"
+    echo -e "\t-i <int> Minimum Identity(%). [default: 85]"
+    echo -e "\t-c <int> Minimum Coverage(%). [default: 85]"
     echo -e "\t-q <int> Minimum Q-Score. [default: 10]"
     echo -e "\t-n <str> Database Name. [default: REFSEQ]"
     exit 1 # Exit script after printing help
