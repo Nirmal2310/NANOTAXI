@@ -2055,75 +2055,116 @@ server <- function(input, output, session) {
 
         prev_cutoff <- prevalence_cutoff/100
 
-        output <- suppressMessages(suppressWarnings(ancombc2(data = daa_matrix, meta_data = metadata,
-            taxa_are_rows = TRUE,
-            fix_formula = "Group", rand_formula = NULL,
-            p_adj_method = "BH", pseudo_sens = TRUE,
-            prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
-            group = "Group", struc_zero = TRUE, neg_lb = FALSE,
-            alpha = 0.05, n_cl = threads, verbose = FALSE,
-            global = FALSE, pairwise = TRUE, 
-            dunnet = FALSE, trend = FALSE,
-            iter_control = list(tol = 1e-5, max_iter = 20, 
-            verbose = FALSE),
-            em_control = list(tol = 1e-5, max_iter = 100),
-            lme_control = lme4::lmerControl(), 
-            mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
-            trend_control = NULL)))
-        
-        res_pair <- output$res_pair
+        struc_zero_flag <- TRUE
+    
+        output <- NULL
 
-        total_groups <- length(levels(metadata$Group))
+        output <- tryCatch({
+          suppressMessages(suppressWarnings(ancombc2(data = daa_matrix, meta_data = metadata,
+                  taxa_are_rows = TRUE,
+                  fix_formula = "Group", rand_formula = NULL,
+                  p_adj_method = "BH", pseudo_sens = TRUE,
+                  prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
+                  group = "Group", struc_zero = TRUE, neg_lb = FALSE,
+                  alpha = 0.05, n_cl = threads, verbose = FALSE,
+                  global = FALSE, pairwise = TRUE, 
+                  dunnet = FALSE, trend = FALSE,
+                  iter_control = list(tol = 1e-5, max_iter = 20, 
+                  verbose = FALSE),
+                  em_control = list(tol = 1e-5, max_iter = 100),
+                  lme_control = lme4::lmerControl(), 
+                  mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
+                  trend_control = NULL)))
+        }, error = function(e) {
+            message("struc_zero = TRUE failed: ", e$message, ". Setting struc_zero to FALSE.")
+            return(NULL)
+          })
 
-        req_start_values <- c("passed_ss_Group", "diff_Group", "lfc_Group", "q_Group")
-
-        out_col_values <- c("Sensitive", "Significance", "LFC", "P_adj")
-
-        all_comb <- outer(levels(metadata$Group)[2:total_groups], 
-                          levels(metadata$Group)[2:total_groups], 
-                          function(x,y) paste0(x,"_","Group",y)) %>% as.vector()
-
-        req_columns <- c(outer(levels(metadata$Group)[2:total_groups], req_start_values, function(x,y) paste0(y, x)), 
-                          outer(all_comb, req_start_values, function(x,y) paste0(y, x)))
-
-        filtered_pair <- res_pair[,c(1,which(colnames(res_pair) %in% req_columns))]
-
-        long_data_list <- list()
-
-        for(i in 1:length(req_start_values)) {
-          long_data_list[[i]] <- filtered_pair %>% dplyr::select(c(taxon, starts_with(req_start_values[i]))) %>% 
-            pivot_longer(cols = -taxon, names_to = "Comparison", values_to = out_col_values[i])
-
-          long_data_list[[i]]$Comparison <- sub(req_start_values[i], "", long_data_list[[i]]$Comparison)
+        if(is.null(output)) {
+          output <- tryCatch({
+          suppressMessages(suppressWarnings(ancombc2(data = daa_matrix, meta_data = metadata,
+                  taxa_are_rows = TRUE,
+                  fix_formula = "Group", rand_formula = NULL,
+                  p_adj_method = "BH", pseudo_sens = TRUE,
+                  prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
+                  group = "Group", struc_zero = FALSE, neg_lb = FALSE,
+                  alpha = 0.05, n_cl = threads, verbose = FALSE,
+                  global = FALSE, pairwise = TRUE, 
+                  dunnet = FALSE, trend = FALSE,
+                  iter_control = list(tol = 1e-5, max_iter = 20, 
+                  verbose = FALSE),
+                  em_control = list(tol = 1e-5, max_iter = 100),
+                  lme_control = lme4::lmerControl(), 
+                  mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
+                  trend_control = NULL)))
+          }, error = function(e) {
+            stop("Both struc_zero = TRUE and FALSE failed: ", e$message)
+            return(NULL)
+          })
+          struc_zero_flag <- FALSE
         }
 
-        final_data <- purrr::reduce(long_data_list, left_join, by=c("taxon", "Comparison"))
-
-        final_data <- final_data %>% dplyr::select(taxon, everything())
-
-        colnames(final_data)[1] <- lineage
-
-        final_data <- final_data %>% filter(Sensitive==TRUE)
-
-        final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(Comparison, " - ", control), Comparison))
-
-        final_data$Comparison <- gsub("_Group", " - ", final_data$Comparison)
-
-        final_data$Name <- ifelse(final_data$LFC < -1 & final_data$P_adj < 0.05, "Depleted",
-                                  ifelse(final_data$LFC > 1 & final_data$P_adj < 0.05, "Enriched", "Not Significant"))
+        if(is.null(output)) {
+          
+          return(NULL)
         
-        final_data$Name <- factor(final_data$Name, levels = c("Enriched", "Depleted", "Not Significant"))
+        } else {
+          
+          res_pair <- output$res_pair
 
-        comparison_groups <- unique(final_data$Comparison) %>% as.vector()
-        
-        return(list(
-          'final_data' = final_data,
-          'prevalence_cutoff' = prevalence_cutoff,
-          'counts_cutoff' = counts_cutoff,
-          'control_group' = control_group,
-          'comparison_groups' = comparison_groups,
-          'lineage' = lineage
-        ))
+          total_groups <- length(levels(metadata$Group))
+
+          req_start_values <- c("passed_ss_Group", "diff_Group", "lfc_Group", "q_Group")
+
+          out_col_values <- c("Sensitive", "Significance", "LFC", "P_adj")
+
+          all_comb <- outer(levels(metadata$Group)[2:total_groups], 
+                            levels(metadata$Group)[2:total_groups], 
+                            function(x,y) paste0(x,"_","Group",y)) %>% as.vector()
+
+          req_columns <- c(outer(levels(metadata$Group)[2:total_groups], req_start_values, function(x,y) paste0(y, x)), 
+                            outer(all_comb, req_start_values, function(x,y) paste0(y, x)))
+
+          filtered_pair <- res_pair[,c(1,which(colnames(res_pair) %in% req_columns))]
+
+          long_data_list <- list()
+
+          for(i in 1:length(req_start_values)) {
+            long_data_list[[i]] <- filtered_pair %>% dplyr::select(c(taxon, starts_with(req_start_values[i]))) %>% 
+              pivot_longer(cols = -taxon, names_to = "Comparison", values_to = out_col_values[i])
+
+            long_data_list[[i]]$Comparison <- sub(req_start_values[i], "", long_data_list[[i]]$Comparison)
+          }
+
+          final_data <- purrr::reduce(long_data_list, left_join, by=c("taxon", "Comparison"))
+
+          final_data <- final_data %>% dplyr::select(taxon, everything())
+
+          colnames(final_data)[1] <- lineage
+
+          final_data <- final_data %>% filter(Sensitive==TRUE)
+
+          final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(Comparison, " - ", control), Comparison))
+
+          final_data$Comparison <- gsub("_Group", " - ", final_data$Comparison)
+
+          final_data$Name <- ifelse(final_data$LFC < -1 & final_data$P_adj < 0.05, "Depleted",
+                                    ifelse(final_data$LFC > 1 & final_data$P_adj < 0.05, "Enriched", "Not Significant"))
+          
+          final_data$Name <- factor(final_data$Name, levels = c("Enriched", "Depleted", "Not Significant"))
+
+          comparison_groups <- unique(final_data$Comparison) %>% as.vector()
+          
+          return(list(
+            'final_data' = final_data,
+            'prevalence_cutoff' = prevalence_cutoff,
+            'counts_cutoff' = counts_cutoff,
+            'control_group' = control_group,
+            'comparison_groups' = comparison_groups,
+            'lineage' = lineage
+          ))
+        }
+      
       } else {
         
         return(NULL)
@@ -2167,79 +2208,120 @@ server <- function(input, output, session) {
 
         prev_cutoff <- prevalence_cutoff/100
 
-        output <- suppressMessages(suppressWarnings(ancombc2(data = daa_matrix, meta_data = metadata,
-            taxa_are_rows = TRUE,
-            fix_formula = "Group", rand_formula = NULL,
-            p_adj_method = "BH", pseudo_sens = TRUE,
-            prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
-            group = "Group", struc_zero = TRUE, neg_lb = FALSE,
-            alpha = 0.05, n_cl = threads, verbose = FALSE,
-            global = FALSE, pairwise = TRUE, 
-            dunnet = FALSE, trend = FALSE,
-            iter_control = list(tol = 1e-5, max_iter = 20, 
-            verbose = FALSE),
-            em_control = list(tol = 1e-5, max_iter = 100),
-            lme_control = lme4::lmerControl(), 
-            mdfdr_control = list(fwer_ctrl_method = "holm", B = 100),
-            trend_control = NULL)))
-        
-        res_pair <- output$res_pair
+        struc_zero_flag <- TRUE
+    
+        output <- NULL
 
-        total_groups <- length(levels(metadata$Group))
+        output <- tryCatch({
+          suppressMessages(suppressWarnings(ancombc2(data = daa_matrix, meta_data = metadata,
+                  taxa_are_rows = TRUE,
+                  fix_formula = "Group", rand_formula = NULL,
+                  p_adj_method = "BH", pseudo_sens = TRUE,
+                  prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
+                  group = "Group", struc_zero = TRUE, neg_lb = FALSE,
+                  alpha = 0.05, n_cl = threads, verbose = FALSE,
+                  global = FALSE, pairwise = TRUE, 
+                  dunnet = FALSE, trend = FALSE,
+                  iter_control = list(tol = 1e-5, max_iter = 20, 
+                  verbose = FALSE),
+                  em_control = list(tol = 1e-5, max_iter = 100),
+                  lme_control = lme4::lmerControl(), 
+                  mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
+                  trend_control = NULL)))
+          }, error = function(e) {
+            message("struc_zero = TRUE failed: ", e$message, ". Setting struc_zero to FALSE.")
+            return(NULL)
+          }
+        )
 
-        req_start_values <- c("passed_ss_Group", "diff_Group", "lfc_Group", "q_Group")
-
-        out_col_values <- c("Sensitive", "Significance", "LFC", "P_adj")
-
-        all_comb <- outer(levels(metadata$Group)[2:total_groups], 
-                        levels(metadata$Group)[2:total_groups], 
-                        function(x,y) paste0(x,"_","Group",y)) %>% as.vector()
-
-        req_columns <- c(outer(levels(metadata$Group)[2:total_groups], req_start_values, function(x,y) paste0(y, x)), 
-                        outer(all_comb, req_start_values, function(x,y) paste0(y, x)))
-
-        filtered_pair <- res_pair[,c(1,which(colnames(res_pair) %in% req_columns))]
-
-        long_data_list <- list()
-
-        for(i in 1:length(req_start_values)) {
-          long_data_list[[i]] <- filtered_pair %>% dplyr::select(c(taxon, starts_with(req_start_values[i]))) %>% 
-            pivot_longer(cols = -taxon, names_to = "Comparison", values_to = out_col_values[i])
-
-          long_data_list[[i]]$Comparison <- sub(req_start_values[i], "", long_data_list[[i]]$Comparison)
+        if(is.null(output)) {
+          output <- tryCatch({
+          suppressMessages(suppressWarnings(ancombc2(data = daa_matrix, meta_data = metadata,
+                  taxa_are_rows = TRUE,
+                  fix_formula = "Group", rand_formula = NULL,
+                  p_adj_method = "BH", pseudo_sens = TRUE,
+                  prv_cut = prev_cutoff, lib_cut = counts_cutoff, s0_perc = 0.05,
+                  group = "Group", struc_zero = FALSE, neg_lb = FALSE,
+                  alpha = 0.05, n_cl = threads, verbose = FALSE,
+                  global = FALSE, pairwise = TRUE, 
+                  dunnet = FALSE, trend = FALSE,
+                  iter_control = list(tol = 1e-5, max_iter = 20, 
+                  verbose = FALSE),
+                  em_control = list(tol = 1e-5, max_iter = 100),
+                  lme_control = lme4::lmerControl(), 
+                  mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
+                  trend_control = NULL)))
+          }, error = function(e) {
+            stop("Both struc_zero = TRUE and FALSE failed: ", e$message)
+            return(NULL)
+          })
+          struc_zero_flag <- FALSE
         }
 
-        final_data <- purrr::reduce(long_data_list, left_join, by=c("taxon", "Comparison"))
-
-        final_data <- final_data %>% dplyr::select(taxon, everything())
-
-        colnames(final_data)[1] <- category_name
-
-        final_data <- final_data %>% filter(Sensitive==TRUE)
-
-        final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(Comparison, " - ", control), Comparison))
-
-        final_data$Comparison <- gsub("_Group", " - ", final_data$Comparison)
-
-        final_data$Name <- ifelse(final_data$LFC < -1 & final_data$P_adj < 0.05, "Depleted",
-                                  ifelse(final_data$LFC > 1 & final_data$P_adj < 0.05, "Enriched", "Not Significant"))
+        if(is.null(output)) {
+          
+          return(NULL)
         
-        final_data$Name <- factor(final_data$Name, levels = c("Enriched", "Depleted", "Not Significant"))
+        } else {
+          
+          res_pair <- output$res_pair
 
-        comparison_groups <- unique(final_data$Comparison) %>% as.vector()
+          total_groups <- length(levels(metadata$Group))
 
-        final_data <- final_data %>% filter(Name != "Not Significant")
+          req_start_values <- c("passed_ss_Group", "diff_Group", "lfc_Group", "q_Group")
 
-        final_data <- final_data %>% group_by(Comparison) %>% mutate(Rank_Metric = sign(LFC) * (-log10(P_adj))) %>% dplyr::arrange(Rank_Metric, desc = TRUE)
-        
-        return(list(
-          'final_data' = final_data,
-          'prevalence_cutoff' = prevalence_cutoff,
-          'counts_cutoff' = counts_cutoff,
-          'category_name' = category_name,
-          'control_group' = control_group,
-          'comparison_groups' = comparison_groups
-        ))
+          out_col_values <- c("Sensitive", "Significance", "LFC", "P_adj")
+
+          all_comb <- outer(levels(metadata$Group)[2:total_groups], 
+                          levels(metadata$Group)[2:total_groups], 
+                          function(x,y) paste0(x,"_","Group",y)) %>% as.vector()
+
+          req_columns <- c(outer(levels(metadata$Group)[2:total_groups], req_start_values, function(x,y) paste0(y, x)), 
+                          outer(all_comb, req_start_values, function(x,y) paste0(y, x)))
+
+          filtered_pair <- res_pair[,c(1,which(colnames(res_pair) %in% req_columns))]
+
+          long_data_list <- list()
+
+          for(i in 1:length(req_start_values)) {
+            long_data_list[[i]] <- filtered_pair %>% dplyr::select(c(taxon, starts_with(req_start_values[i]))) %>% 
+              pivot_longer(cols = -taxon, names_to = "Comparison", values_to = out_col_values[i])
+
+            long_data_list[[i]]$Comparison <- sub(req_start_values[i], "", long_data_list[[i]]$Comparison)
+          }
+
+          final_data <- purrr::reduce(long_data_list, left_join, by=c("taxon", "Comparison"))
+
+          final_data <- final_data %>% dplyr::select(taxon, everything())
+
+          colnames(final_data)[1] <- category_name
+
+          final_data <- final_data %>% filter(Sensitive==TRUE)
+
+          final_data <- final_data %>% mutate(Comparison = ifelse(!str_detect(Comparison, "Group"), paste0(Comparison, " - ", control), Comparison))
+
+          final_data$Comparison <- gsub("_Group", " - ", final_data$Comparison)
+
+          final_data$Name <- ifelse(final_data$LFC < -1 & final_data$P_adj < 0.05, "Depleted",
+                                    ifelse(final_data$LFC > 1 & final_data$P_adj < 0.05, "Enriched", "Not Significant"))
+          
+          final_data$Name <- factor(final_data$Name, levels = c("Enriched", "Depleted", "Not Significant"))
+
+          comparison_groups <- unique(final_data$Comparison) %>% as.vector()
+
+          final_data <- final_data %>% filter(Name != "Not Significant")
+
+          final_data <- final_data %>% group_by(Comparison) %>% mutate(Rank_Metric = sign(LFC) * (-log10(P_adj))) %>% dplyr::arrange(Rank_Metric, desc = TRUE)
+          
+          return(list(
+            'final_data' = final_data,
+            'prevalence_cutoff' = prevalence_cutoff,
+            'counts_cutoff' = counts_cutoff,
+            'category_name' = category_name,
+            'control_group' = control_group,
+            'comparison_groups' = comparison_groups
+          ))
+        }
       } else {
         
         return(NULL)
