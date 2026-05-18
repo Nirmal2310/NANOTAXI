@@ -180,6 +180,52 @@ The user can run the example dataset by selecting **Example Data**, add the cont
 
 Please see the demo of Real-time classification by using the following [link](https://youtu.be/2QoAKN4wpOE)
 
+## Sequencing Playback using Bulk FAST5 file
+
+To playback the sequencing run of barcoded 16S rRNA reads, please download the bulk FAST5 file using the given link: https://zenodo.org/records/20195479/files/Bulk16S114.24.fast5. Please note that the file size is approximately 60 GB.
+
+- Simulate a MinION run using the following commands (sudo access is required, avoid if a sequencing device is plugged in to the system)
+
+```bash
+sudo service minknow stop
+
+sudo /opt/ont/minknow/bin/mk_manager_svc --simulated-minion-devices 1
+```
+
+- Launch the MinKNOW application and set up the basic information about the run.
+
+<img src="www/Sequencing Setup.png" alt="Sequencing Setup" style="width: 100%"/>
+
+- Select the Bulk FAST5 file in 'Simulated playback' under 'Advanced sequencing options'.
+
+<img src="www/Simulated Playback.png" alt="Simulated Playback" style="width: 100%"/>
+
+- Start the sequencing run.
+
+The metadata for the sequencing run is provided below:
+
+<div  class="sample_info">
+
+| Barcode   | Group       |
+| :--------:| :---------: |
+| barcode01 |  Equimolar  |
+| barcode02 |  Equimolar  |
+| barcode03 |  Equimolar  |
+| barcode04 |    Ecoli    |
+| barcode05 |    Ecoli    |
+| barcode06 |    Ecoli    |
+| barcode07 | Paeruginosa |
+| barcode08 | Paeruginosa |
+| barcode09 | Paeruginosa |
+| barcode10 |   Saureus   |
+| barcode11 |   Saureus   |
+| barcode12 |   Saureus   |
+| barcode13 | Zymobiomics |
+| barcode14 | Zymobiomics |
+| barcode15 | Zymobiomics |
+
+</div>
+
 ## Documentation
 
 For detailed information about NANOTAXI, please refer to the [Documentation](https://github.com/Nirmal2310/NANOTAXI/blob/main/Tabs/additional_information.md).
