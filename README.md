@@ -192,7 +192,7 @@ sudo service minknow stop
 sudo /opt/ont/minknow/bin/mk_manager_svc --simulated-minion-devices 1
 ```
 
-- Launch the MinKNOW application and set up the basic information about the run.
+- Launch the MinKNOW application and set up the basic information about the run (Sequencing Kit: SQK-16S114-24).
 
 <img src="www/Sequencing Setup.png" alt="Sequencing Setup" style="width: 100%"/>
 
