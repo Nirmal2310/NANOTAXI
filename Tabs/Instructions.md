@@ -188,7 +188,7 @@ The R Shiny Application has been developed by Nirmal Singh Mahar<sup><b>1</b></s
 
 ## <a name="Citation"></a> <img src="citation.png" alt="Cite App" style="float: left; width:30px; height:30px"><span style="margin-left:5px; font-size:30px"><b>CITATION</b></span>
 
-[NANOTAXI: R Shiny GUI For Classifying 16S Nanopore Seqequencing Reads in Real-time]()
+[NANOTAXI: R Shiny GUI For Classifying 16S Nanopore Seqequencing Reads in Real-time](https://doi.org/10.64898/2026.05.17.725747)
 
 <span style="display: inline-block; margin-right: 2px;">
   <b>The source code of NANOTAXI is available on</b> 

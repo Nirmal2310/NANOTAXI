@@ -242,6 +242,10 @@ For detailed information about NANOTAXI, please refer to the [Documentation](htt
 - [Nirmal Singh Mahar](https://scholar.google.com/citations?user=eOqR6ekAAAAJ&hl=en)
 - [Ishaan Gupta](https://scholar.google.co.in/citations?user=H8yFVJYAAAAJ&hl=en)
 
+## Citing NANOTAXI
+
+If you use NANOTAXI in your research, please cite our paper: [NANOTAXI](https://doi.org/10.64898/2026.05.17.725747)
+
 ## Feedback/Help
 
 If you have any feedback/issues, please report the issue via [GitHub](https://github.com/Nirmal2310/NANOTAXI/issues).
